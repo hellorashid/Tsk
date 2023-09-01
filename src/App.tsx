@@ -76,7 +76,7 @@ function Home() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("hi :)", newInput);
+    console.log("hi :) :)", newInput);
     addTask(newInput);
     setNewInput("");
   };
