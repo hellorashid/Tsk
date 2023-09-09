@@ -95,7 +95,7 @@ function Home() {
         </div>
       </div>
 
-      <div>
+      {/* <div>
         <input
           type="text"
           value={newInput}
@@ -103,7 +103,7 @@ function Home() {
           placeholder="Query string..."
           className="join-item input input-bordered w-full max-w-xs"
         />{" "}
-      </div>
+      </div> */}
 
       <div className="p-4">
         <form
