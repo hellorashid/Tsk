@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 export async function filterTasks() {
   let all = await getTasks();
-  let tasks = all.tasks;
+  // let tasks = all.tasks;
   const query = [{ key: "done", value: true }];
   const code = `return tasks.filter((task) => {
     return query.every((filter) => {

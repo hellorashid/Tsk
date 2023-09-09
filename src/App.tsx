@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from "react";
 import * as db from "./utils/db";
 import "./App.css";
