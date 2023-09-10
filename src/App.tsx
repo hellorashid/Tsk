@@ -32,7 +32,8 @@ const ListItem = ({
 
   return (
     // divs & some other elements can also have an OnClick(), see below
-    <tr>
+    <tr className="flex items-center justify-between">
+      <div>
       <th>
         <label>
           <input
@@ -45,20 +46,25 @@ const ListItem = ({
         </label>
       </th>
       <td>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 pb-1">
           <div>
             <div className="font-bold">{task.title}</div>
           </div>
         </div>
       </td>
+      </div>
+
+      <div>
       <td>
         <span className="badge badge-ghost badge-md">work</span>
       </td>
+      
       <th className=" ">
-        <button onClick={handleDelete} className="btn btn-ghost btn-xs pb-6">
+        <button onClick={handleDelete} className="btn btn-ghost btn-xs pb-5">
           delete
         </button>
       </th>
+      </div>
     </tr>
   );
 };
@@ -83,7 +89,7 @@ function Home() {
   };
 
   return (
-    <section className="task-home w-screen p-2 bg-grey-900 h-screen">
+    <section className="task-home p-2 bg-grey-900 w-screen h-screen lg:max-w-full">
       <div className="navbar bg-base-100 rounded-md">
         <div className="flex-1">
           <a className="btn btn-ghost normal-case text-xl">tsk.</a>
@@ -124,30 +130,8 @@ function Home() {
           />
         </form>
 
-        <div className="overflow-x-auto mt-4">
-          {/* wasssszzzuupp yoooo i tried something now theres so many red lines oop */}
-          {/* thats ok its just missing a key */}
-          {/* ohhh mkay bet it made the buttons look weird tho but
-            maybe we remove the btn class? we can still add the Onclick on the div
-            gotcha
-            bro i clicked on ur picture and now everything follows ur cursor LMAO
-            so cool, u can click again to unfollow
-            ouhh
-            i just okay i forgot what i was gonna say oop 
-            oop
-            oop
-            LMAO 
-            whiat h sahove lakdjla pls
-            what should i work on?
-            uhmmm, edit-ability ? i can make sure that the dialog pop up is smooth sailing and
-            retain as much of the design initially as possible 
-            i got a meeting in like 9 mins so ill be back 
-            okbet gl with meeting
-            ok bet
-            why u so cool pls
-            ayo
-          */}
-          <table className="table">
+        <div className="overflow-x-auto mt-10 flex justify-center">
+          <table className="table w-2/3">
             <tbody>
               {tasks.map((task: Task) => {
                 return (
@@ -159,7 +143,7 @@ function Home() {
                       setSelectedTask(task);
                     }}
                   >
-                    <ListItem // ok pro coder lmao pls i wanna make it look better now
+                    <ListItem 
                       key={task.id}
                       task={task}
                       deleteTask={deleteTask}
