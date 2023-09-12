@@ -84,12 +84,12 @@ function Home() {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log("hi :) :)", newInput);
-    addTask(newInput);
     if (newInput.trim() === "") {
       // Check if the input is empty or contains only whitespace
       alert('Please fill out this field');
       return;
     }
+    addTask(newInput);
     setNewInput("");
   };
 
@@ -150,10 +150,6 @@ function Home() {
               }
 
               {tasks.map((task: Task) => {
-                if (task.title.trim() === "") {
-                  return null;
-                }
-                
                 return (
                   <button
                     key={task.id}
