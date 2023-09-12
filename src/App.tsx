@@ -86,7 +86,9 @@ function Home() {
     <section className="task-home w-screen p-2 bg-grey-900 h-screen">
       <div className="navbar bg-base-100 rounded-md">
         <div className="flex-1">
-          <a className="btn btn-ghost normal-case text-xl">tsk.</a>
+          <a className="btn btn-ghost normal-case text-xl"
+            onClick={() => { window.modal_2.showModal(); }}
+          >tsk.</a>
         </div>
         <div className="flex-none">
           <button onClick={debuggeroo} className="btn btn-square btn-ghost">
@@ -125,28 +127,6 @@ function Home() {
         </form>
 
         <div className="overflow-x-auto mt-4">
-          {/* wasssszzzuupp yoooo i tried something now theres so many red lines oop */}
-          {/* thats ok its just missing a key */}
-          {/* ohhh mkay bet it made the buttons look weird tho but
-            maybe we remove the btn class? we can still add the Onclick on the div
-            gotcha
-            bro i clicked on ur picture and now everything follows ur cursor LMAO
-            so cool, u can click again to unfollow
-            ouhh
-            i just okay i forgot what i was gonna say oop 
-            oop
-            oop
-            LMAO 
-            whiat h sahove lakdjla pls
-            what should i work on?
-            uhmmm, edit-ability ? i can make sure that the dialog pop up is smooth sailing and
-            retain as much of the design initially as possible 
-            i got a meeting in like 9 mins so ill be back 
-            okbet gl with meeting
-            ok bet
-            why u so cool pls
-            ayo
-          */}
           <table className="table">
             <tbody>
               {tasks.map((task: Task) => {
@@ -159,7 +139,7 @@ function Home() {
                       setSelectedTask(task);
                     }}
                   >
-                    <ListItem // ok pro coder lmao pls i wanna make it look better now
+                    <ListItem
                       key={task.id}
                       task={task}
                       deleteTask={deleteTask}
@@ -172,7 +152,11 @@ function Home() {
           </table>
         </div>
 
-        <h1 className="pt-20"> </h1>
+
+
+        <dialog id="modal_2" className="modal">
+          <AboutModal />
+        </dialog>
 
         <dialog id="modal_1" className="modal">
           <TaskModal
@@ -258,6 +242,36 @@ const TaskModal = ({
     </>
   );
 };
+
+const AboutModal = () => {
+  return (
+    <>
+      <form method="dialog" className="modal-box">
+       
+          <div className="modal-header">
+            <h2 className="text-xl font-bold">About</h2>
+          </div>
+          <div className="modal-body">
+            <p className="whitespace-pre-wrap overflow-hidden break-words  text-left ">
+            {`tldr: tsk is a cozy & customizable task manager. 
+
+• tsk is built to be fully customizable and expandable - it can be a simple todo list, or a planner for your entire life.
+• your data is private, and yours. everything is stored locally on your device.
+• open source - add your own features & fixes, and let the community benefit
+• free.`}
+            </p>
+          </div>
+
+     
+      </form>
+      <form method="dialog" className="modal-backdrop">
+        <button>close</button>
+      </form>
+    </>
+  );
+}
+
+
 
 function App() {
   return (
