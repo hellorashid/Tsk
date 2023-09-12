@@ -97,7 +97,7 @@ function Home() {
     <section className="task-home p-2 bg-grey-900 w-screen h-screen lg:max-w-full">
       <div className="navbar bg-base-100 rounded-md">
         <div className="flex-1">
-          <a className="btn btn-ghost normal-case text-xl">tsk.</a>
+          <a className="btn btn-ghost normal-case text-xl"><img className='w-8 h-8 mr-2' src="tsk-logo.png"/>tsk.</a>
         </div>
         <div className="flex-none">
           <button onClick={debuggeroo} className="btn btn-square btn-ghost">
