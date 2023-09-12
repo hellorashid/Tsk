@@ -99,7 +99,7 @@ function Home() {
         <div className="flex-1">
           <a className="btn btn-ghost normal-case text-xl"
             onClick={() => { window.modal_2.showModal(); }}
-          >tsk.</a>
+          ><img className="w-8 h-8 mr-2" src='tsk-logo.png'/>tsk.</a>
         </div>
         <div className="flex-none">
           <button onClick={debuggeroo} className="btn btn-square btn-ghost">
