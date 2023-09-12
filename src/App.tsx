@@ -85,6 +85,11 @@ function Home() {
     e.preventDefault();
     console.log("hi :) :)", newInput);
     addTask(newInput);
+    if (newInput.trim() === "") {
+      // Check if the input is empty or contains only whitespace
+      alert('Please fill out this field');
+      return;
+    }
     setNewInput("");
   };
 
@@ -122,9 +127,10 @@ function Home() {
             onChange={(e) => setNewInput(e.target.value)}
             placeholder="I want to..."
             className="join-item input input-bordered w-full max-w-xs"
+            required
           />
           <input
-            className="join-item submit btn bg-violet-600 font-bold "
+            className="join-item submit btn bg-violet-600 font-bold text-slate-300 hover:bg-violet-400 hover:text-slate-700"
             type="submit"
             onClick={handleSubmit}
           />
@@ -134,6 +140,10 @@ function Home() {
           <table className="table w-2/3">
             <tbody>
               {tasks.map((task: Task) => {
+                if (task.title.trim() === "") {
+                  return null;
+                }
+                
                 return (
                   <button
                     key={task.id}
