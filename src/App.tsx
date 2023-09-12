@@ -129,6 +129,14 @@ function Home() {
         <div className="overflow-x-auto mt-4">
           <table className="table">
             <tbody>
+              { tasks.length == 0 && <div>
+                <p className=" text-lg font-bold text-center text-slate-100">No tasks yet.</p>
+                <p className=" text-sm font-serif text-center text-slate-100">which is <em>totally</em> fine. its okay to do nothing. you deserve a rest day.</p>
+                <p className=" text-sm font-serif text-center text-slate-100">but also, you can add a task above.</p>
+
+              </div> 
+              }
+
               {tasks.map((task: Task) => {
                 return (
                   <button
