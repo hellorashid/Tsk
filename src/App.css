@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --ff-main: 'Geologica', sans-serif;
+  --ff-accent: 'Averia Serif Libre', cursive;
+  --ff-body: 'Fragment Mono', monospace;
+}
+
+body {
+  font-family: var(--ff-main);
+}
+
+.task-description {
+  font-family: var(--ff-body);
+}
+
+.no-task-blurb {
+  font-family: var(--ff-accent);
+}
+
+
 #root {
   max-width: 1280px;
   margin: 0 auto;

@@ -44,14 +44,14 @@ export const TaskModal = ({
             contentEditable
             id="title"
             onBlur={handleEdit}
-            className="text-start text-xl text-bold"
+            className="text-start text-xl text-bold py-1 px-2"
           >
             {task.title}
           </h1>
 
           <p
             id="description"
-            className="mt-4 opacity-50 text-left"
+            className="task-description mt-4 opacity-50 text-left py-1 px-2"
             contentEditable
             onBlur={handleEdit}
           >
