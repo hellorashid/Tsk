@@ -1,5 +1,6 @@
 // @ts-nocheck
 
+import { useState } from "react";
 import { Task } from "../utils/types";
 
 export const TaskModal = ({
@@ -8,6 +9,12 @@ export const TaskModal = ({
   task: Task;
   updateFunction: any;
 }) => {
+  const [taskDescription, setTaskDescription] = useState('Some description...');
+
+  const handleDescEdit = () => {
+    setTaskDescription(newDescription);
+  }
+
   const handleEdit = (event) => {
     console.log(event.target.id, event.target.textContent);
     updateFunction(task.id, { [event.target.id]: event.target.textContent });
@@ -43,7 +50,7 @@ export const TaskModal = ({
           <h1
             contentEditable
             id="title"
-            onBlur={handleEdit}
+            onBlue={handleEdit}
             className="text-start text-xl text-bold py-1 px-2"
           >
             {task.title}
@@ -53,9 +60,17 @@ export const TaskModal = ({
             id="description"
             className="task-description mt-4 opacity-50 text-left py-1 px-2"
             contentEditable
-            onBlur={handleEdit}
+            onFocus={(event) => {
+              if (event.target.textContent === 'Some description...') {
+                event.target.textContent = '';
+              }
+            }}
+            onBlur={(event) => {
+              const newDescription = event.target.textContent;
+              handleDescEdit(newDescription);
+            }}
           >
-            {task.description || "Some description..."}
+            {taskDescription}
           </p>
         </div>
 
