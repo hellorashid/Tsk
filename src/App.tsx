@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as db from "./utils/db";
 import "./App.css";
 import { AboutModal } from "./components/AboutModal";
@@ -7,17 +7,39 @@ import { TaskModal } from "./components/TaskModal";
 import { ListItem } from "./components/ListItem";
 import { Task } from "./utils/types";
 
+import UserAvatarButton from "./components/UserAvatarButton";
+
+
+import Basic, { useAuth } from "basictech-react"
+Basic.init("4eSNb1xPA06isZncmftj")
+
+
 function Home() {
   console.log("Home");
+  const { authState, login, logout } = useAuth();
+
   const { tasks, addTask, deleteTask, updateTask, loading } = db.useTasks();
   const [selectedTask, setSelectedTask] = useState({});
   const [newInput, setNewInput] = useState("");
 
   const debuggeroo = async () => {
     console.log(tasks);
-    const f = await db.filterTasks();
-    console.log(f);
+
+    console.log(authState.user, authState.isAuthenticated);
+    // login()
+    // console.log(Basic.login())
+
+    // const f = await db.filterTasks();
+    // console.log(f);
+
+    // const hi = Hello()
+
+    // console.log(hi)
   };
+
+  // useEffect(() => {
+  //   Basic.handleAuthCode();
+  // }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -43,6 +65,7 @@ function Home() {
           <button onClick={debuggeroo} className="btn btn-square btn-ghost">
             🦄
           </button>
+          <UserAvatarButton />
         </div>
       </div>
 
