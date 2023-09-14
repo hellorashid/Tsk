@@ -20,6 +20,13 @@ body {
   font-family: var(--ff-accent);
 }
 
+.modal-header h2 {
+  font-family: var(--ff-accent);
+}
+
+.about-blurb {
+  font-family: var(--ff-body);
+}
 
 #root {
   max-width: 1280px;

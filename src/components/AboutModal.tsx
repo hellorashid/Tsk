@@ -4,10 +4,10 @@ export const AboutModal = () => {
       <form method="dialog" className="modal-box">
 
         <div className="modal-header">
-          <h2 className="text-xl font-bold">About</h2>
+          <h2 className="text-2xl font-bold">About</h2>
         </div>
         <div className="modal-body">
-          <p className="whitespace-pre-wrap overflow-hidden break-words  text-left ">
+          <p className="about-blurb whitespace-pre-wrap overflow-hidden break-words text-left text-sm mt-4">
             {`tldr: tsk is a cozy & customizable task manager. 
 
 • tsk is built to be fully customizable and expandable - it can be a simple todo list, or a planner for your entire life.
