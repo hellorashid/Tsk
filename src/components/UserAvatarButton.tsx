@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+//@ts-ignore
 import {useAuth } from "basictech-react"
 // import { useAuth } from "../lib.jsx";
 
