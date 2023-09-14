@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.0.18",
-    "basictech-react": "^1.2.1",
+    "basictech-react": "^1.2.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
