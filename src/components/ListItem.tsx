@@ -45,7 +45,7 @@ export const ListItem = ({
 
       <div>
         <td>
-        { task.labels.map((label) => (
+        { task?.labels?.map((label) => (
             <span className="badge badge-ghost badge-md text-sm bg-slate-800 py-1">{label.value}</span>
             ))  
           }
