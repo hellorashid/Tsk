@@ -9,7 +9,7 @@ export const TaskModal = ({
   task: Task;
   updateFunction: any;
 }) => {
-  const [labels, setLabels] = useState(["vibes"]);
+  const [labels, setLabels] = useState(task.labels);
   const [newLabel, setNewLabel] = useState("");
 
   const addLabel = (event) => {
@@ -22,10 +22,15 @@ export const TaskModal = ({
       console.log(labels);
       console.log({newLabel});
       //adds onto the global array 
-      setLabels([...labels, newLabel]);
-      setNewLabel("");
-      
+
+
+      setLabels([...labels, {value: newLabel}]);
+    
       //adds to the task label list 
+
+      updateFunction(task.id, { labels: [...task.labels, { value: newLabel }] });
+      
+      setNewLabel("");
 
   }
 
@@ -97,11 +102,15 @@ export const TaskModal = ({
         <div className="flex justify-between items-center mt-5 ">
               <div className="flex justify-center items-center gap-2">
                 
-                <button className="bg-slate-800 px-4 py-1 rounded-full text-sm">
-                  <p>
-                    vibes
-                  </p>
-                </button>
+                { labels?.map((label) => {
+                    return ( <button className="bg-slate-800 px-4 py-1 rounded-full text-sm">
+                    <p>
+                      {label.value}
+                    </p>
+                  </button>
+                  )
+                })}
+               
                   
                 <div className="dropdown dropdown-top">
                   <label tabIndex={0} className="btn btn-sm m-1 bg-slate-800 rounded-full p-0 hover:border-2 hover:border-indigo-700">
@@ -118,12 +127,12 @@ export const TaskModal = ({
                     </svg>
                   </label>
                   <ul tabIndex={0} className="dropdown-content z-10 menu p-2 shadow bg-base-100 rounded-box w-52">
-                    {labels.map((label) => {
+                    {/* {labels.map((label) => {
                       return (
                       <li className="text-base mb-1.5"><a>{label}</a></li>
                       );
-                    })}
-                    <hr className="border-slate-700"/>
+                    })} */}
+                    {/* <hr className="border-slate-700"/> */}
 
                     <div className="flex justify-evenly items-center">
                       {/* <p 
@@ -146,7 +155,8 @@ export const TaskModal = ({
                         placeholder="e.g. personal, work"
                         value={newLabel}
                         onChange={(e) => setNewLabel(e.target.value)}
-                        onKeyDown={addLabel}
+                        // onKeyDown={addLabel}
+
                       />
 
                       <svg 

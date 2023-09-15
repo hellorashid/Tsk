@@ -45,8 +45,12 @@ export const ListItem = ({
 
       <div>
         <td>
-          <span className="badge badge-ghost badge-md text-sm bg-slate-800 py-2">vibes</span>
-        </td>
+        { task.labels.map((label) => (
+            <span className="badge badge-ghost badge-md text-sm bg-slate-800 py-1">{label.value}</span>
+            ))  
+          }
+          </td>
+
 
         <th className="">
           <button onClick={handleDelete} className="rounded-full btn btn-ghost btn-xs pb-7">
