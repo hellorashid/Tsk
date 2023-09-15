@@ -1,3 +1,7 @@
+export type Label = {
+  value: string,
+  color: string,
+}
 
 export type Task = {
   id: string;
@@ -5,4 +9,5 @@ export type Task = {
   description: string;
   date_created: EpochTimeStamp;
   done: boolean;
+  labels: Label[];
 };

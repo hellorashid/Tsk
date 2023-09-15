@@ -19,7 +19,7 @@ export async function getTasks(query = []) {
 
   if (!tsk) {
     console.log("localstorage not found - creating ...");
-    tsk = { tasks: [] };
+    tsk = { tasks: [], labels: [] };
     const str = JSON.stringify(tsk);
     console.log("saving", str);
     localStorage.setItem("tsk", str);
@@ -41,6 +41,7 @@ export async function addTask(task) {
   newTask.date_created = Date.now();
   newTask.id = randomId;
   newTask.done = false;
+  newTask.labels = []
 
   let currentTasks = await getTasks();
 
@@ -101,6 +102,8 @@ function generateRandomId(length) {
 
 export function useTasks() {
   const [tasks, setTasks] = useState([]);
+  const [labels, setLabels] = useState([]);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
