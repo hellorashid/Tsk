@@ -17,6 +17,12 @@ export const AboutModal = () => {
           </p>
         </div>
 
+        <div className="modal-footer">
+          <div className="divider"></div>
+          <h6 className="font-mono">built by: <a target="_blank" href="https://twitter.com/_ingriddsss">@_ingriddsss</a> & <a target="_blank" href="https://twitter.com/razberrychai">@razberrychai</a> </h6>
+          <p>we'd love to hear your feedback!</p>
+        </div>
+
 
       </form>
       <form method="dialog" className="modal-backdrop">
