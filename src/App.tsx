@@ -79,7 +79,7 @@ function Home() {
         />{" "}
       </div> */}
 
-      <div className="p-4">
+      <div className="p-0 ">
         <form
           onSubmit={handleSubmit}
           className="mt-10 join task-input flex justify-center"
@@ -99,8 +99,8 @@ function Home() {
           />
         </form>
 
-        <div className="overflow-x-auto mt-10 flex justify-center">
-          <table className=" table w-2/3">
+        <div className="overflow-x-auto mt-10 flex justify-center ">
+          <table className="table w-full max-w-4xl">
             <tbody>
               { tasks.length == 0 && <div>
                 <p className="text-lg font-bold text-center text-slate-100">No tasks yet.</p>
