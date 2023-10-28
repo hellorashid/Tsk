@@ -1,0 +1,24 @@
+{
+    "name": "Tsk ~ cozy task manager",
+    "short_name": "Tsk",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#1E2329",
+    "theme_color": "#3367D6",
+    "description": "The cozy task manager",
+    "icons": [
+      {
+        "src": "/tsk-logo-144.png",
+        "sizes": "144x144",
+        "type": "image/png", 
+        "purpose": "any maskable"
+      }, 
+      {
+        "src": "/tsk-logo-512.png",
+        "sizes": "512x512",
+        "type": "image/png", 
+        "purpose": "any maskable"
+      }
+    ]
+  }
+  
