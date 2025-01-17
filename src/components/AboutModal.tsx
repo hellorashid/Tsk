@@ -13,7 +13,9 @@ export const AboutModal = () => {
 • tsk is built to be fully customizable and expandable - it can be a simple todo list, or a planner for your entire life.
 • your data is private, and yours. everything is stored locally on your device.
 • open source - add your own features & fixes, and let the community benefit
-• free.`}
+• free.
+
+v0.1`}
           </p>
         </div>
 
