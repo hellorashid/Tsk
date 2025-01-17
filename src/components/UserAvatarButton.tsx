@@ -1,9 +1,9 @@
 import { useState } from "react";
 //@ts-ignore
-import { useAuth } from "basictech-react"
+import { useBasic } from "@basictech/react"
 
 function UserAvatarButton() {
-  const { authState, login, logout } = useAuth();
+  const { signin, signout, isSignedIn, user } = useBasic();
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleDropdown = () => {
@@ -11,12 +11,12 @@ function UserAvatarButton() {
   };
 
   const handleLogin = () => {
-    login();
+    signin();
     setIsOpen(false);
   };
 
   const handleLogout = () => {
-    logout();
+    signout();
     setIsOpen(false);
   };
 
@@ -26,20 +26,20 @@ function UserAvatarButton() {
         className="avatar rounded-full flex items-center justify-center  bg-base-300 text-gray-300"
         onClick={toggleDropdown}
       >
-        {authState.isAuthenticated ? (
-          <span>{authState.user.name.slice(0, 1)}</span>
+        {isSignedIn ? (
+          <span>{user?.name?.slice(0, 1)}</span>
         ) : (
           <span>Login</span>
         )}
       </button>
       {isOpen && (
         <div className="absolute  menu right-0 mt-2 w-56 bg-base-300 rounded-md shadow-lg z-10">
-          {authState.isAuthenticated ? (
+          {isSignedIn ? (
             <div className="p-4 text-left">
               <p className="text-slate-100 font-medium">
-                {authState.user.name}
+                {user?.name}
               </p>
-              <p className="text-gray-200">{authState.user.email}</p>
+              <p className="text-gray-200">{user?.email}</p>
               
               <div className="divider"></div> 
 

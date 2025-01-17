@@ -9,37 +9,26 @@ import { Task } from "./utils/types";
 
 import UserAvatarButton from "./components/UserAvatarButton";
 
-
-import Basic, { useAuth } from "basictech-react"
-Basic.init("4eSNb1xPA06isZncmftj")
-
+import { useBasic, useQuery } from "@basictech/react";
 
 function Home() {
-  console.log("Home");
-  const { authState, login, logout } = useAuth();
+  const { db } = useBasic();
 
-  const { tasks, addTask, deleteTask, updateTask, loading } = db.useTasks();
+  const tasks = useQuery( () => db.collection("tasks").getAll())
+  
+
+  // const { tasks, addTask, deleteTask, updateTask, loading } = () =>{}
   const [selectedTask, setSelectedTask] = useState({});
   const [newInput, setNewInput] = useState("");
 
   const debuggeroo = async () => {
     console.log(tasks);
 
-    console.log(authState.user, authState.isAuthenticated);
-    // login()
-    // console.log(Basic.login())
+    // console.log(authState.user, authState.isAuthenticated);
 
-    // const f = await db.filterTasks();
-    // console.log(f);
-
-    // const hi = Hello()
-
-    // console.log(hi)
   };
 
-  // useEffect(() => {
-  //   Basic.handleAuthCode();
-  // }, []);
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -49,9 +38,23 @@ function Home() {
       alert('Please fill out this field');
       return;
     }
-    addTask(newInput);
+    
+    db.collection("tasks").add({
+      name: newInput,
+      completed: false,
+      description: "",
+    });
+
     setNewInput("");
   };
+
+  const updateTask = (taskId: string, changes: any) => {
+    db.collection("tasks").update(taskId, changes);
+  }
+
+  const deleteTask = (taskId: string) => {
+    db.collection("tasks").delete(taskId);
+  }
 
   return (
     <section className="task-home p-2 bg-grey-900 w-screen h-screen lg:max-w-full">
@@ -99,38 +102,34 @@ function Home() {
           />
         </form>
 
-        <div className="overflow-x-auto mt-10 flex justify-center ">
-          <table className="table w-full max-w-4xl">
-            <tbody>
-              { tasks.length == 0 && <div>
-                <p className="text-lg font-bold text-center text-slate-100">No tasks yet.</p>
-                <p className="no-task-blurb text-sm font-serif text-center text-slate-100">which is <em>totally</em> fine. its okay to do nothing. you deserve a rest day.</p>
-                <p className="no-task-blurb text-sm font-serif text-center text-slate-100">but also, you can add a task above.</p>
+        <div className="overflow-x-auto mt-10 flex justify-center">
+          <div className="w-full max-w-4xl">
+            {tasks?.length == 0 && <div>
+              <p className="text-lg font-bold text-center text-slate-100">No tasks yet.</p>
+              <p className="no-task-blurb text-sm font-serif text-center text-slate-100">which is <em>totally</em> fine. its okay to do nothing. you deserve a rest day.</p>
+              <p className="no-task-blurb text-sm font-serif text-center text-slate-100">but also, you can add a task above.</p>
+            </div>}
 
-              </div> 
-              }
-
-              {tasks.map((task: Task) => {
-                return (
-                  <button
+            <div className="flex flex-col gap-4">
+              {tasks?.map((task: Task) => (
+                <div
+                  key={task.id}
+                  className="w-full p-1"
+                  onClick={() => {
+                    window.modal_1.showModal();
+                    setSelectedTask(task);
+                  }}
+                >
+                  <ListItem 
                     key={task.id}
-                    className="w-full mb-4 p-1"
-                    onClick={() => {
-                      window.modal_1.showModal();
-                      setSelectedTask(task);
-                    }}
-                  >
-                    <ListItem 
-                      key={task.id}
-                      task={task}
-                      deleteTask={deleteTask}
-                      updateTask={updateTask}
-                    />
-                  </button>
-                );
-              })}
-            </tbody>
-          </table>
+                    task={task}
+                    deleteTask={deleteTask}
+                    updateTask={updateTask}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
 
@@ -139,14 +138,14 @@ function Home() {
           <AboutModal />
         </dialog>
 
-        <dialog id="modal_1" className="modal">
+        {/* <dialog id="modal_1" className="modal">
           <TaskModal
             key={selectedTask.id}
             task={selectedTask}
             new={false}
             updateFunction={updateTask}
           />
-        </dialog>
+        </dialog> */}
       </div>
     </section>
   );

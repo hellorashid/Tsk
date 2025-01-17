@@ -6,7 +6,9 @@ import "./index.css";
 
 // import { AuthProvider } from "./lib.jsx";
 //ts-ignore
-import {AuthProvider} from "basictech-react";
+import { BasicProvider } from "@basictech/react";
+
+import { schema } from "../basic.config";
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -24,8 +26,8 @@ if ('serviceWorker' in navigator) {
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <AuthProvider>
+    <BasicProvider project_id={schema.project_id} schema={schema}>
       <App />
-    </AuthProvider>
+    </BasicProvider>
   </React.StrictMode>
 );

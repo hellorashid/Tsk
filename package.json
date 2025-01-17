@@ -10,8 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@basictech/react": "^0.4.0-beta.0",
     "@heroicons/react": "^2.0.18",
-    "basictech-react": "^1.2.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
