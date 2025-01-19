@@ -20,14 +20,14 @@ export const ListItem = ({
   };
 
   return (
-    <div className="flex items-center justify-between p-3 gap-3 cursor-pointer bg-slate-500/5 rounded-lg transition-all duration-100 ease-in-out hover:bg-slate-500/10 hover:translate-x-1">
+    <div className="group flex items-center justify-between p-3 gap-1 cursor-pointer bg-base-100 rounded-lg transition-all duration-100 ease-in-out bg-opacity-70 hover:bg-opacity-100 hover:translate-x-1">
       <div className="flex items-center gap-2">
         <div className="pr-3">
           <input
             type="checkbox"
             className="checkbox"
-            checked={task.completed}
-            onChange={() => updateTask(task.id, { completed: !task.completed })}
+            checked={task.done}
+            onChange={() => updateTask(task.id, { done: !task.done })}
             onClick={handleDone}
           />
         </div>
@@ -45,7 +45,7 @@ export const ListItem = ({
 
       <button
         onClick={handleDelete}
-        className="rounded-full btn btn-ghost btn-xs pb-7"
+        className="rounded-full btn btn-ghost btn-xs pb-7 opacity-0 group-hover:opacity-70 transition-opacity duration-200"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -53,7 +53,7 @@ export const ListItem = ({
           viewBox="0 0 24 24"
           strokeWidth={1.5}
           stroke="currentColor"
-          className="w-5 h-5 opacity-30 hover:opacity-100"
+          className="w-5 h-5"
         >
           <path
             strokeLinecap="round"
