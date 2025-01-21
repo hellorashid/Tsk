@@ -26,8 +26,8 @@ export const ListItem = ({
           <input
             type="checkbox"
             className="checkbox"
-            checked={task.done}
-            onChange={() => updateTask(task.id, { done: !task.done })}
+            checked={task.completed}
+            onChange={() => updateTask(task.id, { completed: !task.completed })}
             onClick={handleDone}
           />
         </div>

@@ -8,7 +8,7 @@ import { ListItem } from "./components/ListItem";
 import { Task } from "./utils/types";
 import UserAvatarButton from "./components/UserAvatarButton";
 import { useBasic, useQuery } from "@basictech/react";
-import bgImage from '/bg.jpeg';
+import bgImage from '/bg2.jpg';
 
 
  function ExpandableInput() {
@@ -111,8 +111,6 @@ function Home() {
 
   const tasks = useQuery( () => db.collection("tasks").getAll())
   
-
-  // const { tasks, addTask, deleteTask, updateTask, loading } = () =>{}
   const [selectedTask, setSelectedTask] = useState({});
   const [newInput, setNewInput] = useState("");
 
@@ -154,7 +152,7 @@ function Home() {
   return (
     <section className="task-home p-2 w-screen h-screen lg:max-w-full relative" 
       style={{
-        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url(${bgImage})`,
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.6)), url(${bgImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
@@ -227,14 +225,14 @@ function Home() {
           <AboutModal />
         </dialog>
 
-        {/* <dialog id="modal_1" className="modal">
+        <dialog id="modal_1" className="modal">
           <TaskModal
             key={selectedTask.id}
             task={selectedTask}
             new={false}
             updateFunction={updateTask}
           />
-        </dialog> */}
+        </dialog>
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-base-100 md:hidden">
