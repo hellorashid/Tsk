@@ -152,12 +152,12 @@ function Home() {
   return (
     <section className="task-home p-2 w-screen h-screen lg:max-w-full relative" 
       style={{
-        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.6)), url(${bgImage})`,
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4)), url(${bgImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-      <div className="navbar bg-base-100 rounded-md flex justify-between items-center">
+      <div className="navbar bg-[#1F1B2F] rounded-md flex justify-between items-center">
         <div className="">
           <a className="btn btn-ghost normal-case text-xl"
             onClick={() => { window.modal_2.showModal(); }}
