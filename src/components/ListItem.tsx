@@ -20,7 +20,7 @@ export const ListItem = ({
   };
 
   return (
-    <div className="group flex items-center justify-between p-3 gap-1 cursor-pointer bg-base-100 rounded-lg transition-all duration-100 ease-in-out bg-opacity-70 hover:bg-opacity-100 hover:translate-x-1">
+    <div className="group flex items-center justify-between p-3 gap-1 cursor-pointer bg-base-100 rounded-lg transition-all duration-200 ease-in-out bg-opacity-70 hover:bg-opacity-100 hover:scale-[1.01]">
       <div className="flex items-center gap-2">
         <div className="pr-3">
           <input

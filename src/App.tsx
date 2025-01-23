@@ -204,10 +204,10 @@ function Home() {
                 <div
                   key={task.id}
                   className="w-full p-1"
-                  onClick={() => {
-                    window.modal_1.showModal();
-                    setSelectedTask(task);
-                  }}
+                  // onClick={() => {
+                  //   window.modal_1.showModal();
+                  //   setSelectedTask(task);
+                  // }}
                 >
                   <ListItem 
                     key={task.id}
