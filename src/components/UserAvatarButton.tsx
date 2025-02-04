@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useBasic } from "@basictech/react"
 
 function UserAvatarButton() {
-  const { signin, signout, isSignedIn, user } = useBasic();
+  const { signin, signout, isSignedIn, user, isAuthReady } = useBasic();
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleDropdown = () => {
@@ -19,6 +19,10 @@ function UserAvatarButton() {
     signout();
     setIsOpen(false);
   };
+
+  if (!isAuthReady) {
+    return <div></div>;
+  }
 
   return (
     <div className="relative">
