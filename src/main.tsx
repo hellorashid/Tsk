@@ -6,6 +6,7 @@ import "./index.css";
 import { BasicProvider } from "@basictech/react";
 
 import { schema } from "../basic.config";
+import './registerSW';
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
