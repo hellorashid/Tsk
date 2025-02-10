@@ -1,7 +1,7 @@
 {
-  "name": "sandbox",
+  "name": "tsk",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,8 +12,6 @@
   "dependencies": {
     "@basictech/react": "^0.5.0-beta.0",
     "@heroicons/react": "^2.0.18",
-    "i": "^0.3.7",
-    "npm": "^11.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

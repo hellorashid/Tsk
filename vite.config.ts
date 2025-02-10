@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'Tsk',
-        short_name: 'Tsk',
-        description: 'cozy task manager',
+        name: 'tsk.',
+        short_name: 'tsk.',
+        description: 'tsk - cozy task manager',
         theme_color: '#ffffff',
         icons: [
           {

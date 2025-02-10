@@ -15,7 +15,7 @@ export const AboutModal = () => {
 • open source - add your own features & fixes, and let the community benefit
 • free.
 
-v0.1`}
+v0.2`}
           </p>
         </div>
 
