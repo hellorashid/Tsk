@@ -8,19 +8,8 @@ import { BasicProvider } from "@basictech/react";
 import { schema } from "../basic.config";
 import './registerSW';
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(
-      (registration) => {
-        console.log('SW registered: ', registration);
-      },
-      (registrationError) => {
-        console.log('SW registration failed: ', registrationError);
-      }
-    );
-  });
-}
-
+// Remove the manual service worker registration
+// Let vite-plugin-pwa handle it
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
