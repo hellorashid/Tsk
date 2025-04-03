@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import * as db from "./utils/db";
 import "./App.css";
 import { AboutModal } from "./components/AboutModal";
@@ -9,6 +9,7 @@ import { Task } from "./utils/types";
 import UserAvatarButton from "./components/UserAvatarButton";
 import { useBasic, useQuery } from "@basictech/react";
 import bgImage from '/bg2.jpg';
+import TaskDrawer from "./components/TaskDrawer";
 
 
  function ExpandableInput() {
@@ -145,38 +146,58 @@ function Home() {
 
   const tasks = useQuery( () => db.collection("tasks").getAll())
   
+  console.log("tasks from DB:", tasks);
   const [selectedTask, setSelectedTask] = useState({});
-  const [newInput, setNewInput] = useState("");
+  const [newInput, setNewInput] = useState(""); 
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const debuggeroo = async () => {
-    console.log(tasks);
-
-    // console.log(authState.user, authState.isAuthenticated);
-
+  // When opening a task in the drawer, make sure it has both title and name properties
+  const handleTaskSelect = (task) => {
+    console.log("Selected task:", task);
+    setSelectedTask(task);
+    setDrawerOpen(true);
   };
-
-
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("hi :) :)", newInput);
     if (newInput.trim() === "") {
-      // Check if the input is empty or contains only whitespace
       alert('Please fill out this field');
       return;
     }
     
     db.collection("tasks").add({
-      name: newInput,
-      completed: false,
+      name: newInput,         // For ListItem
+      title: newInput,        // For TaskModal
+      completed: false,       // For ListItem
+      done: false,            // For TaskModal
       description: "",
+      date_created: Date.now(),
+      labels: []
     });
 
     setNewInput("");
   };
 
   const updateTask = (taskId: string, changes: any) => {
-    db.collection("tasks").update(taskId, changes);
+    // Ensure property consistency between models
+    const updatedChanges = { ...changes };
+    
+    // Keep name and title in sync
+    if (changes.name && !changes.title) {
+      updatedChanges.title = changes.name;
+    } else if (changes.title && !changes.name) {
+      updatedChanges.name = changes.title;
+    }
+    
+    // Keep completed and done in sync
+    if (changes.completed !== undefined && changes.done === undefined) {
+      updatedChanges.done = changes.completed;
+    } else if (changes.done !== undefined && changes.completed === undefined) {
+      updatedChanges.completed = changes.done;
+    }
+    
+    console.log(`Updating task ${taskId} with:`, updatedChanges);
+    db.collection("tasks").update(taskId, updatedChanges);
   }
 
   const deleteTask = (taskId: string) => {
@@ -240,10 +261,9 @@ function Home() {
                 <div
                   key={task.id}
                   className="w-full p-1"
-                  // onClick={() => {
-                  //   window.modal_1.showModal();
-                  //   setSelectedTask(task);
-                  // }}
+                  onClick={() => {
+                    handleTaskSelect(task);
+                  }}
                 >
                   <ListItem 
                     key={task.id}
@@ -260,16 +280,15 @@ function Home() {
         <dialog id="modal_2" className="modal">
           <AboutModal />
         </dialog>
-
-        <dialog id="modal_1" className="modal">
-          <TaskModal
-            key={selectedTask.id}
-            task={selectedTask}
-            new={false}
-            updateFunction={updateTask}
-          />
-        </dialog>
       </div>
+
+      <TaskDrawer 
+        isOpen={drawerOpen} 
+        setIsOpen={setDrawerOpen} 
+        task={selectedTask} 
+        updateFunction={updateTask}
+        deleteTask={deleteTask}
+      />
 
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-base-100 md:hidden">
         <form

@@ -8,7 +8,6 @@ export const ListItem = ({
   task: Task;
   deleteTask: any;
   updateTask: any;
-  handleClick: any;
 }) => {
   const handleDelete = (e) => {
     e.stopPropagation();
