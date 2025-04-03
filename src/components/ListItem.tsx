@@ -33,13 +33,6 @@ export const ListItem = ({
         <div className="flex items-center space-x-3">
           <div className="font-bold text-base">{task.name}</div>
         </div>
-        <div className="flex gap-1">
-          {task?.labels?.map((label) => (
-            <span className="badge badge-ghost badge-md text-sm bg-slate-800 py-1">
-              {label.value}
-            </span>
-          ))}
-        </div>
       </div>
 
       <button

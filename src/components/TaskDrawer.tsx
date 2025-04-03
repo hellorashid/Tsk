@@ -42,19 +42,6 @@ export default function TaskDrawer({ isOpen, setIsOpen, task, updateFunction, de
       console.log("Task in drawer:", task);
     }
   }, [isOpen, task]);
-
-  // Create a transformed task object to match the expected schema if needed
-  // This is a fallback in case the properties are missing
-  const transformedTask = task && {
-    id: task.id,
-    title: task.title || task.name || '', 
-    name: task.name || task.title || '',
-    description: task.description || '',
-    date_created: task.date_created || Date.now(),
-    done: task.done !== undefined ? task.done : (task.completed || false),
-    completed: task.completed !== undefined ? task.completed : (task.done || false),
-    labels: task.labels || []
-  };
   
   return (
     <Drawer.Root open={isOpen} onOpenChange={setIsOpen}>
@@ -66,15 +53,15 @@ export default function TaskDrawer({ isOpen, setIsOpen, task, updateFunction, de
         >
           {/* Title for accessibility */}
           <h2 id={titleId} className="sr-only">
-            Task Details: {transformedTask?.title || 'Task'}
+            Task Details: {task?.name || 'Task'}
           </h2>
           
           <div className="mx-auto w-12 h-1.5 bg-gray-300 rounded-full my-4" />
           
-          {isOpen && transformedTask ? (
+          {isOpen && task?.id ? (
             <TaskModal
-              key={transformedTask.id}
-              task={transformedTask}
+              key={task.id}
+              task={task}
               new={false}
               updateFunction={updateFunction}
               deleteTask={deleteTask}

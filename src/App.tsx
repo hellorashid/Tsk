@@ -151,7 +151,7 @@ function Home() {
   const [newInput, setNewInput] = useState(""); 
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // When opening a task in the drawer, make sure it has both title and name properties
+  // When opening a task in the drawer
   const handleTaskSelect = (task) => {
     console.log("Selected task:", task);
     setSelectedTask(task);
@@ -166,38 +166,17 @@ function Home() {
     }
     
     db.collection("tasks").add({
-      name: newInput,         // For ListItem
-      title: newInput,        // For TaskModal
-      completed: false,       // For ListItem
-      done: false,            // For TaskModal
+      name: newInput,
       description: "",
-      date_created: Date.now(),
-      labels: []
+      completed: false
     });
 
     setNewInput("");
   };
 
   const updateTask = (taskId: string, changes: any) => {
-    // Ensure property consistency between models
-    const updatedChanges = { ...changes };
-    
-    // Keep name and title in sync
-    if (changes.name && !changes.title) {
-      updatedChanges.title = changes.name;
-    } else if (changes.title && !changes.name) {
-      updatedChanges.name = changes.title;
-    }
-    
-    // Keep completed and done in sync
-    if (changes.completed !== undefined && changes.done === undefined) {
-      updatedChanges.done = changes.completed;
-    } else if (changes.done !== undefined && changes.completed === undefined) {
-      updatedChanges.completed = changes.done;
-    }
-    
-    console.log(`Updating task ${taskId} with:`, updatedChanges);
-    db.collection("tasks").update(taskId, updatedChanges);
+    console.log(`Updating task ${taskId} with:`, changes);
+    db.collection("tasks").update(taskId, changes);
   }
 
   const deleteTask = (taskId: string) => {

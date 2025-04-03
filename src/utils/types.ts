@@ -5,9 +5,7 @@ export type Label = {
 
 export type Task = {
   id: string;
-  title: string;
+  name: string;
   description: string;
-  date_created: EpochTimeStamp;
-  done: boolean;
-  labels: Label[];
+  completed: boolean;
 };
