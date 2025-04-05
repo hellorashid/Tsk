@@ -154,7 +154,7 @@ function Home() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [showSettings, setShowSettings] = useState(false);
-  const [viewMode, setViewMode] = useState('cozy');
+  const [viewMode, setViewMode] = useState('mid');
 
   useEffect(() => {
     const handleResize = () => {
@@ -276,14 +276,14 @@ function Home() {
   }
 
   return (
-    <section className="task-home w-screen h-screen max-h-screen lg:max-w-full relative overflow-hidden" 
+    <section className="flex-1 task-home w-full h-screen max-h-screen relative overflow-hidden" 
       style={{
         backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4)), url(${bgImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-      <div className="navbar bg-[#1F1B2F] rounded-md flex justify-between items-center sticky top-0 z-10">
+      <div className="navbar bg-[#1F1B2F] rounded-b-md bg-opacity-95 shadow-md backdrop-blur-sm flex justify-between items-center sticky top-0 z-10">
         <div className="">
           <a className="btn btn-ghost normal-case text-xl"
             onClick={() => { window.modal_2.showModal(); }}
@@ -334,7 +334,7 @@ function Home() {
           />
         </div>
         
-        <div className="flex-1 overflow-y-auto pb-24 md:pb-0 md:px-4">
+        <div className="flex-1 overflow-y-auto pb-24 md:pb-0 px-1 md:px-4">
           <div className="mt-10 flex justify-center">
             <div className="w-full max-w-4xl">
               {filteredTasks?.length == 0 && <div>

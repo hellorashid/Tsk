@@ -10,7 +10,7 @@ interface SettingsSidebarProps {
 const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   onClose,
   onViewModeChange,
-  currentViewMode = 'cozy',
+  currentViewMode = 'mid',
 }) => {
   const { dbStatus } = useBasic();
   const [viewMode, setViewMode] = useState(currentViewMode);

@@ -17,7 +17,7 @@ const ListItem: React.FC<ListItemProps> = ({
   deleteTask,
   updateTask,
   isSelected = false,
-  viewMode = 'cozy',
+  viewMode = 'mid',
 }) => {
   const { dbStatus } = useBasic();
   const [isEditing, setIsEditing] = useState(false);

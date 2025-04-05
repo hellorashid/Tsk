@@ -8,9 +8,6 @@ import { BasicProvider } from "@basictech/react";
 import { schema } from "../basic.config";
 import './registerSW';
 
-// Remove the manual service worker registration
-// Let vite-plugin-pwa handle it
-
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <BasicProvider project_id={schema.project_id} schema={schema}>
