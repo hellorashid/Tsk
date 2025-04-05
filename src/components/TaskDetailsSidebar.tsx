@@ -69,7 +69,7 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
   if (!task) return null;
 
   return (
-    <div className="w-80 h-full text-white p-6 overflow-y-auto bg-[#1F1B2F]/80 backdrop-blur-sm flex flex-col">
+    <div className="w-80 m-2 h-full text-white p-4 rounded-md overflow-y-auto bg-[#1F1B2F]/80 backdrop-blur-md flex flex-col">
       <div className="flex items-center mb-4">
         <input
           type="checkbox"
@@ -97,7 +97,7 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
         )}
       </div>
 
-      <div className="divider my-2"></div>
+      <div className="divider my-0"></div>
 
       <div className="flex-1 overflow-y-auto">
         {isEditingDescription ? (

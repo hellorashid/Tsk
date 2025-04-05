@@ -38,7 +38,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
 
       <div className="space-y-6">
         <div className="bg-[#2A2535]/50 p-4 rounded-lg">
-          <h3 className="text-lg font-medium mb-2">Database Status</h3>
+          <h3 className="text-lg font-medium mb-2">Sync Status</h3>
           <div className="flex items-center">
             <div className={`w-3 h-3 rounded-full mr-2 ${
               dbStatus === "ONLINE" ? "bg-green-500" : 
@@ -46,8 +46,8 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
               "bg-yellow-500"
             }`}></div>
             <span className="text-gray-300">
-              {dbStatus === "ONLINE" ? "Connected" : 
-               dbStatus === "OFFLINE" ? "Offline" : 
+              {dbStatus === "ONLINE" ? "Data is synced" : 
+               dbStatus === "OFFLINE" ? "Offline - not syncing" : 
                "Connecting..."}
             </span>
           </div>

@@ -311,7 +311,7 @@ function Home() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-      <div className="navbar bg-[#1F1B2F] rounded-b-md bg-opacity-95 shadow-md backdrop-blur-sm flex justify-between items-center sticky top-0 z-10">
+      <div className="navbar bg-[#1F1B2F] rounded-b-md md:rounded-b-none bg-opacity-95 shadow-md backdrop-blur-sm flex justify-between items-center sticky top-0 z-10">
         <div className="">
           <a className="btn btn-ghost normal-case text-xl"
             onClick={() => { window.modal_2.showModal(); }}
