@@ -3,11 +3,12 @@
 import { Task } from "../utils/types";
 
 export const ListItem = ({
-  task, deleteTask, updateTask,
+  task, deleteTask, updateTask, isSelected = false,
 }: {
   task: Task;
   deleteTask: any;
   updateTask: any;
+  isSelected?: boolean;
 }) => {
   const handleDelete = (e) => {
     e.stopPropagation();
@@ -19,7 +20,11 @@ export const ListItem = ({
   };
 
   return (
-    <div className="group flex items-center justify-between p-3 gap-1 cursor-pointer bg-base-100 rounded-lg transition-all duration-200 ease-in-out bg-opacity-70 hover:bg-opacity-100 hover:scale-[1.01]">
+    <div className={`group flex items-center justify-between p-3 gap-1 cursor-pointer bg-base-100 rounded-lg transition-all duration-200 ease-in-out ${
+      isSelected 
+        ? 'bg-opacity-100 scale-[1.01]' 
+        : 'bg-opacity-70 hover:bg-opacity-100 hover:scale-[1.01]'
+    }`}>
       <div className="flex items-center gap-2">
         <div className="pr-3">
           <input
@@ -37,7 +42,9 @@ export const ListItem = ({
 
       <button
         onClick={handleDelete}
-        className="rounded-full btn btn-ghost btn-xs pb-7 opacity-0 group-hover:opacity-70 transition-opacity duration-200"
+        className={`rounded-full btn btn-ghost btn-xs pb-7 transition-opacity duration-200 ${
+          isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-70'
+        }`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

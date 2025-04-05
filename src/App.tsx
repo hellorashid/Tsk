@@ -10,6 +10,9 @@ import UserAvatarButton from "./components/UserAvatarButton";
 import { useBasic, useQuery } from "@basictech/react";
 import bgImage from '/bg2.jpg';
 import TaskDrawer from "./components/TaskDrawer";
+import Sidebar from "./components/Sidebar";
+import TaskDetailsSidebar from "./components/TaskDetailsSidebar";
+import SettingsSidebar from "./components/SettingsSidebar";
 
 
  function ExpandableInput() {
@@ -44,59 +47,57 @@ import TaskDrawer from "./components/TaskDrawer";
   }
 
   return (
-    <div className="w-full max-w-md mx-auto mt-10">
-      <form onSubmit={handleSubmit} ref={formRef} className="relative">
+    <div className="relative">
+      <form
+        ref={formRef}
+        onSubmit={handleSubmit}
+        className="relative"
+      >
+        <textarea
+          ref={inputRef}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
+          placeholder="I want to..."
+          className={`
+            w-full p-3 rounded-lg
+            bg-white dark:bg-gray-800
+            border border-gray-300 dark:border-gray-600
+            focus:outline-none focus:ring-2 focus:ring-blue-500
+            transition-all duration-300 ease-in-out
+            ${isExpanded ? 'h-32' : 'h-12'}
+          `}
+          onClick={() => setIsExpanded(true)}
+        />
+
         <div 
           className={`
-            relative overflow-hidden transition-all duration-300 ease-in-out
-            border rounded-lg focus-within:ring-2 focus-within:ring-blue-500
-            ${isExpanded ? 'h-[144px]' : 'h-12'}
+            absolute bottom-0 left-0 right-0
+            bg-white dark:bg-gray-800 border-t
+            transition-opacity duration-300 ease-in-out
+            ${isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}
           `}
         >
-          <textarea
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onFocus={() => setIsExpanded(true)}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            placeholder="Type something..."
-            className={`
-              w-full p-3 resize-none overflow-auto
-              absolute top-0 left-0 right-0
-              focus:outline-none bg-transparent
-              ${isExpanded ? 'h-[108px]' : 'h-12'}
-            `}
-            style={{ transition: 'height 300ms ease-in-out' }}
-          />
-          <div 
-            className={`
-              absolute bottom-0 left-0 right-0
-              bg-white dark:bg-gray-800 border-t
-              transition-opacity duration-300 ease-in-out
-              ${isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}
-            `}
-          >
-            <div className="flex justify-between items-center p-2">
-              <div className="flex space-x-2">
-                <button variant="ghost" size="icon" type="button">
-                  {/* <Bold className="h-4 w-4" /> */}
-                  <span className="sr-only">Bold</span>
-                </button>
-                <button variant="ghost" size="icon" type="button">
-                  {/* <Italic className="h-4 w-4" /> */}
-                  <span className="sr-only">Italic</span>
-                </button>
-                <button variant="ghost" size="icon" type="button">
-                  {/* <Link className="h-4 w-4" /> */}
-                  <span className="sr-only">Link</span>
-                </button>
-              </div>
-              <button type="submit" size="sm">
-                {/* <Send className="h-4 w-4 mr-2" /> */}
-                Submit
+          <div className="flex justify-between items-center p-2">
+            <div className="flex space-x-2">
+              <button variant="ghost" size="icon" type="button">
+                {/* <Bold className="h-4 w-4" /> */}
+                <span className="sr-only">Bold</span>
+              </button>
+              <button variant="ghost" size="icon" type="button">
+                {/* <Italic className="h-4 w-4" /> */}
+                <span className="sr-only">Italic</span>
+              </button>
+              <button variant="ghost" size="icon" type="button">
+                {/* <Link className="h-4 w-4" /> */}
+                <span className="sr-only">Link</span>
               </button>
             </div>
+            <button type="submit" size="sm">
+              {/* <Send className="h-4 w-4 mr-2" /> */}
+              Submit
+            </button>
           </div>
         </div>
       </form>
@@ -147,15 +148,101 @@ function Home() {
   const tasks = useQuery( () => db.collection("tasks").getAll())
   
   console.log("tasks from DB:", tasks);
-  const [selectedTask, setSelectedTask] = useState({});
+  const [selectedTask, setSelectedTask] = useState(null);
   const [newInput, setNewInput] = useState(""); 
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [showSettings, setShowSettings] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Define filters
+  const filters = [
+    { id: 'all', label: 'All Tasks', count: tasks?.length },
+    { id: 'active', label: 'Active', count: tasks?.filter(task => !task.completed).length },
+    { id: 'completed', label: 'Completed', count: tasks?.filter(task => task.completed).length },
+  ];
+
+  // Filter tasks based on active filter
+  const filteredTasks = tasks?.filter(task => {
+    if (activeFilter === 'all') return true;
+    if (activeFilter === 'active') return !task.completed;
+    if (activeFilter === 'completed') return task.completed;
+    return true;
+  });
+
+  // Keyboard navigation for tasks
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setSelectedTask(null);
+        setShowSettings(false);
+        if (isMobile) {
+          setDrawerOpen(false);
+        }
+        return;
+      }
+      
+      if (!filteredTasks || filteredTasks.length === 0) return;
+      
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        
+        const currentIndex = selectedTask 
+          ? filteredTasks.findIndex(task => task.id === selectedTask.id)
+          : -1;
+        
+        let newIndex;
+        
+        if (e.key === 'ArrowRight') {
+          // Move to next task or first task if at the end
+          newIndex = currentIndex < filteredTasks.length - 1 ? currentIndex + 1 : 0;
+        } else {
+          // Move to previous task or last task if at the beginning
+          newIndex = currentIndex > 0 ? currentIndex - 1 : filteredTasks.length - 1;
+        }
+        
+        setSelectedTask(filteredTasks[newIndex]);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filteredTasks, selectedTask, isMobile]);
 
   // When opening a task in the drawer
   const handleTaskSelect = (task) => {
     console.log("Selected task:", task);
     setSelectedTask(task);
-    setDrawerOpen(true);
+    setShowSettings(false); // Close settings when selecting a task
+    if (isMobile) {
+      setDrawerOpen(true);
+    }
+  };
+
+  const handleCloseTaskDetails = () => {
+    setSelectedTask(null);
+    if (isMobile) {
+      setDrawerOpen(false);
+    }
+  };
+
+  const handleOpenSettings = () => {
+    setShowSettings(true);
+    setSelectedTask(null); // Close task details when opening settings
+  };
+
+  const handleCloseSettings = () => {
+    setShowSettings(false);
   };
 
   const handleSubmit = (e) => {
@@ -219,55 +306,95 @@ function Home() {
           </form>
         </div>
 
-        <div className="flex-none">
-          <StatusIcon status={dbStatus} />
+        <div className="flex-none flex items-center">
+          <button 
+            onClick={handleOpenSettings}
+            className="text-gray-400 hover:text-white focus:outline-none mr-2"
+            aria-label="Settings"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+            </svg>
+          </button>
           <UserAvatarButton />
         </div>
       </div>
 
+      <div className="flex h-[calc(100vh-64px)]">
+        <div className="hidden md:block">
+          <Sidebar 
+            filters={filters}
+            activeFilter={activeFilter}
+            onFilterChange={setActiveFilter}
+          />
+        </div>
+        
+        <div className="flex-1 overflow-y-auto pb-24 md:pb-0 md:px-4">
+          <div className="mt-10 flex justify-center">
+            <div className="w-full max-w-4xl">
+              {filteredTasks?.length == 0 && <div>
+                <p className="text-lg font-bold text-center text-slate-100">No tasks yet.</p>
+                <p className="no-task-blurb text-sm font-serif text-center text-slate-100">which is <em>totally</em> fine. its okay to do nothing. you deserve a rest day.</p>
+                <p className="no-task-blurb text-sm font-serif text-center text-slate-100">but also, you can add a task above.</p>
+              </div>}
 
-      <div className="h-[calc(100vh-64px)] overflow-y-auto pb-24 md:pb-0">
-        <div className="mt-10 flex justify-center">
-          <div className="w-full max-w-4xl">
-            {tasks?.length == 0 && <div>
-              <p className="text-lg font-bold text-center text-slate-100">No tasks yet.</p>
-              <p className="no-task-blurb text-sm font-serif text-center text-slate-100">which is <em>totally</em> fine. its okay to do nothing. you deserve a rest day.</p>
-              <p className="no-task-blurb text-sm font-serif text-center text-slate-100">but also, you can add a task above.</p>
-            </div>}
-
-            <div className="flex flex-col">
-              {tasks?.map((task: Task) => (
-                <div
-                  key={task.id}
-                  className="w-full p-1"
-                  onClick={() => {
-                    handleTaskSelect(task);
-                  }}
-                >
-                  <ListItem 
+              <div className="flex flex-col">
+                {filteredTasks?.map((task: Task) => (
+                  <div
                     key={task.id}
-                    task={task}
-                    deleteTask={deleteTask}
-                    updateTask={updateTask}
-                  />
-                </div>
-              ))}
+                    className="w-full p-1"
+                    onClick={() => {
+                      handleTaskSelect(task);
+                    }}
+                  >
+                    <ListItem 
+                      key={task.id}
+                      task={task}
+                      deleteTask={deleteTask}
+                      updateTask={updateTask}
+                      isSelected={selectedTask?.id === task.id}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
+
+          <dialog id="modal_2" className="modal">
+            <AboutModal />
+          </dialog>
         </div>
 
-        <dialog id="modal_2" className="modal">
-          <AboutModal />
-        </dialog>
+        {/* Desktop task details sidebar - only show on desktop when a task is selected and settings is not open */}
+        {!isMobile && selectedTask && !showSettings && (
+          <div className="hidden md:block md:pl-4">
+            <TaskDetailsSidebar
+              task={selectedTask}
+              onClose={handleCloseTaskDetails}
+              onUpdate={updateTask}
+              onDelete={deleteTask}
+            />
+          </div>
+        )}
+
+        {/* Settings sidebar - only show on desktop when settings is open */}
+        {!isMobile && showSettings && (
+          <div className="hidden md:block md:pl-4">
+            <SettingsSidebar onClose={handleCloseSettings} />
+          </div>
+        )}
       </div>
 
-      <TaskDrawer 
-        isOpen={drawerOpen} 
-        setIsOpen={setDrawerOpen} 
-        task={selectedTask} 
-        updateFunction={updateTask}
-        deleteTask={deleteTask}
-      />
+      {/* Mobile drawer - only show on mobile */}
+      {isMobile && (
+        <TaskDrawer 
+          isOpen={drawerOpen} 
+          setIsOpen={setDrawerOpen} 
+          task={selectedTask} 
+          updateFunction={updateTask}
+          deleteTask={deleteTask}
+        />
+      )}
 
       <div className="fixed bottom-0 left-0 right-0 p-4 md:hidden bg-[#1F1B2F] z-10">
         <form
