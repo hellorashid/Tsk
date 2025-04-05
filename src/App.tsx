@@ -154,7 +154,8 @@ function Home() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [showSettings, setShowSettings] = useState(false);
-  const [viewMode, setViewMode] = useState('mid');
+  const [viewMode, setViewMode] = useState('cozy');
+  const [customFilters, setCustomFilters] = useState([]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -170,6 +171,7 @@ function Home() {
     { id: 'all', label: 'All Tasks', count: tasks?.length },
     { id: 'active', label: 'Active', count: tasks?.filter(task => !task.completed).length },
     { id: 'completed', label: 'Completed', count: tasks?.filter(task => task.completed).length },
+    ...customFilters
   ];
 
   // Filter tasks based on active filter
@@ -177,6 +179,19 @@ function Home() {
     if (activeFilter === 'all') return true;
     if (activeFilter === 'active') return !task.completed;
     if (activeFilter === 'completed') return task.completed;
+    
+    // Handle custom filters
+    const customFilter = customFilters.find(f => f.id === activeFilter);
+    if (customFilter) {
+      // Check if the task has any of the filter's labels
+      if (customFilter.labels && customFilter.labels.length > 0) {
+        return customFilter.labels.some(label => 
+          task.labels && task.labels.includes(label)
+        );
+      }
+      return true;
+    }
+    
     return true;
   });
 
@@ -275,6 +290,19 @@ function Home() {
     db.collection("tasks").delete(taskId);
   }
 
+  const handleCreateFilter = (filterName, labels) => {
+    const newFilterId = `custom-${Date.now()}`;
+    const newFilter = {
+      id: newFilterId,
+      label: filterName,
+      labels: labels,
+      count: 0, // This will be updated when tasks are filtered
+    };
+    
+    setCustomFilters([...customFilters, newFilter]);
+    setActiveFilter(newFilterId); // Switch to the new filter
+  };
+
   return (
     <section className="flex-1 task-home w-full h-screen max-h-screen relative overflow-hidden" 
       style={{
@@ -331,6 +359,7 @@ function Home() {
             filters={filters}
             activeFilter={activeFilter}
             onFilterChange={setActiveFilter}
+            onCreateFilter={handleCreateFilter}
           />
         </div>
         
@@ -343,7 +372,7 @@ function Home() {
                 <p className="no-task-blurb text-sm font-serif text-center text-slate-100">but also, you can add a task above.</p>
               </div>}
 
-              <div className={`flex flex-col ${viewMode === 'compact' ? 'space-y-0' : viewMode === 'mid' ? 'space-y-1' : 'space-y-2'}`}>
+              <div className={`flex flex-col ${viewMode === 'compact' ? 'space-y-0' : viewMode === 'cozy' ? 'space-y-1' : 'space-y-2'}`}>
                 {filteredTasks?.map((task: Task) => (
                   <div
                     key={task.id}

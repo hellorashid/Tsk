@@ -9,7 +9,7 @@ interface ListItemProps {
   deleteTask: (id: string) => void;
   updateTask: (id: string, changes: any) => void;
   isSelected?: boolean;
-  viewMode?: 'cozy' | 'mid' | 'compact';
+  viewMode?: 'compact' | 'cozy' | 'chonky';
 }
 
 const ListItem: React.FC<ListItemProps> = ({
@@ -17,7 +17,7 @@ const ListItem: React.FC<ListItemProps> = ({
   deleteTask,
   updateTask,
   isSelected = false,
-  viewMode = 'mid',
+  viewMode = 'cozy',
 }) => {
   const { dbStatus } = useBasic();
   const [isEditing, setIsEditing] = useState(false);
@@ -67,14 +67,14 @@ const ListItem: React.FC<ListItemProps> = ({
           title: 'text-sm',
           deleteButton: 'btn-xs',
         };
-      case 'mid':
+      case 'cozy':
         return {
           container: 'py-2',
           checkbox: 'checkbox-sm',
           title: 'text-base',
           deleteButton: 'btn-sm',
         };
-      case 'cozy':
+      case 'chonky':
       default:
         return {
           container: 'py-2',
@@ -122,9 +122,7 @@ const ListItem: React.FC<ListItemProps> = ({
           ) : (
             <span
               onClick={handleTitleClick}
-              className={`${styles.title}  truncate ${
-                task.completed ? "text-gray-500" : "text-white"
-              }`}
+              className={`${styles.title}  truncate text-white`}
             >
               {task.name}
             </span>
@@ -134,7 +132,7 @@ const ListItem: React.FC<ListItemProps> = ({
         <div className="flex items-center">
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className={`rounded-full btn btn-ghost ${styles.deleteButton} pb-7 transition-opacity duration-200 ${
+            className={`rounded-full btn btn-ghost ${styles.deleteButton} transition-opacity duration-200 ${
               isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-70'
             }`}
             aria-label="Delete task"

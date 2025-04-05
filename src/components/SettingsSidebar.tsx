@@ -3,19 +3,19 @@ import { useBasic } from "@basictech/react";
 
 interface SettingsSidebarProps {
   onClose: () => void;
-  onViewModeChange?: (mode: 'compact' | 'mid' | 'cozy') => void;
-  currentViewMode?: 'compact' | 'mid' | 'cozy';
+  onViewModeChange?: (mode: 'compact' | 'cozy' | 'chonky') => void;
+  currentViewMode?: 'compact' | 'cozy' | 'chonky';
 }
 
 const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   onClose,
   onViewModeChange,
-  currentViewMode = 'mid',
+  currentViewMode = 'cozy',
 }) => {
   const { dbStatus } = useBasic();
   const [viewMode, setViewMode] = useState(currentViewMode);
 
-  const handleViewModeChange = (mode: 'compact' | 'mid' | 'cozy') => {
+  const handleViewModeChange = (mode: 'compact' | 'cozy' | 'chonky') => {
     setViewMode(mode);
     if (onViewModeChange) {
       onViewModeChange(mode);
@@ -78,16 +78,16 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                     min="0" 
                     max="2" 
                     step="1" 
-                    value={viewMode === 'compact' ? 0 : viewMode === 'mid' ? 1 : 2}
+                    value={viewMode === 'compact' ? 0 : viewMode === 'cozy' ? 1 : 2}
                     onChange={(e) => {
                       const value = parseInt(e.target.value);
-                      const mode = value === 0 ? 'compact' : value === 1 ? 'mid' : 'cozy';
+                      const mode = value === 0 ? 'compact' : value === 1 ? 'cozy' : 'chonky';
                       handleViewModeChange(mode);
                     }}
                     className="range range-xs range-primary"
                   />
                 </div>
-                <span className="text-xs text-gray-400">Cozy</span>
+                <span className="text-xs text-gray-400">Chonky</span>
               </div>
             </div>
           </div>

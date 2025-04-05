@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface SidebarProps {
   filters: {
@@ -8,12 +8,37 @@ interface SidebarProps {
   }[];
   activeFilter: string;
   onFilterChange: (filterId: string) => void;
+  onCreateFilter?: (filterName: string, labels: string[]) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ filters, activeFilter, onFilterChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({ 
+  filters, 
+  activeFilter, 
+  onFilterChange,
+  onCreateFilter 
+}) => {
+  const [isCreating, setIsCreating] = useState(false);
+  const [newFilterName, setNewFilterName] = useState('');
+  const [newFilterLabels, setNewFilterLabels] = useState('');
+
+  const handleCreateFilter = () => {
+    if (newFilterName.trim() && onCreateFilter) {
+      // Split labels by comma and trim whitespace
+      const labels = newFilterLabels
+        .split(',')
+        .map(label => label.trim())
+        .filter(label => label !== '');
+      
+      onCreateFilter(newFilterName.trim(), labels);
+      setNewFilterName('');
+      setNewFilterLabels('');
+      setIsCreating(false);
+    }
+  };
+
   return (
-    <div className="w-64 h-full pt-12 text-white p-4 overflow-y-auto">
-      <div className="space-y-2">
+    <div className="w-64 h-full pt-12 text-white p-4 overflow-y-auto flex flex-col">
+      <div className="space-y-2 flex-grow">
         {filters.map((filter) => (
           <button
             key={filter.id}
@@ -34,6 +59,74 @@ const Sidebar: React.FC<SidebarProps> = ({ filters, activeFilter, onFilterChange
             </div>
           </button>
         ))}
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-white/10">
+        {isCreating ? (
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={newFilterName}
+              onChange={(e) => setNewFilterName(e.target.value)}
+              placeholder="Filter name"
+              className="input input-sm w-full bg-white/10 text-white placeholder-white/50 focus:outline-none"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleCreateFilter();
+                } else if (e.key === 'Escape') {
+                  setIsCreating(false);
+                  setNewFilterName('');
+                  setNewFilterLabels('');
+                }
+              }}
+            />
+            <input
+              type="text"
+              value={newFilterLabels}
+              onChange={(e) => setNewFilterLabels(e.target.value)}
+              placeholder="Labels (comma separated)"
+              className="input input-sm w-full bg-white/10 text-white placeholder-white/50 focus:outline-none"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleCreateFilter();
+                } else if (e.key === 'Escape') {
+                  setIsCreating(false);
+                  setNewFilterName('');
+                  setNewFilterLabels('');
+                }
+              }}
+            />
+            <div className="flex space-x-2">
+              <button
+                onClick={handleCreateFilter}
+                className="btn btn-sm btn-primary flex-1"
+              >
+                Create
+              </button>
+              <button
+                onClick={() => {
+                  setIsCreating(false);
+                  setNewFilterName('');
+                  setNewFilterLabels('');
+                }}
+                className="btn btn-sm btn-ghost"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsCreating(true)}
+            className="w-full btn btn-sm btn-ghost text-slate-200 hover:bg-white/10"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New Filter
+          </button>
+        )}
       </div>
     </div>
   );
