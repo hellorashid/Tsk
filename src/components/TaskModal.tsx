@@ -4,13 +4,14 @@ import { Task } from "../utils/types";
 import { useState, useEffect } from 'react';
 
 export const TaskModal = ({
-  task, updateFunction, inDrawer = false, deleteTask, new: isNew = false
+  task, updateFunction, inDrawer = false, deleteTask, new: isNew = false, accentColor = '#1F1B2F'
 }: {
   task: Task;
   updateFunction: any;
   inDrawer?: boolean;
   deleteTask?: any;
   new?: boolean;
+  accentColor?: string;
 }) => {
   // Log task for debugging
   useEffect(() => {
@@ -45,13 +46,21 @@ export const TaskModal = ({
     }
   }
 
+  // Calculate background color without opacity
+  const getBackgroundColor = () => {
+    return accentColor; // No opacity
+  };
+
   if (!task?.id) {
     return <div className="p-4 text-center">No task selected or task data is incomplete.</div>;
   }
 
   return (
     <>
-      <div className={`${inDrawer ? "bg-base-100" : "modal-box bg-black"} p-4`}>
+      <div 
+        className={`${inDrawer ? "text-white" : "modal-box bg-black"} p-4`}
+        style={inDrawer ? { backgroundColor: getBackgroundColor() } : {}}
+      >
         <div className="task-details flex flex-col justify-between rounded-md">
           <div className="task-id flex justify-between items-center w-full my-4">
             <input

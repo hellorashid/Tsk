@@ -442,10 +442,10 @@ function Home() {
 
       {/* Mobile drawer - only show on mobile */}
       {isMobile && (
-        <TaskDrawer 
-          isOpen={drawerOpen} 
-          setIsOpen={setDrawerOpen} 
-          task={selectedTask} 
+        <TaskDrawer
+          isOpen={drawerOpen}
+          setIsOpen={setDrawerOpen}
+          task={selectedTask}
           updateFunction={updateTask}
           deleteTask={deleteTask}
           accentColor={accentColor}

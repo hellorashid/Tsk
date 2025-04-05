@@ -62,9 +62,9 @@ function UserAvatarButton() {
           {isSignedIn ? (
             <div className="p-4 text-left">
               <p className="text-slate-100 font-medium">
-                {user?.name}
+                hi, {user?.name}
               </p>
-              <p className="text-gray-200">{user?.email}</p>
+              {/* <p className="text-gray-200">{user?.email}</p> */}
               
               <div className="divider"></div> 
 

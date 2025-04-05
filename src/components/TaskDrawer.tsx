@@ -31,9 +31,17 @@ interface TaskDrawerProps {
   task: any;
   updateFunction: (id: string, changes: any) => void;
   deleteTask?: (id: string) => void;
+  accentColor?: string;
 }
 
-export default function TaskDrawer({ isOpen, setIsOpen, task, updateFunction, deleteTask }: TaskDrawerProps) {
+export default function TaskDrawer({ 
+  isOpen, 
+  setIsOpen, 
+  task, 
+  updateFunction, 
+  deleteTask,
+  accentColor = '#1F1B2F'
+}: TaskDrawerProps) {
   const titleId = React.useId();
   
   // Debug the task data
@@ -43,12 +51,18 @@ export default function TaskDrawer({ isOpen, setIsOpen, task, updateFunction, de
     }
   }, [isOpen, task]);
   
+  // Calculate background color without opacity
+  const getBackgroundColor = () => {
+    return accentColor; // No opacity
+  };
+  
   return (
     <Drawer.Root open={isOpen} onOpenChange={setIsOpen}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40" />
         <Drawer.Content 
-          className="bg-base-100 text-black h-[80vh] max-h-[85vh] fixed bottom-0 left-0 right-0 outline-none rounded-t-xl overflow-auto"
+          className="text-white h-[80vh] max-h-[85vh] fixed bottom-0 left-0 right-0 outline-none rounded-t-xl overflow-auto"
+          style={{ backgroundColor: getBackgroundColor() }}
           aria-labelledby={titleId}
         >
           {/* Title for accessibility */}
@@ -66,6 +80,7 @@ export default function TaskDrawer({ isOpen, setIsOpen, task, updateFunction, de
               updateFunction={updateFunction}
               deleteTask={deleteTask}
               inDrawer={true}
+              accentColor={accentColor}
             />
           ) : (
             <div className="text-center p-8">Loading task details...</div>

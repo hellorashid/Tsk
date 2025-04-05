@@ -74,9 +74,8 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
     }
   };
 
-  // Calculate background colors based on accent color
   const getBackgroundColor = () => {
-    return `${accentColor}80`; // 80% opacity
+    return `${accentColor}90`; // 90% opacity
   };
 
   if (!task) return null;

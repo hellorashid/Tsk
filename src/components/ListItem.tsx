@@ -81,8 +81,8 @@ const ListItem: React.FC<ListItemProps> = ({
         return {
           container: 'py-2',
           checkbox: 'checkbox-md',
-          title: 'text-lg',
-          deleteButton: 'btn-md',
+          title: 'text-md',
+          deleteButton: 'btn-sm',
         };
     }
   };
@@ -106,45 +106,46 @@ const ListItem: React.FC<ListItemProps> = ({
     <div
       className={`group px-2 relative ${styles.container} ${
         viewMode === 'compact' ? '' : 'rounded-lg'
-      } transition-all duration-200 backdrop-blur-sm`}
+      } transition-all duration-200 backdrop-blur-sm hover:bg-opacity-80`}
       style={{ 
         backgroundColor: getBackgroundColor(),
-        '--tw-hover-bg-opacity': '0.8',
       }}
     >
-      <div className="flex items-center">
-        <input
-          type="checkbox"
-          checked={task.completed}
-          onChange={handleCheckboxChange}
-          className={`checkbox ${styles.checkbox} mr-2`}
-        />
-        {isEditing ? (
+      <div className="flex items-center justify-between">
+        <div className="flex items-center flex-1">
           <input
-            type="text"
-            value={editedTitle}
-            onChange={handleTitleChange}
-            onBlur={handleTitleBlur}
-            onKeyDown={handleKeyDown}
-            className={`input input-sm w-full bg-transparent ${styles.title} focus:outline-none`}
-            autoFocus
+            type="checkbox"
+            checked={task.completed}
+            onChange={handleCheckboxChange}
+            className={`checkbox ${styles.checkbox} mr-2`}
           />
-        ) : (
-          <span
-            className={`${styles.title} cursor-pointer ${
-              task.completed ? "line-through text-gray-400" : ""
-            }`}
-            onClick={handleTitleClick}
-          >
-            {task.name}
-          </span>
-        )}
+          {isEditing ? (
+            <input
+              type="text"
+              value={editedTitle}
+              onChange={handleTitleChange}
+              onBlur={handleTitleBlur}
+              onKeyDown={handleKeyDown}
+              className={`input input-sm w-full bg-transparent ${styles.title} focus:outline-none`}
+              autoFocus
+            />
+          ) : (
+            <span
+              className={`${styles.title} cursor-pointer ${
+                task.completed ? "text-gray-400" : ""
+              }`}
+              onClick={handleTitleClick}
+            >
+              {task.name}
+            </span>
+          )}
+        </div>
         <button
           onClick={(e) => {
             e.stopPropagation();
             setShowDeleteConfirm(true);
           }}
-          className={`rounded-full btn btn-ghost ${styles.deleteButton} pb-7 transition-opacity duration-200 ${
+          className={`rounded-full btn btn-ghost ${styles.deleteButton} transition-opacity duration-200 ${
             isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-70'
           }`}
           aria-label="Delete task"
