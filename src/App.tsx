@@ -4,7 +4,7 @@ import * as db from "./utils/db";
 import "./App.css";
 import { AboutModal } from "./components/AboutModal";
 import { TaskModal } from "./components/TaskModal";
-import { ListItem } from "./components/ListItem";
+import ListItem from "./components/ListItem";
 import { Task } from "./utils/types";
 import UserAvatarButton from "./components/UserAvatarButton";
 import { useBasic, useQuery } from "@basictech/react";
@@ -154,6 +154,7 @@ function Home() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [showSettings, setShowSettings] = useState(false);
+  const [viewMode, setViewMode] = useState('cozy');
 
   useEffect(() => {
     const handleResize = () => {
@@ -243,6 +244,10 @@ function Home() {
 
   const handleCloseSettings = () => {
     setShowSettings(false);
+  };
+
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
   };
 
   const handleSubmit = (e) => {
@@ -338,11 +343,11 @@ function Home() {
                 <p className="no-task-blurb text-sm font-serif text-center text-slate-100">but also, you can add a task above.</p>
               </div>}
 
-              <div className="flex flex-col">
+              <div className={`flex flex-col ${viewMode === 'compact' ? 'space-y-0' : viewMode === 'mid' ? 'space-y-1' : 'space-y-2'}`}>
                 {filteredTasks?.map((task: Task) => (
                   <div
                     key={task.id}
-                    className="w-full p-1"
+                    className="w-full "
                     onClick={() => {
                       handleTaskSelect(task);
                     }}
@@ -353,6 +358,7 @@ function Home() {
                       deleteTask={deleteTask}
                       updateTask={updateTask}
                       isSelected={selectedTask?.id === task.id}
+                      viewMode={viewMode}
                     />
                   </div>
                 ))}
@@ -380,7 +386,11 @@ function Home() {
         {/* Settings sidebar - only show on desktop when settings is open */}
         {!isMobile && showSettings && (
           <div className="hidden md:block md:pl-4">
-            <SettingsSidebar onClose={handleCloseSettings} />
+            <SettingsSidebar 
+              onClose={handleCloseSettings} 
+              onViewModeChange={handleViewModeChange}
+              currentViewMode={viewMode}
+            />
           </div>
         )}
       </div>

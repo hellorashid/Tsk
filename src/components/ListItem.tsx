@@ -1,66 +1,183 @@
 // @ts-nocheck
 
+import React, { useState } from "react";
 import { Task } from "../utils/types";
+import { useBasic } from "@basictech/react";
 
-export const ListItem = ({
-  task, deleteTask, updateTask, isSelected = false,
-}: {
+interface ListItemProps {
   task: Task;
-  deleteTask: any;
-  updateTask: any;
+  deleteTask: (id: string) => void;
+  updateTask: (id: string, changes: any) => void;
   isSelected?: boolean;
+  viewMode?: 'cozy' | 'mid' | 'compact';
+}
+
+const ListItem: React.FC<ListItemProps> = ({
+  task,
+  deleteTask,
+  updateTask,
+  isSelected = false,
+  viewMode = 'cozy',
 }) => {
-  const handleDelete = (e) => {
-    e.stopPropagation();
-    deleteTask(task.id);
+  const { dbStatus } = useBasic();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(task.name);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleTitleClick = () => {
+    setIsEditing(true);
   };
 
-  const handleDone = (e) => {
-    e.stopPropagation();
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedTitle(e.target.value);
   };
+
+  const handleTitleBlur = () => {
+    setIsEditing(false);
+    if (editedTitle.trim() !== task.name) {
+      updateTask(task.id, { name: editedTitle.trim() });
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleTitleBlur();
+    } else if (e.key === "Escape") {
+      setEditedTitle(task.name);
+      setIsEditing(false);
+    }
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    updateTask(task.id, { completed: e.target.checked });
+  };
+
+  const handleDelete = () => {
+    deleteTask(task.id);
+    setShowDeleteConfirm(false);
+  };
+
+  // Get view mode specific styles
+  const getViewModeStyles = () => {
+    switch (viewMode) {
+      case 'compact':
+        return {
+          container: 'py-1',
+          checkbox: 'checkbox-xs',
+          title: 'text-sm',
+          deleteButton: 'btn-xs',
+        };
+      case 'mid':
+        return {
+          container: 'py-2',
+          checkbox: 'checkbox-sm',
+          title: 'text-base',
+          deleteButton: 'btn-sm',
+        };
+      case 'cozy':
+      default:
+        return {
+          container: 'py-2',
+          checkbox: 'checkbox-md',
+          title: 'text-lg',
+          deleteButton: 'btn-md',
+        };
+    }
+  };
+
+  const styles = getViewModeStyles();
 
   return (
-    <div className={`group flex items-center justify-between p-3 gap-1 cursor-pointer bg-base-100 rounded-lg transition-all duration-200 ease-in-out ${
-      isSelected 
-        ? 'bg-opacity-100 scale-[1.01]' 
-        : 'bg-opacity-70 hover:bg-opacity-100 hover:scale-[1.01]'
-    }`}>
-      <div className="flex items-center gap-2">
-        <div className="pr-3">
+    <div
+      className={`group px-2 relative ${styles.container} ${
+        viewMode === 'compact' ? '' : 'rounded-lg'
+      } ${
+        isSelected
+          ? "bg-[#2A2535]"
+          : "bg-[#1F1B2F]/70 hover:bg-[#2A2535]/50"
+      } transition-all duration-200
+      backdrop-blur-sm
+      `}
+    >
+      <div className="flex items-center">
+        <div className="flex items-center flex-1 min-w-0">
           <input
             type="checkbox"
-            className="checkbox"
             checked={task.completed}
-            onChange={() => updateTask(task.id, { completed: !task.completed })}
-            onClick={handleDone}
+            onChange={handleCheckboxChange}
+            className={`checkbox ${styles.checkbox} mr-3 ${
+              task.completed ? "checkbox-primary" : "checkbox-ghost"
+            }`}
           />
+          {isEditing ? (
+            <input
+              type="text"
+              value={editedTitle}
+              onChange={handleTitleChange}
+              onBlur={handleTitleBlur}
+              onKeyDown={handleKeyDown}
+              autoFocus
+              className={`input input-ghost w-full ${styles.title} focus:outline-none`}
+            />
+          ) : (
+            <span
+              onClick={handleTitleClick}
+              className={`${styles.title}  truncate ${
+                task.completed ? "text-gray-500" : "text-white"
+              }`}
+            >
+              {task.name}
+            </span>
+          )}
         </div>
-        <div className="flex items-center space-x-3">
-          <div className="font-bold text-base">{task.name}</div>
+
+        <div className="flex items-center">
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className={`rounded-full btn btn-ghost ${styles.deleteButton} pb-7 transition-opacity duration-200 ${
+              isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-70'
+            }`}
+            aria-label="Delete task"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+          </button>
         </div>
       </div>
 
-      <button
-        onClick={handleDelete}
-        className={`rounded-full btn btn-ghost btn-xs pb-7 transition-opacity duration-200 ${
-          isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-70'
-        }`}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-          className="w-5 h-5"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-          />
-        </svg>
-      </button>
+      {showDeleteConfirm && (
+        <div className="absolute right-0 top-0 bg-[#2A2535] p-2 rounded-lg shadow-lg z-10">
+          <p className="text-sm text-white mb-2">Delete this task?</p>
+          <div className="flex justify-end space-x-2">
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="btn btn-xs btn-ghost"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              className="btn btn-xs btn-error"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+export default ListItem;

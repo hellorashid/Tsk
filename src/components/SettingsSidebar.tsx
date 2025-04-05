@@ -3,13 +3,24 @@ import { useBasic } from "@basictech/react";
 
 interface SettingsSidebarProps {
   onClose: () => void;
+  onViewModeChange?: (mode: 'compact' | 'mid' | 'cozy') => void;
+  currentViewMode?: 'compact' | 'mid' | 'cozy';
 }
 
 const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   onClose,
+  onViewModeChange,
+  currentViewMode = 'cozy',
 }) => {
   const { dbStatus } = useBasic();
-  const [viewMode, setViewMode] = useState('mid'); // Default to mid view
+  const [viewMode, setViewMode] = useState(currentViewMode);
+
+  const handleViewModeChange = (mode: 'compact' | 'mid' | 'cozy') => {
+    setViewMode(mode);
+    if (onViewModeChange) {
+      onViewModeChange(mode);
+    }
+  };
 
   return (
     <div className="w-80 h-full text-white p-6 overflow-y-auto bg-[#1F1B2F]/80 backdrop-blur-sm flex flex-col">
@@ -70,7 +81,8 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                     value={viewMode === 'compact' ? 0 : viewMode === 'mid' ? 1 : 2}
                     onChange={(e) => {
                       const value = parseInt(e.target.value);
-                      setViewMode(value === 0 ? 'compact' : value === 1 ? 'mid' : 'cozy');
+                      const mode = value === 0 ? 'compact' : value === 1 ? 'mid' : 'cozy';
+                      handleViewModeChange(mode);
                     }}
                     className="range range-xs range-primary"
                   />
