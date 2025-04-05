@@ -184,7 +184,7 @@ function Home() {
   }
 
   return (
-    <section className="task-home p-2 w-screen h-screen lg:max-w-full relative" 
+    <section className="task-home p-1 w-screen h-screen lg:max-w-full relative" 
       style={{
         backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4)), url(${bgImage})`,
         backgroundSize: 'cover',
@@ -269,7 +269,7 @@ function Home() {
         deleteTask={deleteTask}
       />
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-base-100 md:hidden">
+      <div className="fixed bottom-0 left-0 right-0 p-4  md:hidden bg-[#1F1B2F]">
         <form
           onSubmit={handleSubmit}
           className="join task-input flex justify-center rounded-full w-full border border-base-200"
