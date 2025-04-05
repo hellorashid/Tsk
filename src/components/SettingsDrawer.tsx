@@ -11,6 +11,8 @@ interface SettingsDrawerProps {
   currentViewMode: 'compact' | 'cozy' | 'chonky';
   onAccentColorChange: (color: string) => void;
   currentAccentColor: string;
+  onThemeChange: (isDark: boolean) => void;
+  isDarkMode: boolean;
 }
 
 export default function SettingsDrawer({ 
@@ -19,7 +21,9 @@ export default function SettingsDrawer({
   onViewModeChange,
   currentViewMode,
   onAccentColorChange,
-  currentAccentColor
+  currentAccentColor,
+  onThemeChange,
+  isDarkMode
 }: SettingsDrawerProps) {
   const titleId = React.useId();
   
@@ -32,7 +36,9 @@ export default function SettingsDrawer({
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40" />
         <Drawer.Content 
-          className="text-white h-[80vh] max-h-[85vh] w-full fixed bottom-0 left-0 right-0 outline-none rounded-t-xl overflow-auto"
+          className={`h-[80vh] max-h-[85vh] w-full fixed bottom-0 left-0 right-0 outline-none rounded-t-xl overflow-auto ${
+            isDarkMode ? 'text-gray-100' : 'text-gray-900'
+          }`}
           style={{ backgroundColor: currentAccentColor }}
           aria-labelledby={titleId}
         >
@@ -50,6 +56,8 @@ export default function SettingsDrawer({
               currentViewMode={currentViewMode}
               onAccentColorChange={onAccentColorChange}
               currentAccentColor={currentAccentColor}
+              onThemeChange={onThemeChange}
+              isDarkMode={isDarkMode}
             />
           </div>
         </Drawer.Content>

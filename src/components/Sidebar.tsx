@@ -10,6 +10,7 @@ interface SidebarProps {
   onFilterChange: (filterId: string) => void;
   onCreateFilter?: (filterName: string, labels: string[]) => void;
   accentColor?: string;
+  isDarkMode?: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
@@ -17,7 +18,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   activeFilter, 
   onFilterChange,
   onCreateFilter,
-  accentColor = '#1F1B2F'
+  accentColor = '#1F1B2F',
+  isDarkMode = true
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [newFilterName, setNewFilterName] = useState('');
@@ -54,7 +56,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <div className="w-64 h-full pt-12 text-white p-4 overflow-y-auto flex flex-col">
+    <div className={`w-64 h-full p-4 overflow-y-auto backdrop-blur-sm flex flex-col ${
+      isDarkMode ? 'text-gray-100' : 'text-gray-900'
+    }`}>
       <div className="space-y-2 flex-grow">
         {filters.map((filter) => (
           <button
@@ -80,7 +84,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="flex justify-between items-center">
               <span>{filter.label}</span>
               {filter.count !== undefined && (
-                <span className="bg-white/10 text-slate-200 px-2 py-1 rounded-full text-xs">
+                <span className={`${isDarkMode ? 'bg-white/10 text-gray-200' : 'bg-gray-200 text-gray-800'} px-2 py-1 rounded-full text-xs`}>
                   {filter.count}
                 </span>
               )}

@@ -7,6 +7,8 @@ interface SettingsSidebarProps {
   currentViewMode: 'compact' | 'cozy' | 'chonky';
   onAccentColorChange: (color: string) => void;
   currentAccentColor: string;
+  onThemeChange: (isDark: boolean) => void;
+  isDarkMode: boolean;
 }
 
 const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
@@ -14,7 +16,9 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   onViewModeChange,
   currentViewMode,
   onAccentColorChange,
-  currentAccentColor
+  currentAccentColor,
+  onThemeChange,
+  isDarkMode
 }) => {
   const { dbStatus } = useBasic();
   const defaultAccentColor = '#1F1B2F';
@@ -28,16 +32,22 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
     onAccentColorChange(defaultAccentColor);
   };
 
+  const handleThemeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onThemeChange(e.target.checked);
+  };
+
   return (
     <div 
-      className="w-full h-full text-white p-6 overflow-y-auto backdrop-blur-sm flex flex-col"
+      className={`w-full h-full p-6 overflow-y-auto backdrop-blur-sm flex flex-col ${
+        isDarkMode ? 'text-gray-100' : 'text-gray-900'
+      }`}
       style={{ backgroundColor: getBackgroundColor() }}
     >
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">Settings</h2>
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-white focus:outline-none"
+          className={`${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-gray-900'} focus:outline-none`}
           aria-label="Close settings"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -67,9 +77,15 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
             <div>
               <div className="flex justify-between items-center mb-2">
                 <span>Dark Mode</span>
-                <label className="switch">
-                  <input type="checkbox" defaultChecked />
-                  <span className="slider round"></span>
+                <label className={`relative inline-flex items-center cursor-pointer ${isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}`}>
+                  <input 
+                    type="checkbox" 
+                    checked={isDarkMode}
+                    onChange={handleThemeChange}
+                    className="sr-only peer"
+                  />
+                  <div className={`w-11 h-6 rounded-full peer ${isDarkMode ? 'bg-gray-700' : 'bg-gray-300'} peer-focus:outline-none peer-focus:ring-4 ${isDarkMode ? 'peer-focus:ring-gray-700' : 'peer-focus:ring-gray-300'}`}></div>
+                  <span className={`absolute left-1 top-1 bg-white rounded-full h-4 w-4 transition-all ${isDarkMode ? 'translate-x-5' : 'translate-x-0'}`}></span>
                 </label>
               </div>
             </div>

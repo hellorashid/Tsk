@@ -9,6 +9,8 @@ body {
   font-family: var(--ff-main);
 }
 
+/* Remove theme-specific styles as we're using Tailwind classes */
+
 /* Add these styles to use the accent color variable */
 .navbar {
   background-color: var(--accent-color) !important;

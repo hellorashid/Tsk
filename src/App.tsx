@@ -162,6 +162,7 @@ function Home() {
   const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [addTaskDrawerOpen, setAddTaskDrawerOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
     const handleResize = () => {
@@ -176,6 +177,21 @@ function Home() {
   useEffect(() => {
     document.documentElement.style.setProperty('--accent-color', accentColor);
   }, [accentColor]);
+
+  // Apply theme to document
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
+  const handleThemeChange = (isDark: boolean) => {
+    setIsDarkMode(isDark);
+  };
 
   // Define filters
   const filters = [
@@ -334,7 +350,7 @@ function Home() {
   };
 
   return (
-    <section className="flex-1 task-home w-full h-screen max-h-screen relative overflow-hidden" 
+    <section className={`flex-1 task-home w-full h-screen max-h-screen relative overflow-hidden ${isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'}`}
       style={{
         backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4)), url(${bgImage})`,
         backgroundSize: 'cover',
@@ -392,6 +408,7 @@ function Home() {
             onFilterChange={setActiveFilter}
             onCreateFilter={handleCreateFilter}
             accentColor={accentColor}
+            isDarkMode={isDarkMode}
           />
         </div>
         
@@ -421,6 +438,7 @@ function Home() {
                       isSelected={selectedTask?.id === task.id}
                       viewMode={viewMode}
                       accentColor={accentColor}
+                      isDarkMode={isDarkMode}
                     />
                   </div>
                 ))}
@@ -442,6 +460,7 @@ function Home() {
               onUpdate={updateTask}
               onDelete={deleteTask}
               accentColor={accentColor}
+              isDarkMode={isDarkMode}
             />
           </div>
         )}
@@ -455,6 +474,8 @@ function Home() {
               currentViewMode={viewMode}
               onAccentColorChange={handleAccentColorChange}
               currentAccentColor={accentColor}
+              onThemeChange={handleThemeChange}
+              isDarkMode={isDarkMode}
             />
           </div>
         )}
@@ -481,6 +502,8 @@ function Home() {
           currentViewMode={viewMode}
           onAccentColorChange={handleAccentColorChange}
           currentAccentColor={accentColor}
+          onThemeChange={handleThemeChange}
+          isDarkMode={isDarkMode}
         />
       )}
 

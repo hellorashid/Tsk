@@ -5,9 +5,10 @@ import { Task } from '../utils/types';
 interface TaskDetailsSidebarProps {
   task: Task | null;
   onClose: () => void;
-  onUpdate: (taskId: string, updates: { title?: string; description?: string; completed?: boolean }) => void;
-  onDelete: (taskId: string) => void;
+  onUpdate: (id: string, changes: any) => void;
+  onDelete: (id: string) => void;
   accentColor?: string;
+  isDarkMode?: boolean;
 }
 
 const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
@@ -15,7 +16,8 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
   onClose,
   onUpdate,
   onDelete,
-  accentColor = '#1F1B2F'
+  accentColor = '#1F1B2F',
+  isDarkMode = true
 }) => {
   const [title, setTitle] = useState(task?.name || '');
   const [description, setDescription] = useState(task?.description || '');
@@ -82,9 +84,24 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
 
   return (
     <div 
-      className="w-80 h-full text-white p-6 overflow-y-auto backdrop-blur-sm flex flex-col"
+      className={`w-full h-full p-6 overflow-y-auto backdrop-blur-sm flex flex-col ${
+        isDarkMode ? 'text-gray-100' : 'text-gray-900'
+      }`}
       style={{ backgroundColor: getBackgroundColor() }}
     >
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold">Task Details</h2>
+        <button
+          onClick={onClose}
+          className={`${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-gray-900'} focus:outline-none`}
+          aria-label="Close task details"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </button>
+      </div>
+
       <div className="flex items-center mb-4">
         <input
           type="checkbox"
