@@ -1,126 +1,157 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useBasic } from "@basictech/react";
 
 interface SettingsSidebarProps {
   onClose: () => void;
-  onViewModeChange?: (mode: 'compact' | 'cozy' | 'chonky') => void;
-  currentViewMode?: 'compact' | 'cozy' | 'chonky';
+  onViewModeChange: (mode: 'compact' | 'cozy' | 'chonky') => void;
+  currentViewMode: 'compact' | 'cozy' | 'chonky';
+  onAccentColorChange: (color: string) => void;
+  currentAccentColor: string;
 }
 
 const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   onClose,
   onViewModeChange,
-  currentViewMode = 'cozy',
+  currentViewMode,
+  onAccentColorChange,
+  currentAccentColor
 }) => {
   const { dbStatus } = useBasic();
-  const [viewMode, setViewMode] = useState(currentViewMode);
+  const defaultAccentColor = '#1F1B2F';
 
-  const handleViewModeChange = (mode: 'compact' | 'cozy' | 'chonky') => {
-    setViewMode(mode);
-    if (onViewModeChange) {
-      onViewModeChange(mode);
-    }
+  // Calculate background colors based on accent color
+  const getBackgroundColor = () => {
+    return `${currentAccentColor}80`; // 80% opacity
+  };
+
+  const handleResetAccentColor = () => {
+    onAccentColorChange(defaultAccentColor);
   };
 
   return (
-    <div className="w-80 h-full text-white p-6 overflow-y-auto bg-[#1F1B2F]/80 backdrop-blur-sm flex flex-col">
+    <div 
+      className="w-80 h-full text-white p-6 overflow-y-auto backdrop-blur-sm flex flex-col"
+      style={{ backgroundColor: getBackgroundColor() }}
+    >
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-white">Settings</h2>
+        <h2 className="text-xl font-bold">Settings</h2>
         <button
           onClick={onClose}
           className="text-gray-400 hover:text-white focus:outline-none"
+          aria-label="Close settings"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
           </svg>
         </button>
       </div>
 
       <div className="space-y-6">
-        <div className="bg-[#2A2535]/50 p-4 rounded-lg">
-          <h3 className="text-lg font-medium mb-2">Sync Status</h3>
+        {/* Database Status */}
+        <div>
+          <h3 className="text-lg font-medium mb-2">Database Status</h3>
           <div className="flex items-center">
             <div className={`w-3 h-3 rounded-full mr-2 ${
               dbStatus === "ONLINE" ? "bg-green-500" : 
-              dbStatus === "OFFLINE" ? "bg-gray-400" : 
-              "bg-yellow-500"
+              dbStatus === "OFFLINE" ? "bg-red-500" : "bg-yellow-500"
             }`}></div>
-            <span className="text-gray-300">
-              {dbStatus === "ONLINE" ? "Data is synced" : 
-               dbStatus === "OFFLINE" ? "Offline - not syncing" : 
-               "Connecting..."}
-            </span>
+            <span>{dbStatus || "CONNECTING..."}</span>
           </div>
         </div>
 
-        <div className="bg-[#2A2535]/50 p-4 rounded-lg">
+        {/* Appearance */}
+        <div>
           <h3 className="text-lg font-medium mb-2">Appearance</h3>
+          
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-300">Dark Mode</span>
-              <label className="swap">
-                <input type="checkbox" defaultChecked />
-                <div className="swap-on">ON</div>
-                <div className="swap-off">OFF</div>
-              </label>
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span>Dark Mode</span>
+                <label className="switch">
+                  <input type="checkbox" defaultChecked />
+                  <span className="slider round"></span>
+                </label>
+              </div>
             </div>
             
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-300">View Mode</span>
-                <span className="text-xs text-gray-400">{viewMode}</span>
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span>View Mode</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">Compact</span>
-                <div className="flex-1 mx-2">
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="2" 
-                    step="1" 
-                    value={viewMode === 'compact' ? 0 : viewMode === 'cozy' ? 1 : 2}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      const mode = value === 0 ? 'compact' : value === 1 ? 'cozy' : 'chonky';
-                      handleViewModeChange(mode);
-                    }}
-                    className="range range-xs range-primary"
-                  />
-                </div>
-                <span className="text-xs text-gray-400">Chonky</span>
+              <div className="flex space-x-2">
+                <button 
+                  className={`btn btn-sm ${currentViewMode === 'compact' ? 'btn-primary' : 'btn-ghost'}`}
+                  onClick={() => onViewModeChange('compact')}
+                >
+                  Compact
+                </button>
+                <button 
+                  className={`btn btn-sm ${currentViewMode === 'cozy' ? 'btn-primary' : 'btn-ghost'}`}
+                  onClick={() => onViewModeChange('cozy')}
+                >
+                  Cozy
+                </button>
+                <button 
+                  className={`btn btn-sm ${currentViewMode === 'chonky' ? 'btn-primary' : 'btn-ghost'}`}
+                  onClick={() => onViewModeChange('chonky')}
+                >
+                  Chonky
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span>Accent Color</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input 
+                  type="color" 
+                  value={currentAccentColor}
+                  onChange={(e) => onAccentColorChange(e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer"
+                />
+                <span className="text-sm">{currentAccentColor}</span>
+                <button 
+                  onClick={handleResetAccentColor}
+                  className="btn btn-xs btn-ghost ml-auto"
+                  title="Reset to default"
+                >
+                  Reset
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-[#2A2535]/50 p-4 rounded-lg">
+        {/* Notifications */}
+        <div>
           <h3 className="text-lg font-medium mb-2">Notifications</h3>
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-300">Task Reminders</span>
-              <label className="swap">
+            <div className="flex justify-between items-center">
+              <span>Task Reminders</span>
+              <label className="switch">
                 <input type="checkbox" defaultChecked />
-                <div className="swap-on">ON</div>
-                <div className="swap-off">OFF</div>
+                <span className="slider round"></span>
               </label>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-300">Due Date Alerts</span>
-              <label className="swap">
+            <div className="flex justify-between items-center">
+              <span>Due Date Alerts</span>
+              <label className="switch">
                 <input type="checkbox" defaultChecked />
-                <div className="swap-on">ON</div>
-                <div className="swap-off">OFF</div>
+                <span className="slider round"></span>
               </label>
             </div>
           </div>
         </div>
 
-        <div className="bg-[#2A2535]/50 p-4 rounded-lg">
+        {/* About */}
+        <div>
           <h3 className="text-lg font-medium mb-2">About</h3>
-          <p className="text-gray-300 text-sm">
-            tsk is a simple task management app designed to help you stay organized without getting in the way.
+          <p className="text-sm text-gray-300">
+            TSK is a simple task management app built with React and TypeScript.
           </p>
-          <p className="text-gray-300 text-sm mt-2">
+          <p className="text-sm text-gray-300 mt-1">
             Version 1.0.0
           </p>
         </div>

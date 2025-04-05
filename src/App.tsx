@@ -156,6 +156,7 @@ function Home() {
   const [showSettings, setShowSettings] = useState(false);
   const [viewMode, setViewMode] = useState('cozy');
   const [customFilters, setCustomFilters] = useState([]);
+  const [accentColor, setAccentColor] = useState('#1F1B2F');
 
   useEffect(() => {
     const handleResize = () => {
@@ -165,6 +166,11 @@ function Home() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Apply accent color to CSS variables
+  useEffect(() => {
+    document.documentElement.style.setProperty('--accent-color', accentColor);
+  }, [accentColor]);
 
   // Define filters
   const filters = [
@@ -265,6 +271,10 @@ function Home() {
     setViewMode(mode);
   };
 
+  const handleAccentColorChange = (color) => {
+    setAccentColor(color);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (newInput.trim() === "") {
@@ -311,7 +321,8 @@ function Home() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-      <div className="navbar bg-[#1F1B2F] rounded-b-md md:rounded-b-none bg-opacity-95 shadow-md backdrop-blur-sm flex justify-between items-center sticky top-0 z-10">
+      <div className="navbar rounded-b-md md:rounded-b-none bg-opacity-95 shadow-md backdrop-blur-sm flex justify-between items-center sticky top-0 z-10"
+        style={{ backgroundColor: accentColor }}>
         <div className="">
           <a className="btn btn-ghost normal-case text-xl"
             onClick={() => { window.modal_2.showModal(); }}
@@ -349,7 +360,7 @@ function Home() {
               <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
             </svg>
           </button>
-          <UserAvatarButton />
+          <UserAvatarButton accentColor={accentColor} />
         </div>
       </div>
 
@@ -360,6 +371,7 @@ function Home() {
             activeFilter={activeFilter}
             onFilterChange={setActiveFilter}
             onCreateFilter={handleCreateFilter}
+            accentColor={accentColor}
           />
         </div>
         
@@ -388,6 +400,7 @@ function Home() {
                       updateTask={updateTask}
                       isSelected={selectedTask?.id === task.id}
                       viewMode={viewMode}
+                      accentColor={accentColor}
                     />
                   </div>
                 ))}
@@ -408,6 +421,7 @@ function Home() {
               onClose={handleCloseTaskDetails}
               onUpdate={updateTask}
               onDelete={deleteTask}
+              accentColor={accentColor}
             />
           </div>
         )}
@@ -419,6 +433,8 @@ function Home() {
               onClose={handleCloseSettings} 
               onViewModeChange={handleViewModeChange}
               currentViewMode={viewMode}
+              onAccentColorChange={handleAccentColorChange}
+              currentAccentColor={accentColor}
             />
           </div>
         )}
@@ -432,10 +448,12 @@ function Home() {
           task={selectedTask} 
           updateFunction={updateTask}
           deleteTask={deleteTask}
+          accentColor={accentColor}
         />
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 md:hidden bg-[#1F1B2F] z-10">
+      <div className="fixed bottom-0 left-0 right-0 p-4 md:hidden z-10"
+        style={{ backgroundColor: accentColor }}>
         <form
           onSubmit={handleSubmit}
           className="join task-input flex justify-center rounded-full w-full border border-base-200"

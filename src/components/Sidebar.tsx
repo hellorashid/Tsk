@@ -9,13 +9,15 @@ interface SidebarProps {
   activeFilter: string;
   onFilterChange: (filterId: string) => void;
   onCreateFilter?: (filterName: string, labels: string[]) => void;
+  accentColor?: string;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
   filters, 
   activeFilter, 
   onFilterChange,
-  onCreateFilter 
+  onCreateFilter,
+  accentColor = '#1F1B2F'
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [newFilterName, setNewFilterName] = useState('');
@@ -36,6 +38,21 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  // Calculate background colors based on accent color
+  const getActiveFilterStyle = () => {
+    return {
+      backgroundColor: `${accentColor}80`, // 80% opacity
+      color: 'white'
+    };
+  };
+
+  const getHoverFilterStyle = () => {
+    return {
+      backgroundColor: `${accentColor}40`, // 40% opacity
+      color: 'rgb(226 232 240)' // text-slate-200
+    };
+  };
+
   return (
     <div className="w-64 h-full pt-12 text-white p-4 overflow-y-auto flex flex-col">
       <div className="space-y-2 flex-grow">
@@ -44,10 +61,21 @@ const Sidebar: React.FC<SidebarProps> = ({
             key={filter.id}
             onClick={() => onFilterChange(filter.id)}
             className={`w-full text-left px-4 py-2 rounded-md transition-colors focus:outline-none ${
-              activeFilter === filter.id
-                ? 'bg-[#1F1B2F]/80 text-white'
-                : 'hover:bg-white/10 text-slate-200'
+              activeFilter === filter.id ? '' : ''
             }`}
+            style={activeFilter === filter.id ? getActiveFilterStyle() : {}}
+            onMouseOver={(e) => {
+              if (activeFilter !== filter.id) {
+                e.currentTarget.style.backgroundColor = getHoverFilterStyle().backgroundColor;
+                e.currentTarget.style.color = getHoverFilterStyle().color;
+              }
+            }}
+            onMouseOut={(e) => {
+              if (activeFilter !== filter.id) {
+                e.currentTarget.style.backgroundColor = '';
+                e.currentTarget.style.color = '';
+              }
+            }}
           >
             <div className="flex justify-between items-center">
               <span>{filter.label}</span>

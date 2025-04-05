@@ -1,10 +1,31 @@
-
 :root {
   --ff-main: 'Geologica', sans-serif;
   --ff-accent: 'Averia Serif Libre', cursive;
   --ff-body: 'Fragment Mono', monospace;
+  --accent-color: #1F1B2F;
 }
 
 body {
   font-family: var(--ff-main);
+}
+
+/* Add these styles to use the accent color variable */
+.navbar {
+  background-color: var(--accent-color) !important;
+}
+
+.bg-\[#1F1B2F\] {
+  background-color: var(--accent-color) !important;
+}
+
+.bg-\[#2A2535\] {
+  background-color: color-mix(in srgb, var(--accent-color) 80%, #2A2535) !important;
+}
+
+.bg-\[#1F1B2F\]\/70 {
+  background-color: color-mix(in srgb, var(--accent-color) 70%, transparent) !important;
+}
+
+.bg-\[#2A2535\]\/50 {
+  background-color: color-mix(in srgb, var(--accent-color) 50%, #2A2535) !important;
 }
