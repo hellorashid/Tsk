@@ -30,7 +30,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
 
   return (
     <div 
-      className="w-80 h-full text-white p-6 overflow-y-auto backdrop-blur-sm flex flex-col"
+      className="w-full h-full text-white p-6 overflow-y-auto backdrop-blur-sm flex flex-col"
       style={{ backgroundColor: getBackgroundColor() }}
     >
       <div className="flex justify-between items-center mb-6">

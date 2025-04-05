@@ -13,6 +13,7 @@ import TaskDrawer from "./components/TaskDrawer";
 import Sidebar from "./components/Sidebar";
 import TaskDetailsSidebar from "./components/TaskDetailsSidebar";
 import SettingsSidebar from "./components/SettingsSidebar";
+import SettingsDrawer from "./components/SettingsDrawer";
 
 
  function ExpandableInput() {
@@ -157,6 +158,7 @@ function Home() {
   const [viewMode, setViewMode] = useState('cozy');
   const [customFilters, setCustomFilters] = useState([]);
   const [accentColor, setAccentColor] = useState('#1F1B2F');
+  const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -259,12 +261,19 @@ function Home() {
   };
 
   const handleOpenSettings = () => {
-    setShowSettings(true);
-    setSelectedTask(null); // Close task details when opening settings
+    if (isMobile) {
+      setSettingsDrawerOpen(true);
+    } else {
+      setShowSettings(true);
+    }
   };
 
   const handleCloseSettings = () => {
-    setShowSettings(false);
+    if (isMobile) {
+      setSettingsDrawerOpen(false);
+    } else {
+      setShowSettings(false);
+    }
   };
 
   const handleViewModeChange = (mode) => {
@@ -449,6 +458,18 @@ function Home() {
           updateFunction={updateTask}
           deleteTask={deleteTask}
           accentColor={accentColor}
+        />
+      )}
+
+      {/* Settings drawer - only show on mobile when settings is open */}
+      {isMobile && (
+        <SettingsDrawer
+          isOpen={settingsDrawerOpen}
+          setIsOpen={setSettingsDrawerOpen}
+          onViewModeChange={handleViewModeChange}
+          currentViewMode={viewMode}
+          onAccentColorChange={handleAccentColorChange}
+          currentAccentColor={accentColor}
         />
       )}
 
