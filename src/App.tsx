@@ -14,6 +14,7 @@ import Sidebar from "./components/Sidebar";
 import TaskDetailsSidebar from "./components/TaskDetailsSidebar";
 import SettingsSidebar from "./components/SettingsSidebar";
 import SettingsDrawer from "./components/SettingsDrawer";
+import AddTaskDrawer from "./components/AddTaskDrawer";
 
 
  function ExpandableInput() {
@@ -159,6 +160,8 @@ function Home() {
   const [customFilters, setCustomFilters] = useState([]);
   const [accentColor, setAccentColor] = useState('#1F1B2F');
   const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [addTaskDrawerOpen, setAddTaskDrawerOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -322,6 +325,14 @@ function Home() {
     setActiveFilter(newFilterId); // Switch to the new filter
   };
 
+  const handleAddTask = (taskName) => {
+    db.collection("tasks").add({
+      name: taskName,
+      description: "",
+      completed: false
+    });
+  };
+
   return (
     <section className="flex-1 task-home w-full h-screen max-h-screen relative overflow-hidden" 
       style={{
@@ -473,26 +484,51 @@ function Home() {
         />
       )}
 
+      {/* Add Task Drawer - only show on mobile */}
+      {isMobile && (
+        <AddTaskDrawer
+          isOpen={addTaskDrawerOpen}
+          setIsOpen={setAddTaskDrawerOpen}
+          onAddTask={handleAddTask}
+          accentColor={accentColor}
+        />
+      )}
+
       <div className="fixed bottom-0 left-0 right-0 p-4 md:hidden z-10"
         style={{ backgroundColor: accentColor }}>
-        <form
-          onSubmit={handleSubmit}
-          className="join task-input flex justify-center rounded-full w-full border border-base-200"
-        >
-          <input
-            type="text"
-            value={newInput}
-            onChange={(e) => setNewInput(e.target.value)}
-            placeholder="I want to..."
-            className="join-item font-serif input w-full focus:outline-none"
-            required
-          />
+        <div className="flex justify-between items-center">
           <button
-            className="join-item submit btn font-bold text-slate-300 hover:text-slate-700"
-            type="submit"
-            onClick={handleSubmit}
-          >Add</button>
-        </form>
+            className="btn btn-circle btn-ghost text-white"
+            onClick={() => setShowFilters(!showFilters)}
+            aria-label="Filters"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-3 3v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+          </button>
+          
+          {addTaskDrawerOpen ? (
+            <button
+              className="btn btn-circle btn-ghost text-white"
+              onClick={() => setAddTaskDrawerOpen(false)}
+              aria-label="Cancel"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          ) : (
+            <button
+              className="btn btn-circle btn-primary text-white"
+              onClick={() => setAddTaskDrawerOpen(true)}
+              aria-label="Add Task"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
     </section>
   );
