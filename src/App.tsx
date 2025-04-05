@@ -184,14 +184,14 @@ function Home() {
   }
 
   return (
-    <section className="task-home p-1 w-screen h-screen lg:max-w-full relative" 
+    <section className="task-home w-screen h-screen max-h-screen lg:max-w-full relative overflow-hidden" 
       style={{
         backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4)), url(${bgImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-      <div className="navbar bg-[#1F1B2F] rounded-md flex justify-between items-center">
+      <div className="navbar bg-[#1F1B2F] rounded-md flex justify-between items-center sticky top-0 z-10">
         <div className="">
           <a className="btn btn-ghost normal-case text-xl"
             onClick={() => { window.modal_2.showModal(); }}
@@ -226,8 +226,8 @@ function Home() {
       </div>
 
 
-      <div className="p-0 pb-24 md:pb-0">
-        <div className="overflow-x-auto mt-10 flex justify-center">
+      <div className="h-[calc(100vh-64px)] overflow-y-auto pb-24 md:pb-0">
+        <div className="mt-10 flex justify-center">
           <div className="w-full max-w-4xl">
             {tasks?.length == 0 && <div>
               <p className="text-lg font-bold text-center text-slate-100">No tasks yet.</p>
@@ -235,7 +235,7 @@ function Home() {
               <p className="no-task-blurb text-sm font-serif text-center text-slate-100">but also, you can add a task above.</p>
             </div>}
 
-            <div className="flex flex-col ">
+            <div className="flex flex-col">
               {tasks?.map((task: Task) => (
                 <div
                   key={task.id}
@@ -269,7 +269,7 @@ function Home() {
         deleteTask={deleteTask}
       />
 
-      <div className="fixed bottom-0 left-0 right-0 p-4  md:hidden bg-[#1F1B2F]">
+      <div className="fixed bottom-0 left-0 right-0 p-4 md:hidden bg-[#1F1B2F] z-10">
         <form
           onSubmit={handleSubmit}
           className="join task-input flex justify-center rounded-full w-full border border-base-200"
