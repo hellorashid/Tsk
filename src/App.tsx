@@ -453,9 +453,12 @@ function Home() {
 
         {/* Desktop task details sidebar - only show on desktop when a task is selected and settings is not open */}
         {!isMobile && selectedTask && !showSettings && (
-          <div className="hidden md:block md:pl-4">
+          <div className="hidden md:block md:pl-4 w-1/3 p-2">
+
             <TaskDetailsSidebar
+              key={selectedTask.id}
               task={selectedTask}
+              taskId={selectedTask.id}
               onClose={handleCloseTaskDetails}
               onUpdate={updateTask}
               onDelete={deleteTask}
@@ -467,7 +470,7 @@ function Home() {
 
         {/* Settings sidebar - only show on desktop when settings is open */}
         {!isMobile && showSettings && (
-          <div className="hidden md:block md:pl-4">
+          <div className="hidden md:block md:pl-4 w-1/3 p-2">
             <SettingsSidebar 
               onClose={handleCloseSettings} 
               onViewModeChange={handleViewModeChange}

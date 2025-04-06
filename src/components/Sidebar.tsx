@@ -56,7 +56,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <div className={`w-64 h-full p-4 overflow-y-auto backdrop-blur-sm flex flex-col ${
+    <div className={`w-64 h-full p-4 overflow-y-auto flex flex-col ${
       isDarkMode ? 'text-gray-100' : 'text-gray-900'
     }`}>
       <div className="space-y-2 flex-grow">
@@ -93,7 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         ))}
       </div>
 
-      <div className="mt-4 pt-4 border-t border-white/10">
+      <div className="mt-4 pt-4 ">
         {isCreating ? (
           <div className="space-y-2">
             <input

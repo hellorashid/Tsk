@@ -12,6 +12,7 @@
   "dependencies": {
     "@basictech/react": "^0.5.0-beta.2",
     "@heroicons/react": "^2.0.18",
+    "motion": "^12.6.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "vaul": "^1.1.2"
