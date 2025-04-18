@@ -14,7 +14,6 @@ import Sidebar from "./components/Sidebar";
 import TaskDetailsSidebar from "./components/TaskDetailsSidebar";
 import SettingsSidebar from "./components/SettingsSidebar";
 import SettingsDrawer from "./components/SettingsDrawer";
-import AddTaskDrawer from "./components/AddTaskDrawer";
 
 
  function ExpandableInput() {
@@ -161,7 +160,7 @@ function Home() {
   const [accentColor, setAccentColor] = useState('#1F1B2F');
   const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [addTaskDrawerOpen, setAddTaskDrawerOpen] = useState(false);
+  const [isNewTaskMode, setIsNewTaskMode] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
@@ -267,6 +266,7 @@ function Home() {
     console.log("Selected task:", task);
     setSelectedTask(task);
     setShowSettings(false); // Close settings when selecting a task
+    setIsNewTaskMode(false); // Ensure we're in edit mode, not new task mode
     if (isMobile) {
       setDrawerOpen(true);
     }
@@ -349,6 +349,13 @@ function Home() {
     });
   };
 
+  // New function to open drawer in "new task" mode
+  const openNewTaskDrawer = () => {
+    setIsNewTaskMode(true);
+    setSelectedTask(null);
+    setDrawerOpen(true);
+  };
+
   return (
     <section className={`flex-1 task-home w-full h-screen max-h-screen relative overflow-hidden ${isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'}`}
       style={{
@@ -357,32 +364,32 @@ function Home() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-      <div className="navbar rounded-b-md md:rounded-b-none bg-opacity-95 shadow-md backdrop-blur-sm flex justify-between items-center sticky top-0 z-10"
+      <div className=" h-12 rounded-b-md md:rounded-b-none bg-opacity-95 shadow-md backdrop-blur-sm flex justify-between items-center sticky top-0 z-100"
         style={{ backgroundColor: accentColor }}>
         <div className="">
-          <a className="btn btn-ghost normal-case text-xl"
+          <a className="btn btn-ghost normal-case text-md"
             onClick={() => { window.modal_2.showModal(); }}
-          ><img className="w-8 h-8 mr-2" src='tsk-logo.png'/>tsk.</a>
+          ><img className="w-6 h-6 mr-2" src='tsk-logo.png'/>tsk.</a>
         </div>
 
         <div className="hidden md:block">  
           <form
             onSubmit={handleSubmit}
-            className="join task-input flex justify-center rounded-full w-200 border border-base-200"
+            className="join task-input flex justify-center rounded-full w-200 border border-base-200 h-8"
           >
-            <input
+            {/* <input
               type="text"
               value={newInput}
               onChange={(e) => setNewInput(e.target.value)}
               placeholder="I want to..."
-              className="join-item font-serif input w-full max-w-xs focus:outline-none"
+              className="join-item font-serif input w-full max-w-xs focus:outline-none h-8"
               required
             />
             <button
-              className="join-item submit btn font-bold text-slate-300 hover:text-slate-700"
+              className="join-item submit  font-bold text-slate-300 hover:text-slate-700 h-8"
               type="submit"
               onClick={handleSubmit}
-            >Add</button>
+            >Add</button> */}
           </form>
         </div>
 
@@ -401,7 +408,7 @@ function Home() {
       </div>
 
       <div className="flex h-[calc(100vh-64px)]">
-        <div className="hidden md:block">
+        <div className="hidden md:block pt-6">
           <Sidebar 
             filters={filters}
             activeFilter={activeFilter}
@@ -484,7 +491,7 @@ function Home() {
         )}
       </div>
 
-      {/* Mobile drawer - only show on mobile */}
+      {/* Combined Task Drawer - handles both edit and new task modes */}
       {isMobile && (
         <TaskDrawer
           isOpen={drawerOpen}
@@ -493,6 +500,8 @@ function Home() {
           updateFunction={updateTask}
           deleteTask={deleteTask}
           accentColor={accentColor}
+          isNewTaskMode={isNewTaskMode}
+          onAddTask={handleAddTask}
         />
       )}
 
@@ -510,16 +519,6 @@ function Home() {
         />
       )}
 
-      {/* Add Task Drawer - only show on mobile */}
-      {isMobile && (
-        <AddTaskDrawer
-          isOpen={addTaskDrawerOpen}
-          setIsOpen={setAddTaskDrawerOpen}
-          onAddTask={handleAddTask}
-          accentColor={accentColor}
-        />
-      )}
-
       <div className="fixed bottom-0 left-0 right-0 p-4 md:hidden z-10"
         style={{ backgroundColor: accentColor }}>
         <div className="flex justify-between items-center">
@@ -533,10 +532,13 @@ function Home() {
             </svg>
           </button>
           
-          {addTaskDrawerOpen ? (
+          {drawerOpen && isNewTaskMode ? (
             <button
               className="btn btn-circle btn-ghost text-white"
-              onClick={() => setAddTaskDrawerOpen(false)}
+              onClick={() => {
+                setDrawerOpen(false);
+                setIsNewTaskMode(false);
+              }}
               aria-label="Cancel"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -546,7 +548,7 @@ function Home() {
           ) : (
             <button
               className="btn btn-circle btn-primary text-white"
-              onClick={() => setAddTaskDrawerOpen(true)}
+              onClick={openNewTaskDrawer}
               aria-label="Add Task"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

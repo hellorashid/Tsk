@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Drawer } from 'vaul';
 import { TaskModal } from './TaskModal';
 
@@ -32,6 +32,8 @@ interface TaskDrawerProps {
   updateFunction: (id: string, changes: any) => void;
   deleteTask?: (id: string) => void;
   accentColor?: string;
+  isNewTaskMode?: boolean;
+  onAddTask?: (taskName: string) => void;
 }
 
 export default function TaskDrawer({ 
@@ -40,20 +42,44 @@ export default function TaskDrawer({
   task, 
   updateFunction, 
   deleteTask,
-  accentColor = '#1F1B2F'
+  accentColor = '#1F1B2F',
+  isNewTaskMode = false,
+  onAddTask
 }: TaskDrawerProps) {
   const titleId = React.useId();
   
   // Debug the task data
   useEffect(() => {
-    if (isOpen && task) {
+    if (isOpen && task && !isNewTaskMode) {
       console.log("Task in drawer:", task);
     }
-  }, [isOpen, task]);
+  }, [isOpen, task, isNewTaskMode]);
   
   // Calculate background color without opacity
   const getBackgroundColor = () => {
     return accentColor; // No opacity
+  };
+  
+  // Create a placeholder task for new task mode
+  const emptyTask = {
+    id: "new-task-placeholder",
+    name: "",
+    description: "",
+    completed: false
+  };
+  
+  // Handle task creation when in new task mode
+  const handleNewTaskUpdate = (id: string, changes: any) => {
+    if (id === "new-task-placeholder" && changes.name && changes.name.trim() !== "") {
+      if (onAddTask) {
+        onAddTask(changes.name);
+        setIsOpen(false);
+      }
+    }
+  };
+  
+  const handleCloseDrawer = () => {
+    setIsOpen(false);
   };
   
   return (
@@ -67,12 +93,20 @@ export default function TaskDrawer({
         >
           {/* Title for accessibility */}
           <h2 id={titleId} className="sr-only">
-            Task Details: {task?.name || 'Task'}
+            {isNewTaskMode ? 'Add New Task' : `Task Details: ${task?.name || 'Task'}`}
           </h2>
           
           <div className="mx-auto w-12 h-1.5 bg-gray-300 rounded-full my-4" />
           
-          {isOpen && task?.id ? (
+          {isNewTaskMode ? (
+            <TaskModal
+              task={emptyTask}
+              new={true}
+              updateFunction={handleNewTaskUpdate}
+              inDrawer={true}
+              accentColor={accentColor}
+            />
+          ) : isOpen && task?.id ? (
             <TaskModal
               key={task.id}
               task={task}

@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 import { Task } from "../utils/types";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export const TaskModal = ({
   task, updateFunction, inDrawer = false, deleteTask, new: isNew = false, accentColor = '#1F1B2F'
@@ -19,6 +19,14 @@ export const TaskModal = ({
   }, [task]);
 
   const [taskCompleted, setTaskCompleted] = useState(task?.completed || false);
+  const nameInputRef = useRef(null);
+  
+  // Focus the name input when creating a new task
+  useEffect(() => {
+    if (isNew && nameInputRef.current) {
+      nameInputRef.current.focus();
+    }
+  }, [isNew]);
 
   useEffect(() => {
     // Update the checkbox state whenever task changes
@@ -77,6 +85,10 @@ export const TaskModal = ({
               }}
               className="scale-140 checkbox checkbox-accent"
             />
+            
+            {isNew && (
+              <div className="text-sm opacity-70">New Task</div>
+            )}
           </div>
           
           <div className="border-t border-slate-700 border-solid w-full mb-4 rounded-md text-white"></div>
@@ -84,8 +96,10 @@ export const TaskModal = ({
           <h1
             contentEditable
             id="name"
+            ref={nameInputRef}
             onBlur={handleEdit}
-            className={`text-start text-xl text-bold py-1 px-2 text-white`}
+            className={`text-start text-xl text-bold py-1 px-2 text-white ${isNew ? 'empty-content' : ''}`}
+            data-placeholder={isNew ? "Enter task name..." : ""}
           >
             {task?.name || ''}
           </h1>
@@ -99,6 +113,12 @@ export const TaskModal = ({
           >
             {task?.description || "Some description..."}
           </p>
+          
+          {isNew && (
+            <div className="mt-6 text-sm opacity-70 text-center">
+              Edit the task name above and click outside to save
+            </div>
+          )}
         </div>
       </div>
       {!inDrawer && (

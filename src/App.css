@@ -31,3 +31,16 @@ body {
 .bg-\[#2A2535\]\/50 {
   background-color: color-mix(in srgb, var(--accent-color) 50%, #2A2535) !important;
 }
+
+/* Styles for the empty content placeholder in TaskModal */
+[contenteditable].empty-content:empty:before {
+  content: attr(data-placeholder);
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  cursor: text;
+}
+
+[contenteditable]:focus {
+  outline: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
