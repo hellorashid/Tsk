@@ -9,7 +9,7 @@ import { Task } from "./utils/types";
 import UserAvatarButton from "./components/UserAvatarButton";
 import { useBasic, useQuery } from "@basictech/react";
 import bgImage from '/bg2.jpg';
-import TaskDrawer from "./components/TaskDrawer";
+import SilkTaskDrawer from "./components/SilkTaskDrawer";
 import Sidebar from "./components/Sidebar";
 import TaskDetailsSidebar from "./components/TaskDetailsSidebar";
 import SettingsSidebar from "./components/SettingsSidebar";
@@ -264,10 +264,24 @@ function Home() {
   // When opening a task in the drawer
   const handleTaskSelect = (task) => {
     console.log("Selected task:", task);
-    setSelectedTask(task);
+    console.log("isMobile state:", isMobile);
+    
+    // Validate the task
+    if (!task) {
+      console.error("Cannot select null task");
+      return;
+    }
+    
+    if (!task.id) {
+      console.error("Task is missing ID:", task);
+      return;
+    }
+    
+    setSelectedTask({...task}); // Use a copy to ensure reactivity
     setShowSettings(false); // Close settings when selecting a task
     setIsNewTaskMode(false); // Ensure we're in edit mode, not new task mode
     if (isMobile) {
+      console.log("Opening drawer for mobile view");
       setDrawerOpen(true);
     }
   };
@@ -351,6 +365,7 @@ function Home() {
 
   // New function to open drawer in "new task" mode
   const openNewTaskDrawer = () => {
+    console.log("Opening new task drawer");
     setIsNewTaskMode(true);
     setSelectedTask(null);
     setDrawerOpen(true);
@@ -370,6 +385,7 @@ function Home() {
           <a className="btn btn-ghost normal-case text-md"
             onClick={() => { window.modal_2.showModal(); }}
           ><img className="w-6 h-6 mr-2" src='tsk-logo.png'/>tsk.</a>
+          {isNewTaskMode && 'NT'} {drawerOpen && 'DO'}
         </div>
 
         <div className="hidden md:block">  
@@ -493,7 +509,7 @@ function Home() {
 
       {/* Combined Task Drawer - handles both edit and new task modes */}
       {isMobile && (
-        <TaskDrawer
+        <SilkTaskDrawer
           isOpen={drawerOpen}
           setIsOpen={setDrawerOpen}
           task={selectedTask}
@@ -519,7 +535,7 @@ function Home() {
         />
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 md:hidden z-10"
+      <div className="fixed bottom-0 left-0 right-0 p-4 md:hidden z-10 rounded-t-md"
         style={{ backgroundColor: accentColor }}>
         <div className="flex justify-between items-center">
           <button
@@ -535,10 +551,10 @@ function Home() {
           {drawerOpen && isNewTaskMode ? (
             <button
               className="btn btn-circle btn-ghost text-white"
-              onClick={() => {
-                setDrawerOpen(false);
-                setIsNewTaskMode(false);
-              }}
+              // onClick={() => {
+              //   setDrawerOpen(false);
+              //   setIsNewTaskMode(false);
+              // }}
               aria-label="Cancel"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -1,0 +1,35 @@
+/* Basic sheet animation styles */
+.SheetWithKeyboard-view:focus {
+  outline: none;
+}
+
+.SheetWithKeyboard-view {
+  height: 90vh !important;
+  max-height: 90vh !important;
+  background-color: transparent !important;
+}
+
+.SheetWithKeyboard-content {
+  max-width: 100%;
+  height: 90vh !important;
+  max-height: 90vh !important;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  background-color: transparent !important;
+}
+
+/* Remove any default backgrounds */
+[role="dialog"] {
+  background-color: transparent !important;
+}
+
+@media (min-width: 800px) {
+  .SheetWithKeyboard-content {
+    width: 500px;
+    max-width: 90vw;
+    height: 90vh !important;
+    max-height: 90vh !important;
+    border-radius: 1rem;
+    background-color: transparent !important;
+  }
+}

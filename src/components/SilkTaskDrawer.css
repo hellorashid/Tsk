@@ -1,0 +1,88 @@
+/* Styling for Silk Sheet component */
+.silk-sheet-content {
+  min-height: 90vh !important;
+  height: 90vh !important;
+  max-height: 90vh !important;
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Make sure the Sheet component has the correct height */
+.SheetWithKeyboard-view {
+  height: 90vh !important;
+  max-height: 90vh !important;
+  background-color: transparent !important;
+}
+
+.SheetWithKeyboard-content {
+  height: 90vh !important;
+  max-height: 90vh !important;
+  background-color: transparent !important;
+}
+
+/* Remove default background from Silk components */
+[data-silk-sheet-view] {
+  background-color: transparent !important;
+}
+
+[data-silk-sheet-content] {
+  background-color: transparent !important;
+}
+
+/* Pull handle styling */
+.pull-handle {
+  width: 3rem;
+  height: 0.25rem;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  margin: 0.5rem auto 1rem;
+}
+
+/* Backdrop styling */
+.sheet-backdrop {
+  background-color: rgba(0, 0, 0, 0.4);
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Hide trigger button but keep it accessible */
+.silk-task-drawer button.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Animation for sheet */
+.sheet-animation-enter {
+  transform: translateY(100%);
+}
+
+.sheet-animation-enter-active {
+  transform: translateY(0);
+  transition: transform 300ms;
+}
+
+.sheet-animation-exit {
+  transform: translateY(0);
+}
+
+.sheet-animation-exit-active {
+  transform: translateY(100%);
+  transition: transform 300ms;
+} 

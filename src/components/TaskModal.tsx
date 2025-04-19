@@ -70,7 +70,7 @@ export const TaskModal = ({
         style={inDrawer ? { backgroundColor: getBackgroundColor() } : {}}
       >
         <div className="task-details flex flex-col justify-between rounded-md">
-          <div className="task-id flex justify-between items-center w-full my-4">
+          <div className="task-id flex items-center w-full my-4 gap-3">
             <input
               type="checkbox"
               checked={taskCompleted}
@@ -86,6 +86,17 @@ export const TaskModal = ({
               className="scale-140 checkbox checkbox-accent"
             />
             
+            <h1
+              contentEditable
+              id="name"
+              ref={nameInputRef}
+              onBlur={handleEdit}
+              className={`flex-1 text-start text-xl text-bold py-1 px-2 text-white ${isNew ? 'empty-content' : ''}`}
+              data-placeholder={isNew ? "Enter task name..." : ""}
+            >
+              {task?.name || ''}
+            </h1>
+            
             {isNew && (
               <div className="text-sm opacity-70">New Task</div>
             )}
@@ -93,17 +104,6 @@ export const TaskModal = ({
           
           <div className="border-t border-slate-700 border-solid w-full mb-4 rounded-md text-white"></div>
           
-          <h1
-            contentEditable
-            id="name"
-            ref={nameInputRef}
-            onBlur={handleEdit}
-            className={`text-start text-xl text-bold py-1 px-2 text-white ${isNew ? 'empty-content' : ''}`}
-            data-placeholder={isNew ? "Enter task name..." : ""}
-          >
-            {task?.name || ''}
-          </h1>
-
           <p
             id="description"
             className={`task-description mt-4 opacity-70 text-left py-1 px-2 text-white`}
@@ -114,11 +114,7 @@ export const TaskModal = ({
             {task?.description || "Some description..."}
           </p>
           
-          {isNew && (
-            <div className="mt-6 text-sm opacity-70 text-center">
-              Edit the task name above and click outside to save
-            </div>
-          )}
+        
         </div>
       </div>
       {!inDrawer && (
