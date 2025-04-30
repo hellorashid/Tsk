@@ -264,6 +264,7 @@ export default function SilkTaskDrawer({
                     deleteTask={deleteTask}
                     inDrawer={true}
                     accentColor={accentColor}
+                    onDelete={() => setIsOpen(false)}
                   />
                 )}
               </div>
