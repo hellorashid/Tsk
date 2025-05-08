@@ -38,7 +38,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
 
   return (
     <div 
-      className={`w-full h-full p-6 overflow-y-auto backdrop-blur-sm flex flex-col ${
+      className={`w-full h-full p-6 overflow-y-auto backdrop-blur-sm  rounded-md flex flex-col ${
         isDarkMode ? 'text-gray-100' : 'text-gray-900'
       }`}
       style={{ backgroundColor: getBackgroundColor() }}

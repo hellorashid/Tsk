@@ -20,6 +20,8 @@ export const TaskModal = ({
   }, [task]);
 
   const [taskCompleted, setTaskCompleted] = useState(task?.completed || false);
+  const [taskName, setTaskName] = useState(task?.name || '');
+  const [taskDescription, setTaskDescription] = useState(task?.description || '');
   const nameInputRef = useRef(null);
   
   // Focus the name input when creating a new task
@@ -30,9 +32,26 @@ export const TaskModal = ({
   }, [isNew]);
 
   useEffect(() => {
-    // Update the checkbox state whenever task changes
+    // Update states whenever task changes
     setTaskCompleted(task?.completed || false);
+    setTaskName(task?.name || '');
+    setTaskDescription(task?.description || '');
   }, [task]);
+
+  // Auto-resize textareas on initial render and when content changes
+  useEffect(() => {
+    const titleTextarea = document.querySelector('textarea.task-title') as HTMLTextAreaElement;
+    if (titleTextarea) {
+      titleTextarea.style.height = 'auto';
+      titleTextarea.style.height = `${titleTextarea.scrollHeight}px`;
+    }
+
+    const descTextarea = document.querySelector('textarea.task-description') as HTMLTextAreaElement;
+    if (descTextarea) {
+      descTextarea.style.height = 'auto';
+      descTextarea.style.height = `${descTextarea.scrollHeight}px`;
+    }
+  }, [taskName, taskDescription]);
 
   const handleDelete = (e) => {
     e.stopPropagation();
@@ -45,18 +64,38 @@ export const TaskModal = ({
     }
   };
 
-  const handleEdit = (event) => {
-    console.log("Editing field:", event.target.id, "New value:", event.target.textContent);
-    if (task?.id) {
-      updateFunction(task.id, { [event.target.id]: event.target.textContent });
+  const handleTitleChange = (e) => {
+    setTaskName(e.target.value);
+    // Auto-resize the textarea
+    e.target.style.height = 'auto';
+    e.target.style.height = `${e.target.scrollHeight}px`;
+  };
+
+  const handleDescriptionChange = (e) => {
+    setTaskDescription(e.target.value);
+    // Auto-resize the textarea
+    e.target.style.height = 'auto';
+    e.target.style.height = `${e.target.scrollHeight}px`;
+  };
+
+  const handleTitleBlur = () => {
+    if (taskName.trim() !== task?.name && task?.id) {
+      updateFunction(task.id, { name: taskName.trim() });
     }
   };
 
-  const resetField = (event) => {
-    if (event.target.textContent === 'Some description...') {
-      event.target.textContent = '';
+  const handleDescriptionBlur = () => {
+    if ((taskDescription.trim() !== task?.description) && task?.id) {
+      updateFunction(task.id, { description: taskDescription.trim() || '' });
     }
-  }
+  };
+
+  const handleKeyDown = (e, type) => {
+    if (e.key === 'Enter' && type === 'title') {
+      handleTitleBlur();
+      e.preventDefault();
+    }
+  };
 
   // Calculate background color without opacity
   const getBackgroundColor = () => {
@@ -74,7 +113,7 @@ export const TaskModal = ({
         style={inDrawer ? { backgroundColor: getBackgroundColor() } : {}}
       >
         <div className="task-details flex flex-col justify-between rounded-md">
-          <div className="task-id flex items-center w-full my-4 gap-3">
+          <div className="task-id flex items-start w-full my-4 gap-3">
             <input
               type="checkbox"
               checked={taskCompleted}
@@ -87,19 +126,20 @@ export const TaskModal = ({
                   });
                 }
               }}
-              className="scale-140 checkbox checkbox-accent"
+              className="scale-140 checkbox checkbox-accent mt-2"
             />
             
-            <h1
-              contentEditable
-              id="name"
+            <textarea
               ref={nameInputRef}
-              onBlur={handleEdit}
-              className={`flex-1 text-start text-xl text-bold py-1 px-2 text-white ${isNew ? 'empty-content' : ''}`}
-              data-placeholder={isNew ? "Enter task name..." : ""}
-            >
-              {task?.name || ''}
-            </h1>
+              value={taskName}
+              onChange={handleTitleChange}
+              onBlur={handleTitleBlur}
+              onKeyDown={(e) => handleKeyDown(e, 'title')}
+              className="task-title flex-1 text-start text-xl text-bold py-1 px-2 text-white bg-transparent resize-none overflow-hidden min-h-[2rem] focus:outline-none"
+              placeholder={isNew ? "Enter task name..." : ""}
+              rows={1}
+              style={{ height: 'auto' }}
+            />
             
             {isNew && (
               <div className="text-sm opacity-70">New Task</div>
@@ -108,15 +148,15 @@ export const TaskModal = ({
           
           <div className="border-t border-slate-700 border-solid w-full mb-4 rounded-md text-white"></div>
           
-          <p
-            id="description"
-            className={`task-description mt-4 opacity-70 text-left py-1 px-2 text-white`}
-            contentEditable
-            onFocus={resetField}         
-            onBlur={handleEdit}
-          >
-            {task?.description || "Some description..."}
-          </p>
+          <textarea
+            value={taskDescription || ""}
+            onChange={handleDescriptionChange}
+            onBlur={handleDescriptionBlur}
+            onKeyDown={(e) => handleKeyDown(e, 'description')}
+            className="task-description mt-4 opacity-70 text-left py-1 px-2 text-white bg-transparent resize-none min-h-[100px] focus:outline-none"
+            placeholder="Some description..."
+            style={{ height: 'auto' }}
+          />
           
           {!isNew && deleteTask && (
             <div className="mt-auto pt-4 flex justify-end">

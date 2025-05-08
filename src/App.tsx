@@ -538,8 +538,7 @@ function Home() {
         />
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 md:hidden z-10 rounded-t-md"
-        style={{ backgroundColor: accentColor }}>
+      <div className="fixed bottom-0 left-0 right-0 p-4 md:hidden z-10 rounded-t-md">
         <div className="flex justify-between items-center">
           <button
             className="btn btn-circle btn-ghost text-white"

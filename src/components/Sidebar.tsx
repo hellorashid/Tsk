@@ -43,7 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   // Calculate background colors based on accent color
   const getActiveFilterStyle = () => {
     return {
-      backgroundColor: `${accentColor}80`, // 80% opacity
+      backgroundColor: `${accentColor}50`, // 80% opacity
       color: 'white'
     };
   };
@@ -56,15 +56,15 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <div className={`w-64 h-full p-4 overflow-y-auto flex flex-col ${
+    <div className={`w-48 h-full p-0 mt-4 overflow-y-auto flex flex-col ${
       isDarkMode ? 'text-gray-100' : 'text-gray-900'
     }`}>
-      <div className="space-y-2 flex-grow">
+      <div className={`bg-[${accentColor}] rounded-r-md py-0 bg-opacity-10 backdrop-blur-sm overflow-hidden`}>
         {filters.map((filter) => (
           <button
             key={filter.id}
             onClick={() => onFilterChange(filter.id)}
-            className={`w-full text-left px-4 py-2 rounded-md transition-colors focus:outline-none ${
+            className={`w-full text-left px-4 py-2 transition-colors focus:outline-none ${
               activeFilter === filter.id ? '' : ''
             }`}
             style={activeFilter === filter.id ? getActiveFilterStyle() : {}}
@@ -82,7 +82,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             }}
           >
             <div className="flex justify-between items-center">
-              <span>{filter.label}</span>
+              <span className="text-sm">{filter.label}</span>
               {filter.count !== undefined && (
                 <span className={`${isDarkMode ? 'bg-white/10 text-gray-200' : 'bg-gray-200 text-gray-800'} px-2 py-1 rounded-full text-xs`}>
                   {filter.count}
