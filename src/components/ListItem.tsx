@@ -26,7 +26,6 @@ const ListItem: React.FC<ListItemProps> = ({
   const { dbStatus } = useBasic();
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(task.name);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
@@ -65,14 +64,13 @@ const ListItem: React.FC<ListItemProps> = ({
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
     updateTask(task.id, { completed: e.target.checked });
   };
 
-  const handleDelete = () => {
-    if (!isMobile) {
-      deleteTask(task.id);
-      setShowDeleteConfirm(false);
-    }
+  const handleDelete = (e) => {
+    e.stopPropagation();
+    deleteTask(task.id);
   };
 
   // Get view mode specific styles
@@ -135,6 +133,7 @@ const ListItem: React.FC<ListItemProps> = ({
             type="checkbox"
             checked={task.completed}
             onChange={handleCheckboxChange}
+            onClick={(e) => e.stopPropagation()}
             className={`checkbox ${styles.checkbox} mr-2 ${isDarkMode ? 'border-gray-300' : 'border-gray-700'}`}
           />
           {isEditing ? (
@@ -162,10 +161,7 @@ const ListItem: React.FC<ListItemProps> = ({
         </div>
         {!isMobile && (
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowDeleteConfirm(true);
-            }}
+            onClick={handleDelete}
             className={`rounded-full btn btn-ghost ${styles.deleteButton} transition-opacity duration-200 ${
               isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-70'
             }`}
@@ -177,34 +173,6 @@ const ListItem: React.FC<ListItemProps> = ({
           </button>
         )}
       </div>
-
-      {showDeleteConfirm && !isMobile && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
-          <div className="bg-gray-800 p-4 rounded-lg">
-            <p className="text-white mb-2">Delete this task?</p>
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowDeleteConfirm(false);
-                }}
-                className="btn btn-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete();
-                }}
-                className="btn btn-sm btn-error"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

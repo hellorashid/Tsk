@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useBasic , useQuery} from "@basictech/react";
 import { Task } from '../utils/types';
 
@@ -21,48 +21,66 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
 }) => {
   const {db } = useBasic()
   const taskDetails = useQuery( () => db.collection('tasks').get(task?.id) )
+
+  
   const [title, setTitle] = useState(task?.name || '');
   const [description, setDescription] = useState(task?.description || '');
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [isEditingDescription, setIsEditingDescription] = useState(false);
-  const { dbStatus } = useBasic();
 
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    if (taskDetails?.name) {
+      setTitle(taskDetails.name);
+    }
+  }, [taskDetails]);
+
+  useEffect(() => {
+    const titleTextarea = document.querySelector('textarea.text-lg') as HTMLTextAreaElement;
+    if (titleTextarea) {
+      titleTextarea.style.height = 'auto';
+      titleTextarea.style.height = `${titleTextarea.scrollHeight}px`;
+    }
+
+    const descTextarea = document.querySelector('textarea.description') as HTMLTextAreaElement;
+    if (descTextarea) {
+      descTextarea.style.height = 'auto';
+      descTextarea.style.height = `${descTextarea.scrollHeight}px`;
+    }
+  }, [title, description]);
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setTitle(e.target.value);
+    // Auto-resize the textarea
+    e.target.style.height = 'auto';
+    e.target.style.height = `${e.target.scrollHeight}px`;
   };
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setDescription(e.target.value);
+    // Auto-resize the textarea
+    e.target.style.height = 'auto';
+    e.target.style.height = `${e.target.scrollHeight}px`;
   };
 
   const handleTitleBlur = () => {
-    setIsEditingTitle(false);
     if (title.trim() !== task?.name) {
       onUpdate(task?.id || '', { name: title.trim() });
     }
   };
 
   const handleDescriptionBlur = () => {
-    setIsEditingDescription(false);
     if (description.trim() !== task?.description) {
       onUpdate(task?.id || '', { description: description.trim() });
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent, type: 'title' | 'description') => {
-    if (e.key === 'Enter') {
-      if (type === 'title') {
-        handleTitleBlur();
-      } else {
-        handleDescriptionBlur();
-      }
+    if (e.key === 'Enter' && type === 'title') {
+      handleTitleBlur();
+      e.preventDefault();
     } else if (e.key === 'Escape') {
       if (type === 'title') {
         setTitle(task?.name || '');
-        setIsEditingTitle(false);
       } else {
         setDescription(task?.description || '');
-        setIsEditingDescription(false);
       }
     }
   };
@@ -72,10 +90,8 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
   };
 
   const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this task?')) {
-      onDelete(task?.id || '');
-      onClose();
-    }
+    onDelete(task?.id || '');
+    onClose();
   };
 
   const getBackgroundColor = () => {
@@ -91,54 +107,36 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
       }`}
       style={{ backgroundColor: getBackgroundColor() }}
     >
-      <div className="flex items-center mb-4">
+      <div className="flex items-start mb-2">
         <input
           type="checkbox"
-          className="checkbox  checkbox-sm mr-3"
-          checked={task.completed}
+          className="checkbox checkbox-sm mr-1 mt-2"
+          checked={taskDetails?.completed}
           onChange={handleCompletedChange}
         />
-        {isEditingTitle ? (
-          <input
-            type="text"
-            value={taskDetails?.name}
-            onChange={handleTitleChange}
-            onBlur={handleTitleBlur}
-            onKeyDown={(e) => handleKeyDown(e, 'title')}
-            className="input input-sm w-full bg-transparent focus:outline-none text-lg font-medium"
-            autoFocus
-          />
-        ) : (
-          <h2 
-            className="text-lg font-medium cursor-pointer hover:bg-white/10 px-2 py-1 rounded"
-            onClick={() => setIsEditingTitle(true)}
-          >
-            {taskDetails?.name}
-          </h2>
-        )}
+        <textarea
+          value={title}
+          onChange={handleTitleChange}
+          onBlur={handleTitleBlur}
+          onKeyDown={(e) => handleKeyDown(e, 'title')}
+          className="textarea textarea-sm w-full bg-transparent focus:outline-none text-lg font-medium min-h-[2rem] resize-none overflow-hidden"
+          rows={1}
+          style={{ height: 'auto' }}
+        />
       </div>
 
       <div className="divider my-2"></div>
 
       <div className="mt-2">
-        {isEditingDescription ? (
-          <textarea
-            value={description}
-            onChange={handleDescriptionChange}
-            onBlur={handleDescriptionBlur}
-            onKeyDown={(e) => handleKeyDown(e, 'description')}
-            className="textarea textarea-sm w-full bg-transparent focus:outline-none min-h-[100px]"
-            placeholder="Add a description..."
-            autoFocus
-          />
-        ) : (
-          <div 
-            className="cursor-pointer hover:bg-white/10 px-2 py-1 rounded min-h-[100px]"
-            onClick={() => setIsEditingDescription(true)}
-          >
-            {description || <span className="text-gray-400">Add a description...</span>}
-          </div>
-        )}
+        <textarea
+          value={description}
+          onChange={handleDescriptionChange}
+          onBlur={handleDescriptionBlur}
+          onKeyDown={(e) => handleKeyDown(e, 'description')}
+          className="textarea textarea-sm w-full bg-transparent focus:outline-none min-h-[100px] description resize-none"
+          placeholder="Add a description..."
+          style={{ height: 'auto' }}
+        />
       </div>
 
       <div className="mt-auto pt-4">

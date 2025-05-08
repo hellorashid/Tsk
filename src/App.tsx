@@ -385,31 +385,34 @@ function Home() {
           <a className="btn btn-ghost normal-case text-md"
             onClick={() => { window.modal_2.showModal(); }}
           ><img className="w-6 h-6 mr-2" src='tsk-logo.png'/>tsk.</a>
-          {isNewTaskMode && 'NT'} {drawerOpen && 'DO'}
+          {/* {isNewTaskMode && 'NT'} {drawerOpen && 'DO'} */}
         </div>
 
-        <div className="hidden md:block">  
+        <div className="hidden md:block"> 
+
           <form
             onSubmit={handleSubmit}
-            className="join task-input flex justify-center rounded-full w-200 border border-base-200 h-8"
+            className="join task-input flex justify-center rounded-sm w-96 h-8"
           >
-            {/* <input
+            <input
               type="text"
               value={newInput}
               onChange={(e) => setNewInput(e.target.value)}
               placeholder="I want to..."
-              className="join-item font-serif input w-full max-w-xs focus:outline-none h-8"
+              className="join-item font-serif input w-full max-w-xs focus:outline-none h-8 bg-[white] bg-opacity-5 "
               required
             />
             <button
-              className="join-item submit  font-bold text-slate-300 hover:text-slate-700 h-8"
+              className={` px-2 submit font-sm text-slate-300 h-8 overflow-hidden transition-all duration-300 ease-in-out ${
+                newInput.trim() !== "" ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 px-0"
+              }`}
               type="submit"
               onClick={handleSubmit}
-            >Add</button> */}
+            >Add</button>
           </form>
         </div>
 
-        <div className="flex-none flex items-center">
+        <div className="flex-none flex items-center pr-2">
           <button 
             onClick={handleOpenSettings}
             className="text-gray-400 hover:text-white focus:outline-none mr-2"
