@@ -8,7 +8,8 @@ import ListItem from "./components/ListItem";
 import { Task } from "./utils/types";
 import UserAvatarButton from "./components/UserAvatarButton";
 import { useBasic, useQuery } from "@basictech/react";
-import bgImage from '/bg2.jpg';
+import bgImage from '/bg1.jpg';
+
 import SilkTaskDrawer from "./components/SilkTaskDrawer";
 import Sidebar from "./components/Sidebar";
 import TaskDetailsSidebar from "./components/TaskDetailsSidebar";
@@ -162,6 +163,7 @@ function Home() {
   const [showFilters, setShowFilters] = useState(false);
   const [isNewTaskMode, setIsNewTaskMode] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [fontStyle, setFontStyle] = useState<'mono' | 'sans' | 'serif'>('sans');
 
   useEffect(() => {
     const handleResize = () => {
@@ -187,6 +189,11 @@ function Home() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
+
+  // Apply font style to document
+  useEffect(() => {
+    document.documentElement.style.setProperty('--font-style', fontStyle);
+  }, [fontStyle]);
 
   const handleThemeChange = (isDark: boolean) => {
     setIsDarkMode(isDark);
@@ -371,6 +378,10 @@ function Home() {
     setDrawerOpen(true);
   };
 
+  const handleFontStyleChange = (style: 'mono' | 'sans' | 'serif') => {
+    setFontStyle(style);
+  };
+
   return (
     <section className={`flex-1 task-home w-full h-screen max-h-screen relative overflow-hidden ${isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'}`}
       style={{
@@ -505,6 +516,8 @@ function Home() {
               currentAccentColor={accentColor}
               onThemeChange={handleThemeChange}
               isDarkMode={isDarkMode}
+              onFontStyleChange={handleFontStyleChange}
+              currentFontStyle={fontStyle}
             />
           </div>
         )}
@@ -535,6 +548,8 @@ function Home() {
           currentAccentColor={accentColor}
           onThemeChange={handleThemeChange}
           isDarkMode={isDarkMode}
+          onFontStyleChange={handleFontStyleChange}
+          currentFontStyle={fontStyle}
         />
       )}
 

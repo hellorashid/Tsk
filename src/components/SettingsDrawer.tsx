@@ -13,6 +13,8 @@ interface SettingsDrawerProps {
   currentAccentColor: string;
   onThemeChange: (isDark: boolean) => void;
   isDarkMode: boolean;
+  onFontStyleChange: (style: 'mono' | 'sans' | 'serif') => void;
+  currentFontStyle: 'mono' | 'sans' | 'serif';
 }
 
 export default function SettingsDrawer({ 
@@ -23,7 +25,9 @@ export default function SettingsDrawer({
   onAccentColorChange,
   currentAccentColor,
   onThemeChange,
-  isDarkMode
+  isDarkMode,
+  onFontStyleChange,
+  currentFontStyle
 }: SettingsDrawerProps) {
   const titleId = React.useId();
   
@@ -36,10 +40,10 @@ export default function SettingsDrawer({
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40" />
         <Drawer.Content 
-          className={`h-[80vh] max-h-[85vh] w-full fixed bottom-0 left-0 right-0 outline-none rounded-t-xl overflow-auto ${
+          className={`bg-[#1F1B2F] h-[80vh] max-h-[85vh] w-full fixed bottom-0 left-0 right-0 outline-none rounded-t-xl overflow-auto ${
             isDarkMode ? 'text-gray-100' : 'text-gray-900'
           }`}
-          style={{ backgroundColor: currentAccentColor }}
+          // style={{ backgroundColor: currentAccentColor }}
           aria-labelledby={titleId}
         >
           {/* Title for accessibility */}
@@ -58,6 +62,8 @@ export default function SettingsDrawer({
               currentAccentColor={currentAccentColor}
               onThemeChange={onThemeChange}
               isDarkMode={isDarkMode}
+              onFontStyleChange={onFontStyleChange}
+              currentFontStyle={currentFontStyle}
             />
           </div>
         </Drawer.Content>

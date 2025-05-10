@@ -3,10 +3,37 @@
   --ff-accent: 'Averia Serif Libre', cursive;
   --ff-body: 'Fragment Mono', monospace;
   --accent-color: #1F1B2F;
+  --font-style: sans;
 }
 
 body {
   font-family: var(--ff-main);
+}
+
+/* Font style classes */
+.font-mono {
+  font-family: var(--ff-body);
+}
+
+.font-sans {
+  font-family: var(--ff-main);
+}
+
+.font-serif {
+  font-family: var(--ff-accent);
+}
+
+/* Apply font style based on CSS variable */
+:root[style*="--font-style: mono"] * {
+  font-family: var(--ff-body);
+}
+
+:root[style*="--font-style: sans"] * {
+  font-family: var(--ff-main);
+}
+
+:root[style*="--font-style: serif"] * {
+  font-family: var(--ff-accent);
 }
 
 /* Remove theme-specific styles as we're using Tailwind classes */

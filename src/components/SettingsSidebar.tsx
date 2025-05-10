@@ -9,6 +9,8 @@ interface SettingsSidebarProps {
   currentAccentColor: string;
   onThemeChange: (isDark: boolean) => void;
   isDarkMode: boolean;
+  onFontStyleChange: (style: 'mono' | 'sans' | 'serif') => void;
+  currentFontStyle: 'mono' | 'sans' | 'serif';
 }
 
 const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
@@ -18,7 +20,9 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   onAccentColorChange,
   currentAccentColor,
   onThemeChange,
-  isDarkMode
+  isDarkMode,
+  onFontStyleChange,
+  currentFontStyle
 }) => {
   const { dbStatus } = useBasic();
   const defaultAccentColor = '#1F1B2F';
@@ -112,6 +116,32 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                   onClick={() => onViewModeChange('chonky')}
                 >
                   Chonky
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span>Font Style</span>
+              </div>
+              <div className="flex space-x-2">
+                <button 
+                  className={`btn btn-sm ${currentFontStyle === 'mono' ? 'btn-primary' : 'btn-ghost'} font-mono`}
+                  onClick={() => onFontStyleChange('mono')}
+                >
+                  Mono
+                </button>
+                <button 
+                  className={`btn btn-sm ${currentFontStyle === 'sans' ? 'btn-primary' : 'btn-ghost'} font-sans`}
+                  onClick={() => onFontStyleChange('sans')}
+                >
+                  Sans
+                </button>
+                <button 
+                  className={`btn btn-sm ${currentFontStyle === 'serif' ? 'btn-primary' : 'btn-ghost'} font-serif`}
+                  onClick={() => onFontStyleChange('serif')}
+                >
+                  Serif
                 </button>
               </div>
             </div>
