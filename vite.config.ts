@@ -10,23 +10,23 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'your app name',
-        short_name: 'your app short name',
-        description: 'your app description',
+        name: 'tsk',
+        short_name: 'tsk',
+        description: 'tsk - cozy task manager',
         theme_color: '#ffffff',
         icons: [
           {
-            src: 'logo-144.png',
-            sizes: '144x1s44',
+            src: 'tsk-logo-144.png',
+            sizes: '144x144',
             type: 'image/png'
           },
           {
-            src: 'logo-512.png',
+            src: 'tsk-logo-512.png',
             sizes: '512x512',
             type: 'image/png'
           },
           {
-            src: 'logo-512.png',
+            src: 'tsk-logo-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
