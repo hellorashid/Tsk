@@ -8,7 +8,7 @@ import ListItem from "./components/ListItem";
 import { Task } from "./utils/types";
 import UserAvatarButton from "./components/UserAvatarButton";
 import { useBasic, useQuery } from "@basictech/react";
-import bgImage from '/bg1.jpg';
+import bgImage from '/bg2.jpg';
 
 import SilkTaskDrawer from "./components/SilkTaskDrawer";
 import Sidebar from "./components/Sidebar";
