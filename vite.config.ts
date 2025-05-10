@@ -8,12 +8,14 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg', 'tsk-logo.png'],
       manifest: {
         name: 'tsk',
         short_name: 'tsk',
         description: 'tsk - cozy task manager',
-        theme_color: '#ffffff',
+        theme_color: '#1F1B2F',
+        background_color: '#1F1B2F',
+        display: 'standalone',
         icons: [
           {
             src: 'tsk-logo-144.png',
