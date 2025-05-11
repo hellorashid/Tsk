@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { Sheet, useClientMediaQuery, type SheetViewProps } from "@silk-hq/components";
+import { motion } from 'framer-motion';
 import { TaskModal } from './TaskModal';
 import ListItem from './ListItem';
 import './SilkTaskDrawer.css';
@@ -247,25 +248,32 @@ export default function SilkTaskDrawer({
                         {/* <h3 className="text-sm font-semibold mb-1 text-gray-300 px-2 pt-1">Added:</h3> */}
                         <div className="space-y-1 py-1">
                           {createdTasks.map((task, index) => (
-                            <ListItem
+                            <motion.div
                               key={task.id}
-                              task={task}
-                              // For temporary items, updateTask and deleteTask are no-ops or disabled
-                              // Pass a function to handle local toggle for the checkbox
-                              updateTask={(id, changes) => {
-                                if (changes.hasOwnProperty('completed') && id === task.id) {
-                                  handleToggleTempTask(task.id);
-                                }
-                                // Other updates are not supported for temp items
-                              }}
-                              deleteTask={() => { /* Optionally allow removal from this list */ }}
-                              isSelected={false} // Temporary items are not "selected" in the main app sense
-                              viewMode={"cozy"} // Or a viewMode prop from parent if available
-                              accentColor={accentColor}
-                              isDarkMode={true} // Assuming drawer is always dark, or pass isDarkMode prop
-                              // Pass any other necessary props that ListItem expects
-                              // Ensure ListItem can handle a task object that might not have all DB fields
-                            />
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ type: "spring", stiffness: 300, damping: 20, duration: 0.15, delay: index * 0.03 }}
+                            >
+                              <ListItem
+                                key={task.id}
+                                task={task}
+                                // For temporary items, updateTask and deleteTask are no-ops or disabled
+                                // Pass a function to handle local toggle for the checkbox
+                                updateTask={(id, changes) => {
+                                  if (changes.hasOwnProperty('completed') && id === task.id) {
+                                    handleToggleTempTask(task.id);
+                                  }
+                                  // Other updates are not supported for temp items
+                                }}
+                                deleteTask={() => { /* Optionally allow removal from this list */ }}
+                                isSelected={false} // Temporary items are not "selected" in the main app sense
+                                viewMode={"cozy"} // Or a viewMode prop from parent if available
+                                accentColor={accentColor}
+                                isDarkMode={true} // Assuming drawer is always dark, or pass isDarkMode prop
+                                // Pass any other necessary props that ListItem expects
+                                // Ensure ListItem can handle a task object that might not have all DB fields
+                              />
+                            </motion.div>
                           ))}
                         </div>
                       </div>

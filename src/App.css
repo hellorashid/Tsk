@@ -72,22 +72,36 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.drawer-open-scale {
-  transform: scale(0.95);
-  transition: transform 0.3s ease-in-out;
-  border-radius: 10px; /* Optional: for rounded corners when scaled */
-  overflow: hidden; /* Optional: to prevent content overflow when scaled */
+/* Base styles for the section that will be scaled and its backdrop */
+.task-home {
+  /* Initial states for animatable properties */
+  transform: scale(1);
+  border-radius: 0px; /* Or your desired initial border-radius */
+  /* Transitions applied to the base element */
+  transition: transform 0.2s ease-in-out, border-radius 0.2s ease-in-out;
+  /* position: relative; is already on this element via Tailwind's 'relative' class */
 }
 
-/* Add a bit of extra styling for the backdrop if you want */
-.drawer-open-scale::before {
+.task-home::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.1); /* Darken the backdrop slightly */
-  z-index: -1; /* Ensure it's behind the scaled content */
-  transition: background-color 0.3s ease-in-out;
+  background-color: transparent; /* Initial state for backdrop */
+  z-index: 0; /* Above parent's background, below parent's content */
+  transition: background-color 0.2s ease-in-out;
+  pointer-events: none; /* Allow clicks to pass through */
+}
+
+/* Styles when the drawer is open (applied via .drawer-open-scale class on .task-home) */
+.task-home.drawer-open-scale {
+  transform: scale(0.95);
+  border-radius: 10px; /* Target border-radius when scaled */
+  overflow: hidden; /* Clips content during scale */
+}
+
+.task-home.drawer-open-scale::before {
+  background-color: rgba(0, 0, 0, 0.2); /* Dimming effect */
 }
