@@ -373,7 +373,7 @@ function Home() {
         style={{ backgroundColor: theme.accentColor }}>
         <div className="">
           <a className="btn btn-ghost normal-case text-md"
-            onClick={() => { window.modal_2.showModal(); }}
+            // onClick={() => { window.modal_2.showModal(); }}
           ><img className="w-6 h-6 mr-2" src='tsk-logo.png'/>tsk.</a>
           {/* {isNewTaskMode && 'NT'} {drawerOpen && 'DO'} */}
         </div>
@@ -443,7 +443,7 @@ function Home() {
                     key={task.id}
                     className="w-full "
                     onClick={() => {
-                      handleTaskSelect(task);
+                      // handleTaskSelect(task);
                     }}
                   >
                     <ListItem 
@@ -455,6 +455,7 @@ function Home() {
                       viewMode={viewMode}
                       accentColor={theme.accentColor}
                       isDarkMode={theme.isDarkMode}
+                      handleTaskSelect={handleTaskSelect}
                     />
                   </div>
                 ))}

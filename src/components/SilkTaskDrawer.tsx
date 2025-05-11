@@ -220,10 +220,10 @@ export default function SilkTaskDrawer({
             className="SheetWithKeyboard-view"
             style={sheetStyles}
           >
-            <Sheet.Backdrop 
+            {/* <Sheet.Backdrop 
               className="sheet-backdrop" 
               themeColorDimming="auto" 
-            />
+            /> */}
             
             <Sheet.Content 
               className="SheetWithKeyboard-content"

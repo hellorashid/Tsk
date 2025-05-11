@@ -12,6 +12,7 @@ interface ListItemProps {
   viewMode?: 'compact' | 'cozy' | 'chonky';
   accentColor?: string;
   isDarkMode?: boolean;
+  handleTaskSelect: (task: Task) => void;
 }
 
 const ListItem: React.FC<ListItemProps> = ({
@@ -21,7 +22,8 @@ const ListItem: React.FC<ListItemProps> = ({
   isSelected = false,
   viewMode = 'cozy',
   accentColor = '#1F1B2F',
-  isDarkMode = true
+  isDarkMode = true,
+  handleTaskSelect
 }) => {
   const { dbStatus } = useBasic();
   const [isEditing, setIsEditing] = useState(false);
@@ -105,7 +107,7 @@ const ListItem: React.FC<ListItemProps> = ({
 
   // Calculate background colors based on accent color
   const getBackgroundColor = () => {
-    if (isSelected) {
+    if (isSelected && !isMobile) {
       return accentColor;
     } else {
       return `${accentColor}70`; // 70% opacity
@@ -118,53 +120,55 @@ const ListItem: React.FC<ListItemProps> = ({
 
   return (
     <div
-      className={`group px-2 relative ${styles.container} ${
-        viewMode === 'compact' ? '' : 'rounded-lg'
-      } transition-all duration-200 backdrop-blur-sm hover:bg-opacity-80 ${
-        isDarkMode ? 'text-gray-100' : 'text-gray-900'
-      }`}
-      style={{ 
+      className={`group px-2 relative ${styles.container} ${viewMode === 'compact' ? '' : 'rounded-lg'
+        } transition-all duration-200 backdrop-blur-sm hover:bg-opacity-80 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'
+        }`}
+      style={{
         backgroundColor: getBackgroundColor(),
       }}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center flex-1">
-     
+
           <Checkbox
             id={task.id}
             size="md"
             checked={task.completed}
             onChange={handleCheckboxChange}
           />
-          {isEditing ? (
-            <input
-              type="text"
-              value={editedTitle}
-              onChange={handleTitleChange}
-              onBlur={handleTitleBlur}
-              onKeyDown={handleKeyDown}
-              className={`input input-sm w-full bg-transparent ${styles.title} focus:outline-none ${
-                isDarkMode ? 'text-gray-100' : 'text-gray-900'
-              }`}
-              autoFocus
-            />
-          ) : (
-            <span
-              className={`pl-2 ${styles.title} ${!isMobile ? 'cursor-pointer' : ''} ${
-                task.completed ? (isDarkMode ? "text-gray-400" : "text-gray-500") : ""
-              }`}
-              onClick={handleTitleClick}
-            >
-              {task.name}
-            </span>
-          )}
+          <div className="flex-1"
+            onClick={() => handleTaskSelect(task)}
+            onDoubleClick={() => setIsEditing(true)}
+          >
+
+            {isEditing ? (
+              <input
+                type="text"
+                value={editedTitle}
+                onChange={handleTitleChange}
+                onBlur={handleTitleBlur}
+                onKeyDown={handleKeyDown}
+                className={`input input-sm w-full bg-transparent ${styles.title} focus:outline-none ${isDarkMode ? 'text-gray-100' : 'text-gray-900'
+                  }`}
+                autoFocus
+              />
+            ) : (
+              <span
+                className={`pl-2 ${styles.title} ${!isMobile ? 'cursor-pointer' : ''} ${task.completed ? (isDarkMode ? "text-gray-400" : "text-gray-500") : ""
+                  }`}
+                onClick={handleTitleClick}
+              >
+                {task.name}
+              </span>
+            )}
+          </div>
         </div>
+
         {!isMobile && (
           <button
             onClick={handleDelete}
-            className={`rounded-full btn btn-ghost ${styles.deleteButton} transition-opacity duration-200 ${
-              isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-70'
-            }`}
+            className={`rounded-full btn btn-ghost ${styles.deleteButton} transition-opacity duration-200 ${isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-70'
+              }`}
             aria-label="Delete task"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -172,6 +176,8 @@ const ListItem: React.FC<ListItemProps> = ({
             </svg>
           </button>
         )}
+
+
       </div>
     </div>
   );
