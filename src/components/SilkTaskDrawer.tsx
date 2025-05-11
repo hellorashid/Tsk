@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { Sheet, useClientMediaQuery, type SheetViewProps } from "@silk-hq/components";
 import { TaskModal } from './TaskModal';
+import ListItem from './ListItem';
 import './SilkTaskDrawer.css';
 import './SheetWithKeyboard.css';
 
@@ -39,8 +40,8 @@ interface TaskDrawerProps {
 }
 
 export default function SilkTaskDrawer({ 
-  isOpen, 
-  setIsOpen, 
+  isOpen,
+  setIsOpen,
   task, 
   updateFunction, 
   deleteTask,
@@ -49,20 +50,25 @@ export default function SilkTaskDrawer({
   onAddTask
 }: TaskDrawerProps) {
   const titleId = React.useId();
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
-  const wasOpenRef = useRef<boolean>(false);
   const largeViewport = useClientMediaQuery("(min-width: 800px)");
   const contentPlacement = largeViewport ? "center" : "bottom";
   const tracks: SheetViewProps["tracks"] = largeViewport ? ["top", "bottom"] : "bottom";
   
-  // Ensure we have a valid task object to work with
-  const safeTask = task || {
+  const [newTaskName, setNewTaskName] = useState('');
+  const [createdTasks, setCreatedTasks] = useState<{ id: string; name: string; completed: boolean; description: string }[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Memoize the placeholder task to ensure stable reference
+  const placeholderTask = useMemo(() => ({
     id: "placeholder-task",
     name: "Untitled Task",
     description: "",
     completed: false
-  };
+  }), []);
+
+  // Ensure we have a valid task object to work with
+  const safeTask = task || placeholderTask;
 
   // Create a placeholder task for new task mode
   const emptyTask = {
@@ -72,47 +78,31 @@ export default function SilkTaskDrawer({
     completed: false
   };
 
-  // Debug the task data more extensively
+  // useEffect for resetting input state and focusing when drawer opens in new task mode
   useEffect(() => {
-    if (isOpen) {
-      console.log("=== SilkTaskDrawer Debug ===");
-      console.log("isOpen:", isOpen);
-      console.log("Task in drawer:", task);
-      console.log("Task type:", typeof task);
-      console.log("Task ID:", task?.id);
-      console.log("isNewTaskMode:", isNewTaskMode);
-      console.log("safeTask:", safeTask);
+    if (isOpen && isNewTaskMode) {
+      setNewTaskName('');
+      // createdTasks will be reset by the effect below when isOpen becomes true from a false state,
+      // or handled on initial load if isNewTaskMode is true from the start.
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
     }
-  }, [isOpen, task, isNewTaskMode, safeTask]);
-  
-  // Trigger the sheet to open when isOpen changes
-  useEffect(() => {
-    // Only trigger open if the state changed from closed to open
-    if (isOpen && !wasOpenRef.current && triggerRef.current) {
-      triggerRef.current.click();
-    }
-    
-    // Update the ref to track the current state
-    wasOpenRef.current = isOpen;
-  }, [isOpen]);
-  
-  // This effect ensures we properly sync the task data
-  useEffect(() => {
-    if (isOpen && !isNewTaskMode && task) {
-      // Force rerender when a task is opened
-      console.log("Task loaded into drawer:", task.id);
-    }
-  }, [isOpen, task, isNewTaskMode]);
+  }, [isOpen, isNewTaskMode]);
 
-  // Handle task creation when in new task mode
-  const handleNewTaskUpdate = (id: string, changes: any) => {
-    if (id === "new-task-placeholder" && changes.name && changes.name.trim() !== "") {
-      if (onAddTask) {
-        onAddTask(changes.name);
-        setIsOpen(false);
-      }
+  // useEffect for resetting all local new task state when drawer is closed or opened anew
+  useEffect(() => {
+    if (!isOpen) {
+      setNewTaskName('');
+      setCreatedTasks([]);
+      // console.log("SilkTaskDrawer: Drawer closed (isOpen is false), cleared newTaskName and createdTasks.");
+    } else if (isNewTaskMode) {
+      // If opening in new task mode, ensure createdTasks is clear for the new session.
+      // This covers initial open and reopening in new task mode.
+      setCreatedTasks([]); 
+      // console.log("SilkTaskDrawer: Drawer opened in new task mode, ensured createdTasks is empty.");
     }
-  };
+  }, [isOpen, isNewTaskMode]);
 
   // Dismiss keyboard when sheet is moved
   const travelHandler = useCallback<Exclude<SheetViewProps["onTravel"], undefined>>(({ progress }) => {
@@ -123,17 +113,32 @@ export default function SilkTaskDrawer({
       viewRef.current.focus();
     }
     
-    // Close the drawer when user swipes it away (less than 30%)
-    if (progress < 0.3) {
-      setIsOpen(false);
+    // Close the drawer when user swipes it away - now handled by onPresentedChange
+    // if (progress < 0.3) {
+    //   setIsOpen(false); 
+    // }
+  }, []); // Removed setIsOpen from dependencies as it's no longer called here
+
+  // Handle task creation when in new task mode
+  const handleNewTaskInternal = () => {
+    if (newTaskName.trim() !== "" && onAddTask) {
+      onAddTask(newTaskName.trim());
+      // Add as an object to createdTasks, including an empty description
+      const newId = `temp-${Date.now()}`;
+      setCreatedTasks(prev => [...prev, { id: newId, name: newTaskName.trim(), completed: false, description: '' }]);
+      setNewTaskName(''); // Clear input for next task
+      setTimeout(() => inputRef.current?.focus(), 0); // Re-focus after state update
     }
-  }, [setIsOpen]);
-  
-  // Handle sheet close via onChange event
-  const handleSheetClose = useCallback(() => {
-    console.log("Sheet closed via onChange");
-    setIsOpen(false);
-  }, [setIsOpen]);
+  };
+
+  // Function to toggle the completed state of a temporarily created task
+  const handleToggleTempTask = (tempId: string) => {
+    setCreatedTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === tempId ? { ...task, completed: !task.completed } : task
+      )
+    );
+  };
 
   // Use inline styles to ensure the sheet is tall enough
   const sheetStyles = {
@@ -198,18 +203,11 @@ export default function SilkTaskDrawer({
         `}
       </style>
       
-      <Sheet.Root license="commercial">
-        <Sheet.Trigger asChild>
-          <button 
-            ref={triggerRef} 
-            className="hidden" 
-            aria-hidden="true"
-            data-testid="silk-sheet-trigger"
-          >
-            Open Sheet
-          </button>
-        </Sheet.Trigger>
-        
+      <Sheet.Root 
+        license="commercial"
+        presented={isOpen}
+        onPresentedChange={setIsOpen}
+      >
         <Sheet.Portal>
           <Sheet.View
             ref={viewRef}
@@ -218,7 +216,6 @@ export default function SilkTaskDrawer({
             swipeOvershoot={false}
             nativeEdgeSwipePrevention={true}
             onTravel={travelHandler}
-            onChange={handleSheetClose}
             className="SheetWithKeyboard-view"
             style={sheetStyles}
           >
@@ -243,13 +240,68 @@ export default function SilkTaskDrawer({
                 <div className="pull-handle" />
                 
                 {isNewTaskMode ? (
-                  <TaskModal
-                    task={emptyTask}
-                    new={true}
-                    updateFunction={handleNewTaskUpdate}
-                    inDrawer={true}
-                    accentColor={accentColor}
-                  />
+                  <div className="flex flex-col h-full">
+                    {/* List of created tasks */}
+                    {createdTasks.length > 0 && (
+                      <div className="mb-4 p-1 bg-white/5 rounded-md overflow-y-auto max-h-60 styled-scrollbar">
+                        {/* <h3 className="text-sm font-semibold mb-1 text-gray-300 px-2 pt-1">Added:</h3> */}
+                        <div className="space-y-1 py-1">
+                          {createdTasks.map((task, index) => (
+                            <ListItem
+                              key={task.id}
+                              task={task}
+                              // For temporary items, updateTask and deleteTask are no-ops or disabled
+                              // Pass a function to handle local toggle for the checkbox
+                              updateTask={(id, changes) => {
+                                if (changes.hasOwnProperty('completed') && id === task.id) {
+                                  handleToggleTempTask(task.id);
+                                }
+                                // Other updates are not supported for temp items
+                              }}
+                              deleteTask={() => { /* Optionally allow removal from this list */ }}
+                              isSelected={false} // Temporary items are not "selected" in the main app sense
+                              viewMode={"cozy"} // Or a viewMode prop from parent if available
+                              accentColor={accentColor}
+                              isDarkMode={true} // Assuming drawer is always dark, or pass isDarkMode prop
+                              // Pass any other necessary props that ListItem expects
+                              // Ensure ListItem can handle a task object that might not have all DB fields
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Input Card */}
+                    <div className="p-3 bg-white/10 rounded-lg shadow-md mb-auto">
+                      <input
+                        ref={inputRef}
+                        type="text"
+                        value={newTaskName}
+                        onChange={(e) => setNewTaskName(e.target.value)}
+                        placeholder="Enter task name..."
+                        className="w-full p-2 rounded-md bg-transparent text-white placeholder-gray-300 focus:outline-none"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            handleNewTaskInternal();
+                          }
+                        }}
+                      />
+                    </div>
+
+                    {/* Plus Button */}
+                    <div className="mt-4 flex justify-center sticky bottom-4">
+                      <button
+                        onClick={handleNewTaskInternal}
+                        className="btn btn-primary btn-circle btn-lg text-white shadow-lg"
+                        aria-label="Add Task"
+                        disabled={!newTaskName.trim()}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
                 ) : isLoadingTask ? (
                   <div className="text-center p-8">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mx-auto mb-4"></div>
