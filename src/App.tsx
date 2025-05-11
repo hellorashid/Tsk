@@ -383,7 +383,7 @@ function Home() {
   };
 
   return (
-    <section className={`flex-1 task-home w-full h-screen max-h-screen relative overflow-hidden ${isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'}`}
+    <section className={`flex-1 task-home w-full h-screen max-h-screen relative overflow-hidden ${isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} ${isMobile && drawerOpen ? 'drawer-open-scale' : ''}`}
       style={{
         backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4)), url(${bgImage})`,
         backgroundSize: 'cover',

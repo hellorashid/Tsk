@@ -71,3 +71,23 @@ body {
   outline: none;
   border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
+
+.drawer-open-scale {
+  transform: scale(0.95);
+  transition: transform 0.3s ease-in-out;
+  border-radius: 10px; /* Optional: for rounded corners when scaled */
+  overflow: hidden; /* Optional: to prevent content overflow when scaled */
+}
+
+/* Add a bit of extra styling for the backdrop if you want */
+.drawer-open-scale::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.1); /* Darken the backdrop slightly */
+  z-index: -1; /* Ensure it's behind the scaled content */
+  transition: background-color 0.3s ease-in-out;
+}
