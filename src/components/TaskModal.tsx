@@ -2,6 +2,7 @@
 
 import { Task } from "../utils/types";
 import { useState, useEffect, useRef } from 'react';
+import Checkbox from './Checkbox';
 
 export const TaskModal = ({
   task, updateFunction, inDrawer = false, deleteTask, new: isNew = false, accentColor = '#1F1B2F', onDelete
@@ -23,7 +24,7 @@ export const TaskModal = ({
   const [taskName, setTaskName] = useState(task?.name || '');
   const [taskDescription, setTaskDescription] = useState(task?.description || '');
   const nameInputRef = useRef(null);
-  
+
   // Focus the name input when creating a new task
   useEffect(() => {
     if (isNew && nameInputRef.current) {
@@ -108,27 +109,30 @@ export const TaskModal = ({
 
   return (
     <>
-      <div 
+      <div
         className={`${inDrawer ? "text-white" : "modal-box bg-black"} p-4`}
         style={inDrawer ? { backgroundColor: getBackgroundColor() } : {}}
       >
         <div className="task-details flex flex-col justify-between rounded-md">
           <div className="task-id flex items-start w-full my-4 gap-3">
-            <input
-              type="checkbox"
-              checked={taskCompleted}
-              onChange={() => {
-                const newState = !taskCompleted;
-                setTaskCompleted(newState);
-                if (task?.id) {
-                  updateFunction(task.id, { 
-                    completed: newState
-                  });
-                }
-              }}
-              className="scale-140 checkbox checkbox-accent mt-2"
-            />
-            
+            <div className="mt-2">
+
+              <Checkbox
+                id={task?.id}
+                size="md"
+                checked={taskCompleted}
+                onChange={() => {
+                  const newState = !taskCompleted;
+                  setTaskCompleted(newState);
+                  if (task?.id) {
+                    updateFunction(task.id, {
+                      completed: newState
+                    });
+                  }
+                }}
+              />
+            </div>
+
             <textarea
               ref={nameInputRef}
               value={taskName}
@@ -140,14 +144,14 @@ export const TaskModal = ({
               rows={1}
               style={{ height: 'auto' }}
             />
-            
+
             {isNew && (
               <div className="text-sm opacity-70">New Task</div>
             )}
           </div>
-          
+
           <div className="border-t border-slate-700 border-solid w-full mb-4 rounded-md text-white"></div>
-          
+
           <textarea
             value={taskDescription || ""}
             onChange={handleDescriptionChange}
@@ -157,7 +161,7 @@ export const TaskModal = ({
             placeholder="Some description..."
             style={{ height: 'auto' }}
           />
-          
+
           {!isNew && deleteTask && (
             <div className="mt-auto pt-4 flex justify-end">
               <button

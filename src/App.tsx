@@ -15,6 +15,7 @@ import Sidebar from "./components/Sidebar";
 import TaskDetailsSidebar from "./components/TaskDetailsSidebar";
 import SettingsSidebar from "./components/SettingsSidebar";
 import SettingsDrawer from "./components/SettingsDrawer";
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
 
  function ExpandableInput() {
@@ -146,6 +147,7 @@ function StatusIcon( {status}: {status: string}) {
 
 function Home() {
   const { db, dbStatus } = useBasic();
+  const { theme, setAccentColor, setIsDarkMode, setFontStyle } = useTheme();
 
   const tasks = useQuery( () => db.collection("tasks").getAll())
   
@@ -158,12 +160,9 @@ function Home() {
   const [showSettings, setShowSettings] = useState(false);
   const [viewMode, setViewMode] = useState('cozy');
   const [customFilters, setCustomFilters] = useState([]);
-  const [accentColor, setAccentColor] = useState('#1F1B2F');
   const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [isNewTaskMode, setIsNewTaskMode] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [fontStyle, setFontStyle] = useState<'mono' | 'sans' | 'serif'>('sans');
 
   useEffect(() => {
     const handleResize = () => {
@@ -173,27 +172,6 @@ function Home() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  // Apply accent color to CSS variables
-  useEffect(() => {
-    document.documentElement.style.setProperty('--accent-color', accentColor);
-  }, [accentColor]);
-
-  // Apply theme to document
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-    } else {
-      document.documentElement.classList.add('light');
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
-
-  // Apply font style to document
-  useEffect(() => {
-    document.documentElement.style.setProperty('--font-style', fontStyle);
-  }, [fontStyle]);
 
   const handleThemeChange = (isDark: boolean) => {
     setIsDarkMode(isDark);
@@ -383,7 +361,7 @@ function Home() {
   };
 
   return (
-    <section className={`flex-1 task-home w-full h-screen max-h-screen relative overflow-hidden ${isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} ${isMobile && drawerOpen ? 'drawer-open-scale' : ''}`}
+    <section className={`flex-1 task-home w-full h-screen max-h-screen relative overflow-hidden ${theme.isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} ${isMobile && drawerOpen ? 'drawer-open-scale' : ''}`}
       style={{
         backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4)), url(${bgImage})`,
         backgroundSize: 'cover',
@@ -392,7 +370,7 @@ function Home() {
         paddingBottom: 'env(safe-area-inset-bottom, 20px)'
       }}>
       <div className=" h-12 rounded-b-md md:rounded-b-none bg-opacity-95 shadow-md backdrop-blur-sm flex justify-between items-center sticky top-0 z-100"
-        style={{ backgroundColor: accentColor }}>
+        style={{ backgroundColor: theme.accentColor }}>
         <div className="">
           <a className="btn btn-ghost normal-case text-md"
             onClick={() => { window.modal_2.showModal(); }}
@@ -434,7 +412,7 @@ function Home() {
               <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
             </svg>
           </button>
-          <UserAvatarButton accentColor={accentColor} />
+          <UserAvatarButton accentColor={theme.accentColor} />
         </div>
       </div>
 
@@ -445,8 +423,8 @@ function Home() {
             activeFilter={activeFilter}
             onFilterChange={setActiveFilter}
             onCreateFilter={handleCreateFilter}
-            accentColor={accentColor}
-            isDarkMode={isDarkMode}
+            accentColor={theme.accentColor}
+            isDarkMode={theme.isDarkMode}
           />
         </div>
         
@@ -475,8 +453,8 @@ function Home() {
                       updateTask={updateTask}
                       isSelected={selectedTask?.id === task.id}
                       viewMode={viewMode}
-                      accentColor={accentColor}
-                      isDarkMode={isDarkMode}
+                      accentColor={theme.accentColor}
+                      isDarkMode={theme.isDarkMode}
                     />
                   </div>
                 ))}
@@ -500,8 +478,8 @@ function Home() {
               onClose={handleCloseTaskDetails}
               onUpdate={updateTask}
               onDelete={deleteTask}
-              accentColor={accentColor}
-              isDarkMode={isDarkMode}
+              accentColor={theme.accentColor}
+              isDarkMode={theme.isDarkMode}
             />
           </div>
         )}
@@ -514,11 +492,11 @@ function Home() {
               onViewModeChange={handleViewModeChange}
               currentViewMode={viewMode}
               onAccentColorChange={handleAccentColorChange}
-              currentAccentColor={accentColor}
+              currentAccentColor={theme.accentColor}
               onThemeChange={handleThemeChange}
-              isDarkMode={isDarkMode}
+              isDarkMode={theme.isDarkMode}
               onFontStyleChange={handleFontStyleChange}
-              currentFontStyle={fontStyle}
+              currentFontStyle={theme.fontStyle}
             />
           </div>
         )}
@@ -532,7 +510,7 @@ function Home() {
           task={selectedTask}
           updateFunction={updateTask}
           deleteTask={deleteTask}
-          accentColor={accentColor}
+          accentColor={theme.accentColor}
           isNewTaskMode={isNewTaskMode}
           onAddTask={handleAddTask}
         />
@@ -546,11 +524,11 @@ function Home() {
           onViewModeChange={handleViewModeChange}
           currentViewMode={viewMode}
           onAccentColorChange={handleAccentColorChange}
-          currentAccentColor={accentColor}
+          currentAccentColor={theme.accentColor}
           onThemeChange={handleThemeChange}
-          isDarkMode={isDarkMode}
+          isDarkMode={theme.isDarkMode}
           onFontStyleChange={handleFontStyleChange}
-          currentFontStyle={fontStyle}
+          currentFontStyle={theme.fontStyle}
         />
       )}
 
@@ -598,9 +576,11 @@ function Home() {
 
 function App() {
   return (
-    <div className="App">
-      <Home />
-    </div>
+    <ThemeProvider>
+      <div className="App">
+        <Home />
+      </div>
+    </ThemeProvider>
   );
 }
 

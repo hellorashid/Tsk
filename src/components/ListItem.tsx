@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Task } from "../utils/types";
 import { useBasic } from "@basictech/react";
-
+import Checkbox from "./Checkbox";
 interface ListItemProps {
   task: Task;
   deleteTask: (id: string) => void;
@@ -129,12 +129,12 @@ const ListItem: React.FC<ListItemProps> = ({
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center flex-1">
-          <input
-            type="checkbox"
+     
+          <Checkbox
+            id={task.id}
+            size="md"
             checked={task.completed}
             onChange={handleCheckboxChange}
-            onClick={(e) => e.stopPropagation()}
-            className={`checkbox ${styles.checkbox} mr-2 ${isDarkMode ? 'border-gray-300' : 'border-gray-700'}`}
           />
           {isEditing ? (
             <input
@@ -150,7 +150,7 @@ const ListItem: React.FC<ListItemProps> = ({
             />
           ) : (
             <span
-              className={`${styles.title} ${!isMobile ? 'cursor-pointer' : ''} ${
+              className={`pl-2 ${styles.title} ${!isMobile ? 'cursor-pointer' : ''} ${
                 task.completed ? (isDarkMode ? "text-gray-400" : "text-gray-500") : ""
               }`}
               onClick={handleTitleClick}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useBasic , useQuery} from "@basictech/react";
+import { useBasic, useQuery } from "@basictech/react";
 import { Task } from '../utils/types';
-
+import Checkbox from './Checkbox';
 interface TaskDetailsSidebarProps {
   task: Task | null;
   onClose: () => void;
@@ -19,10 +19,10 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
   accentColor = '#1F1B2F',
   isDarkMode = true
 }) => {
-  const {db } = useBasic()
-  const taskDetails = useQuery( () => db.collection('tasks').get(task?.id) )
+  const { db } = useBasic()
+  const taskDetails = useQuery(() => db.collection('tasks').get(task?.id))
 
-  
+
   const [title, setTitle] = useState(task?.name || '');
   const [description, setDescription] = useState(task?.description || '');
 
@@ -101,19 +101,20 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
   if (!task) return null;
 
   return (
-    <div 
-      className={`w-full h-full p-6 overflow-y-auto backdrop-blur-sm flex flex-col rounded-md ${
-        isDarkMode ? 'text-gray-100' : 'text-gray-900'
-      }`}
+    <div
+      className={`w-full h-full p-6 overflow-y-auto backdrop-blur-sm flex flex-col rounded-md ${isDarkMode ? 'text-gray-100' : 'text-gray-900'
+        }`}
       style={{ backgroundColor: getBackgroundColor() }}
     >
       <div className="flex items-start mb-2">
-        <input
-          type="checkbox"
-          className="checkbox checkbox-sm mr-1 mt-2"
-          checked={taskDetails?.completed}
-          onChange={handleCompletedChange}
-        />
+        <div className="mt-2">
+          <Checkbox
+            id={taskDetails?.id}
+            checked={taskDetails?.completed}
+            onChange={handleCompletedChange}
+            size="md"
+          />
+        </div>
         <textarea
           value={title}
           onChange={handleTitleChange}
@@ -142,7 +143,7 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
       <div className="mt-auto pt-4">
         <button
           onClick={handleDelete}
-          className="text-gray-400 hover:text-white focus:outline-none"
+          className="text-gray-400 hover:text-white focus:outline-none bg-transparent"
           aria-label="Delete task"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

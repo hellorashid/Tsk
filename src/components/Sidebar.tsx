@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 
 interface SidebarProps {
   filters: {
@@ -13,9 +14,9 @@ interface SidebarProps {
   isDarkMode?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ 
-  filters, 
-  activeFilter, 
+const Sidebar: React.FC<SidebarProps> = ({
+  filters,
+  activeFilter,
   onFilterChange,
   onCreateFilter,
   accentColor = '#1F1B2F',
@@ -24,6 +25,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [isCreating, setIsCreating] = useState(false);
   const [newFilterName, setNewFilterName] = useState('');
   const [newFilterLabels, setNewFilterLabels] = useState('');
+  const [isNewFilterButtonHovered, setIsNewFilterButtonHovered] = useState(false);
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
 
   const handleCreateFilter = () => {
     if (newFilterName.trim() && onCreateFilter) {
@@ -32,7 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         .split(',')
         .map(label => label.trim())
         .filter(label => label !== '');
-      
+
       onCreateFilter(newFilterName.trim(), labels);
       setNewFilterName('');
       setNewFilterLabels('');
@@ -40,26 +43,39 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  const getStyle = (filter : any) => { 
+    if (activeFilter === filter.id) {
+      return {
+        backgroundColor: `${accentColor}80`,
+        backgroundOpacity: 1
+      }
+    } else {
+      return {
+        backgroundColor: `${accentColor}40`,
+        backgroundOpacity: 0.4,
+      }
+    }
+  }
+
+
   return (
-    <div className={`w-48 h-full p-0 mt-4 overflow-y-auto flex flex-col ${
-      isDarkMode ? 'text-gray-100' : 'text-gray-900' 
-    }`}>
-      <div className={`bg-opacity-40 rounded-r-md py-0 backdrop-blur-sm overflow-hidden`}>
+    <div
+      className={`w-48 h-full p-0 mt-4 overflow-y-auto flex flex-col ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}
+      onMouseEnter={() => setIsSidebarHovered(true)}
+      onMouseLeave={() => setIsSidebarHovered(false)}
+    >
+      <div
+        className={`rounded-r-md py-0 backdrop-blur-sm overflow-hidden`}
+        style={{ backgroundColor: `${accentColor}66` }}
+      >
         {filters.map((filter) => (
           <button
             key={filter.id}
             onClick={() => onFilterChange(filter.id)}
+            style={getStyle(filter)}
             className={`w-full text-left px-4 py-2 transition-colors focus:outline-none 
-              ${
-              activeFilter === filter.id
-                ? `bg-[${accentColor}] bg-opacity-80`
-                : `bg-[${accentColor}] bg-opacity-40 hover:bg-opacity-30`
-            }
-
-            ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}
-         
-            `
-          }
+              hover:opacity-70 
+            ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}
           >
             <div className="flex justify-between items-center">
               <span className="text-sm">{filter.label}</span>
@@ -73,9 +89,9 @@ const Sidebar: React.FC<SidebarProps> = ({
         ))}
       </div>
 
-      <div className="mt-4 pt-4 ">
+      <div className="mt-0 pt-2 ">
         {isCreating ? (
-          <div className="space-y-2">
+          <div className="space-y-2 p-2">
             <input
               type="text"
               value={newFilterName}
@@ -122,22 +138,31 @@ const Sidebar: React.FC<SidebarProps> = ({
                   setNewFilterName('');
                   setNewFilterLabels('');
                 }}
-                className="btn btn-sm btn-ghost"
+                className={`btn btn-sm btn-ghost ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} hover:bg-[${accentColor}]/15 focus-visible:bg-[${accentColor}]/15`}
               >
                 Cancel
               </button>
             </div>
           </div>
         ) : (
-          <button
+          <motion.button
+            initial="hidden"
+            animate={isSidebarHovered ? "visible" : "hidden"}
+            variants={{
+              visible: { opacity: 1, y: 0 },
+              hidden: { opacity: 0, y: -10 },
+            }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
             onClick={() => setIsCreating(true)}
-            className="w-full btn btn-sm btn-ghost text-slate-200 hover:bg-white/10"
+            className={`w-full rounded-none rounded-r-md btn btn-sm btn-ghost ${isDarkMode ? 'text-slate-200' : 'text-gray-800'}`}
+            onMouseEnter={() => setIsNewFilterButtonHovered(true)}
+            onMouseLeave={() => setIsNewFilterButtonHovered(false)}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             New Filter
-          </button>
+          </motion.button>
         )}
       </div>
     </div>
