@@ -85,9 +85,9 @@ export default function SilkTaskDrawer({
       setNewTaskName('');
       // createdTasks will be reset by the effect below when isOpen becomes true from a false state,
       // or handled on initial load if isNewTaskMode is true from the start.
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 0);
+      // setTimeout(() => {
+      //   inputRef.current?.focus();
+      // }, 0);
     }
   }, [isOpen, isNewTaskMode]);
 
@@ -205,7 +205,7 @@ export default function SilkTaskDrawer({
       </style>
       
       <Sheet.Root 
-        license="commercial"
+        license="non-commercial"
         presented={isOpen}
         onPresentedChange={setIsOpen}
       >
@@ -287,6 +287,7 @@ export default function SilkTaskDrawer({
                         value={newTaskName}
                         onChange={(e) => setNewTaskName(e.target.value)}
                         placeholder="Enter task name..."
+                        autoFocus={true}
                         className="w-full p-2 rounded-md bg-transparent text-white placeholder-gray-300 focus:outline-none"
                         onKeyPress={(e) => {
                           if (e.key === 'Enter') {

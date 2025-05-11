@@ -73,7 +73,7 @@ export default function SettingsDrawer({
   }, [setIsOpen]);
   
   return (
-    <Sheet.Root license="commercial">
+    <Sheet.Root license="non-commercial">
       <Sheet.Trigger asChild>
         <button 
           ref={triggerRef} 
@@ -100,9 +100,9 @@ export default function SettingsDrawer({
             flexDirection: 'column',
           }}
         >
-          {/* <Sheet.Backdrop 
+          <Sheet.Backdrop 
             themeColorDimming="auto" 
-          /> */}
+          />
           <Sheet.Content 
             style={{
               backgroundColor: isDarkMode ? '#1F1B2F' : '#FFFFFF', // Adjust based on theme

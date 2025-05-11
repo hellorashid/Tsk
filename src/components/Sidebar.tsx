@@ -40,46 +40,26 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  // Calculate background colors based on accent color
-  const getActiveFilterStyle = () => {
-    return {
-      backgroundColor: `${accentColor}50`, // 80% opacity
-      color: 'white'
-    };
-  };
-
-  const getHoverFilterStyle = () => {
-    return {
-      backgroundColor: `${accentColor}40`, // 40% opacity
-      color: 'rgb(226 232 240)' // text-slate-200
-    };
-  };
-
   return (
     <div className={`w-48 h-full p-0 mt-4 overflow-y-auto flex flex-col ${
-      isDarkMode ? 'text-gray-100' : 'text-gray-900'
+      isDarkMode ? 'text-gray-100' : 'text-gray-900' 
     }`}>
-      <div className={`bg-[${accentColor}] rounded-r-md py-0 bg-opacity-10 backdrop-blur-sm overflow-hidden`}>
+      <div className={`bg-opacity-40 rounded-r-md py-0 backdrop-blur-sm overflow-hidden`}>
         {filters.map((filter) => (
           <button
             key={filter.id}
             onClick={() => onFilterChange(filter.id)}
-            className={`w-full text-left px-4 py-2 transition-colors focus:outline-none ${
-              activeFilter === filter.id ? '' : ''
-            }`}
-            style={activeFilter === filter.id ? getActiveFilterStyle() : {}}
-            onMouseOver={(e) => {
-              if (activeFilter !== filter.id) {
-                e.currentTarget.style.backgroundColor = getHoverFilterStyle().backgroundColor;
-                e.currentTarget.style.color = getHoverFilterStyle().color;
-              }
-            }}
-            onMouseOut={(e) => {
-              if (activeFilter !== filter.id) {
-                e.currentTarget.style.backgroundColor = '';
-                e.currentTarget.style.color = '';
-              }
-            }}
+            className={`w-full text-left px-4 py-2 transition-colors focus:outline-none 
+              ${
+              activeFilter === filter.id
+                ? `bg-[${accentColor}] bg-opacity-80`
+                : `bg-[${accentColor}] bg-opacity-40 hover:bg-opacity-30`
+            }
+
+            ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}
+         
+            `
+          }
           >
             <div className="flex justify-between items-center">
               <span className="text-sm">{filter.label}</span>

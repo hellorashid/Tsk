@@ -13,6 +13,7 @@
     "@basictech/react": "^0.6.0-beta.0",
     "@heroicons/react": "^2.0.18",
     "@radix-ui/react-popover": "^1.1.13",
+    "@radix-ui/react-switch": "^1.2.4",
     "@silk-hq/components": "^0.8.15",
     "motion": "^12.6.3",
     "react": "^18.2.0",

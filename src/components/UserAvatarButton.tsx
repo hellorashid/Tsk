@@ -48,7 +48,7 @@ function UserAvatarButton() {
             )}
           </button>
           {hasNotifications && (
-            <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${getNotificationColor()} rounded-full border-2 border-base-300`}></span>
+            <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${getNotificationColor()} rounded-full border-1 border-base-300`}></span>
           )}
         </div>
       </Popover.Trigger>
