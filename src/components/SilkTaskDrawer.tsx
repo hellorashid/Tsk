@@ -257,6 +257,7 @@ export default function SilkTaskDrawer({
                               <ListItem
                                 key={task.id}
                                 task={task}
+                                handleTaskSelect={() => {}}
                                 // For temporary items, updateTask and deleteTask are no-ops or disabled
                                 // Pass a function to handle local toggle for the checkbox
                                 updateTask={(id, changes) => {
