@@ -108,7 +108,7 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
     >
       <button
         onClick={onClose}
-        className={`absolute top-4 right-4 ${isDarkMode ? 'text-gray-400 hover:text-gray-100' : 'text-gray-600 hover:text-gray-900'
+        className={`absolute bg-transparent border-none top-4 right-4 ${isDarkMode ? 'text-gray-400 hover:text-gray-100' : 'text-gray-600 hover:text-gray-900'
           } focus:outline-none`}
         aria-label="Close task details"
       >
