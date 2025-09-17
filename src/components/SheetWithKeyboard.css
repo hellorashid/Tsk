@@ -18,8 +18,8 @@
   background-color: transparent !important;
 }
 
-/* Remove any default backgrounds */
-[role="dialog"] {
+/* Remove any default backgrounds from sheet components only */
+.SheetWithKeyboard-view[role="dialog"] {
   background-color: transparent !important;
 }
 

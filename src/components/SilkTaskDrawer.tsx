@@ -196,9 +196,9 @@ export default function SilkTaskDrawer({
       {/* Add a style tag for direct overrides */}
       <style>
         {`
-          [role="dialog"],
-          [role="dialog"] > div,
-          [role="dialog"] div:not(.silk-sheet-content) {
+          .SheetWithKeyboard-view[role="dialog"],
+          .SheetWithKeyboard-view[role="dialog"] > div,
+          .SheetWithKeyboard-view[role="dialog"] div:not(.silk-sheet-content) {
             background-color: transparent !important;
           }
         `}

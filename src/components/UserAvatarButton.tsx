@@ -2,6 +2,7 @@ import { useState } from "react";
 //@ts-ignore
 import { useBasic } from "@basictech/react"
 import * as Popover from '@radix-ui/react-popover';
+import packageJson from '../../package.json';
 
 function UserAvatarButton() {
   const { signin, signout, isSignedIn, user, isAuthReady, dbStatus } = useBasic();
@@ -54,7 +55,7 @@ function UserAvatarButton() {
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className="shadow-lg  w-64 bg-[#1F1B2F]"
+          className="shadow-lg w-64 bg-[#1F1B2F] rounded-lg"
           sideOffset={5}
           align="end"
         >
@@ -67,17 +68,24 @@ function UserAvatarButton() {
 
                 <div className="border-t border-gray-600 my-4"></div>
 
-                <button onClick={handleLogout}><a className="text-grey-100">Logout</a></button>
+                <button onClick={handleLogout}><a className="text-white hover:text-gray-200">Logout</a></button>
+
+                <div className="border-t border-gray-600 my-4"></div>
+                
+                <div className="text-xs text-gray-300 font-mono">
+                  <div>app version: {packageJson.version}</div>
+                  <div>basic version: {packageJson.dependencies['@basictech/react']}</div>
+                </div>
 
               </div>
             ) : (
               <div className="p-2 text-left bg-[#1F1B2F]">
-                <h6>You can always use tsk without creating an account. Your data will only be stored in your browser. </h6>
+                <h6 className="text-white mb-2">You can always use tsk without creating an account. Your data will only be stored in your browser. </h6>
 
-                <h6>Login for more features:</h6>
-                <p> - sync between mobile & desktop</p>
-                <p> - share tasks with frens</p>
-                <p> - backup your tasks</p>
+                <h6 className="text-white mb-2">Login for more features:</h6>
+                <p className="text-gray-200"> - sync between mobile & desktop</p>
+                <p className="text-gray-200"> - share tasks with frens</p>
+                <p className="text-gray-200"> - backup your tasks</p>
 
                 <div className="border-t border-gray-600 my-4"></div>
 
@@ -89,7 +97,14 @@ function UserAvatarButton() {
                   Login with Basic
                 </button>
 
-                <p className="pt-2 font-mono">tsk uses Basic for login, so your data is always private.</p>
+                <p className="pt-2 font-mono text-gray-300">tsk uses Basic for login, so your data is always private.</p>
+                
+                <div className="border-t border-gray-600 my-4"></div>
+                
+                <div className="text-xs text-gray-300 font-mono">
+                  <div>app version: {packageJson.version}</div>
+                  <div>basic version: {packageJson.dependencies['@basictech/react']}</div>
+                </div>
               </div>
             )}
           </div>
