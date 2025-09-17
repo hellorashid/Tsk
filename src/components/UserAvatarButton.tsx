@@ -48,7 +48,7 @@ function UserAvatarButton() {
             )}
           </button>
           {hasNotifications && (
-            <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${getNotificationColor()} rounded-full border-1 border-base-300`}></span>
+            <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${getNotificationColor()} rounded-full border border-gray-300`}></span>
           )}
         </div>
       </Popover.Trigger>
@@ -65,7 +65,7 @@ function UserAvatarButton() {
                   hi, {user?.name}
                 </p>
 
-                <div className="divider"></div>
+                <div className="border-t border-gray-600 my-4"></div>
 
                 <button onClick={handleLogout}><a className="text-grey-100">Logout</a></button>
 
@@ -79,11 +79,11 @@ function UserAvatarButton() {
                 <p> - share tasks with frens</p>
                 <p> - backup your tasks</p>
 
-                <div className="divider"></div>
+                <div className="border-t border-gray-600 my-4"></div>
 
 
                 <button
-                  className="btn btn-md w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-md"
+                  className="px-4 py-2 w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-md transition-colors duration-200"
                   onClick={handleLogin}
                 >
                   Login with Basic

@@ -130,13 +130,13 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
           onChange={handleTitleChange}
           onBlur={handleTitleBlur}
           onKeyDown={(e) => handleKeyDown(e, 'title')}
-          className="textarea textarea-sm w-full bg-transparent focus:outline-none text-lg font-medium min-h-[2rem] resize-none overflow-hidden"
+          className="px-2 py-1 w-full bg-transparent focus:outline-none focus:ring-2 focus:ring-white/30 text-lg font-medium min-h-[2rem] resize-none overflow-hidden border border-transparent hover:border-white/20 rounded"
           rows={1}
           style={{ height: 'auto' }}
         />
       </div>
 
-      <div className="divider my-2"></div>
+      <div className="border-t border-gray-600 my-4"></div>
 
       <div className="mt-2">
         <textarea
@@ -144,7 +144,7 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
           onChange={handleDescriptionChange}
           onBlur={handleDescriptionBlur}
           onKeyDown={(e) => handleKeyDown(e, 'description')}
-          className="textarea textarea-sm w-full bg-transparent focus:outline-none min-h-[100px] description resize-none"
+          className="px-2 py-1 w-full bg-transparent focus:outline-none focus:ring-2 focus:ring-white/30 min-h-[100px] description resize-none border border-transparent hover:border-white/20 rounded"
           placeholder="Add a description..."
           style={{ height: 'auto' }}
         />

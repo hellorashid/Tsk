@@ -43,22 +43,6 @@ body {
   background-color: var(--accent-color) !important;
 }
 
-.bg-\[#1F1B2F\] {
-  background-color: var(--accent-color) !important;
-}
-
-.bg-\[#2A2535\] {
-  background-color: color-mix(in srgb, var(--accent-color) 80%, #2A2535) !important;
-}
-
-.bg-\[#1F1B2F\]\/70 {
-  background-color: color-mix(in srgb, var(--accent-color) 70%, transparent) !important;
-}
-
-.bg-\[#2A2535\]\/50 {
-  background-color: color-mix(in srgb, var(--accent-color) 50%, #2A2535) !important;
-}
-
 /* Styles for the empty content placeholder in TaskModal */
 [contenteditable].empty-content:empty:before {
   content: attr(data-placeholder);

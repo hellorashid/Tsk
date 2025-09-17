@@ -97,7 +97,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               value={newFilterName}
               onChange={(e) => setNewFilterName(e.target.value)}
               placeholder="Filter name"
-              className="input input-sm w-full bg-white/10 text-white placeholder-white/50 focus:outline-none"
+              className="px-3 py-2 text-sm w-full bg-white/10 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 rounded-md border border-white/20"
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -114,7 +114,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               value={newFilterLabels}
               onChange={(e) => setNewFilterLabels(e.target.value)}
               placeholder="Labels (comma separated)"
-              className="input input-sm w-full bg-white/10 text-white placeholder-white/50 focus:outline-none"
+              className="px-3 py-2 text-sm w-full bg-white/10 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 rounded-md border border-white/20"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   handleCreateFilter();
@@ -128,7 +128,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="flex space-x-2">
               <button
                 onClick={handleCreateFilter}
-                className="btn btn-sm btn-primary flex-1"
+                className="px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors duration-200 flex-1"
               >
                 Create
               </button>
@@ -138,7 +138,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   setNewFilterName('');
                   setNewFilterLabels('');
                 }}
-                className={`btn btn-sm btn-ghost ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} hover:bg-[${accentColor}]/15 focus-visible:bg-[${accentColor}]/15`}
+                className={`px-3 py-2 text-sm bg-transparent hover:bg-white/10 rounded-md transition-colors duration-200 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}
               >
                 Cancel
               </button>
@@ -154,7 +154,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
             onClick={() => setIsCreating(true)}
-            className={`w-full rounded-none rounded-r-md btn btn-sm btn-ghost ${isDarkMode ? 'text-slate-200' : 'text-gray-800'}`}
+            className={`w-full rounded-none rounded-r-md px-3 py-2 text-sm bg-transparent hover:bg-white/10 transition-colors duration-200 flex items-center ${isDarkMode ? 'text-slate-200' : 'text-gray-800'}`}
             onMouseEnter={() => setIsNewFilterButtonHovered(true)}
             onMouseLeave={() => setIsNewFilterButtonHovered(false)}
           >

@@ -12,6 +12,7 @@ interface SettingsSidebarProps {
   isDarkMode: boolean;
   onFontStyleChange: (style: 'mono' | 'sans' | 'serif') => void;
   currentFontStyle: 'mono' | 'sans' | 'serif';
+  isMobileDrawer?: boolean;
 }
 
 const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
@@ -23,7 +24,8 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   onThemeChange,
   isDarkMode,
   onFontStyleChange,
-  currentFontStyle
+  currentFontStyle,
+  isMobileDrawer = false
 }) => {
   const { dbStatus } = useBasic();
   const defaultAccentColor = '#1F1B2F';
@@ -43,10 +45,10 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
 
   return (
     <div 
-      className={`w-full h-full p-6 overflow-y-auto backdrop-blur-sm  rounded-md flex flex-col ${
+      className={`w-full ${isMobileDrawer ? 'h-auto' : 'h-full'} p-6 ${isMobileDrawer ? '' : 'overflow-y-auto'} backdrop-blur-sm rounded-md flex flex-col ${
         isDarkMode ? 'text-gray-100' : 'text-gray-900'
       }`}
-      style={{ backgroundColor: getBackgroundColor() }}
+      style={{ backgroundColor: isMobileDrawer ? 'transparent' : getBackgroundColor() }}
     >
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">Settings</h2>
@@ -105,19 +107,19 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
               </div>
               <div className="flex space-x-2">
                 <button 
-                  className={`btn btn-sm ${currentViewMode === 'compact' ? 'btn-primary' : 'btn-ghost'}`}
+                  className={`px-3 py-2 text-sm rounded-md transition-colors duration-200 ${currentViewMode === 'compact' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-transparent hover:bg-white/10 text-current'}`}
                   onClick={() => onViewModeChange('compact')}
                 >
                   Compact
                 </button>
                 <button 
-                  className={`btn btn-sm ${currentViewMode === 'cozy' ? 'btn-primary' : 'btn-ghost'}`}
+                  className={`px-3 py-2 text-sm rounded-md transition-colors duration-200 ${currentViewMode === 'cozy' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-transparent hover:bg-white/10 text-current'}`}
                   onClick={() => onViewModeChange('cozy')}
                 >
                   Cozy
                 </button>
                 <button 
-                  className={`btn btn-sm ${currentViewMode === 'chonky' ? 'btn-primary' : 'btn-ghost'}`}
+                  className={`px-3 py-2 text-sm rounded-md transition-colors duration-200 ${currentViewMode === 'chonky' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-transparent hover:bg-white/10 text-current'}`}
                   onClick={() => onViewModeChange('chonky')}
                 >
                   Chonky
@@ -131,19 +133,19 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
               </div>
               <div className="flex space-x-2">
                 <button 
-                  className={`btn btn-sm ${currentFontStyle === 'mono' ? 'btn-primary' : 'btn-ghost'} font-mono`}
+                  className={`px-3 py-2 text-sm rounded-md transition-colors duration-200 font-mono ${currentFontStyle === 'mono' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-transparent hover:bg-white/10 text-current'}`}
                   onClick={() => onFontStyleChange('mono')}
                 >
                   Mono
                 </button>
                 <button 
-                  className={`btn btn-sm ${currentFontStyle === 'sans' ? 'btn-primary' : 'btn-ghost'} font-sans`}
+                  className={`px-3 py-2 text-sm rounded-md transition-colors duration-200 font-sans ${currentFontStyle === 'sans' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-transparent hover:bg-white/10 text-current'}`}
                   onClick={() => onFontStyleChange('sans')}
                 >
                   Sans
                 </button>
                 <button 
-                  className={`btn btn-sm ${currentFontStyle === 'serif' ? 'btn-primary' : 'btn-ghost'} font-serif`}
+                  className={`px-3 py-2 text-sm rounded-md transition-colors duration-200 font-serif ${currentFontStyle === 'serif' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-transparent hover:bg-white/10 text-current'}`}
                   onClick={() => onFontStyleChange('serif')}
                 >
                   Serif
@@ -165,7 +167,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                 <span className="text-sm">{currentAccentColor}</span>
                 <button 
                   onClick={handleResetAccentColor}
-                  className="btn btn-xs btn-ghost ml-auto"
+                  className="px-2 py-1 text-xs bg-transparent hover:bg-white/10 rounded transition-colors duration-200 ml-auto"
                   title="Reset to default"
                 >
                   Reset
@@ -176,14 +178,27 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
         </div>
 
         {/* About */}
-        <div className="border border-white border-opacity-10 p-2 rounded-md ">
-          <h3 className="text-lg font-medium mb-2">About</h3>
-          <p className="text-sm text-gray-300">
-            tsk is a cozy task manager / todo app. 
-          </p>
-          <p className="text-sm text-gray-300 mt-1">
-            Version 1.0.0
-          </p>
+        <div className="border border-white border-opacity-10 p-4 rounded-md">
+          <h3 className="text-lg font-medium mb-4">About</h3>
+          <div className="space-y-4">
+            <p className="about-blurb whitespace-pre-wrap overflow-hidden break-words text-left text-sm">
+              {`tldr: tsk is a cozy & customizable task manager. 
+
+• tsk is built to be fully customizable and expandable - it can be a simple todo list, or a planner for your entire life.
+• your data is private, and yours. everything is stored locally on your device.
+• open source - add your own features & fixes, and let the community benefit
+• free.
+
+v0.2.3`}
+            </p>
+            
+            <div className="border-t border-white/20 pt-4">
+              <h6 className="font-mono text-sm mb-2">
+                built by: <a target="_blank" href="https://twitter.com/_ingriddsss" className="hover:underline">@_ingriddsss</a> & <a target="_blank" href="https://twitter.com/razberrychai" className="hover:underline">@razberrychai</a>
+              </h6>
+              <p className="text-sm opacity-80">we'd love to hear your feedback!</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -302,7 +302,7 @@ export default function SilkTaskDrawer({
                     <div className="mt-4 flex justify-center sticky bottom-4">
                       <button
                         onClick={handleNewTaskInternal}
-                        className="btn btn-primary btn-circle btn-lg text-white shadow-lg"
+                        className="w-16 h-16 rounded-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center text-white shadow-lg transition-colors duration-200"
                         aria-label="Add Task"
                         disabled={!newTaskName.trim()}
                       >

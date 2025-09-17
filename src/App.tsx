@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import * as db from "./utils/db";
 import "./App.css";
-import { AboutModal } from "./components/AboutModal";
+
 import { TaskModal } from "./components/TaskModal";
 import ListItem from "./components/ListItem";
 import { Task } from "./utils/types";
@@ -302,18 +302,21 @@ function Home() {
     setAccentColor(color);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (newInput.trim() === "") {
       alert('Please fill out this field');
       return;
     }
     
-    db.collection("tasks").add({
+    const newTask = await db.collection("tasks").add({
       name: newInput,
       description: "",
       completed: false
     });
+    console.log("newTask:", newTask);
+
+
 
     setNewInput("");
   };
@@ -372,9 +375,9 @@ function Home() {
       <div className=" h-12 rounded-b-md md:rounded-b-none bg-opacity-95 shadow-md backdrop-blur-sm flex justify-between items-center sticky top-0 z-100"
         style={{ backgroundColor: theme.accentColor }}>
         <div className="">
-          <a className="btn btn-ghost normal-case text-md"
-            // onClick={() => { window.modal_2.showModal(); }}
-          ><img className="w-6 h-6 mr-2" src='tsk-logo.png'/>tsk.</a>
+          <a className="px-4 py-2 rounded-lg bg-transparent hover:bg-white/10 transition-colors duration-200 text-md flex items-center">
+            <img className="w-6 h-6 mr-2" src='tsk-logo.png'/>tsk.
+          </a>
           {/* {isNewTaskMode && 'NT'} {drawerOpen && 'DO'} */}
         </div>
 
@@ -382,18 +385,18 @@ function Home() {
 
           <form
             onSubmit={handleSubmit}
-            className="join task-input flex justify-center rounded-sm w-96 h-8"
+            className="flex justify-center rounded-sm w-96 h-8"
           >
             <input
               type="text"
               value={newInput}
               onChange={(e) => setNewInput(e.target.value)}
               placeholder="I want to..."
-              className="join-item font-serif input w-full max-w-xs focus:outline-none h-8 bg-[white] bg-opacity-5 "
+              className="font-serif px-3 py-2 border border-white/20 rounded-l-sm w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-white/30 h-8 bg-white/5 text-white placeholder-white/70"
               required
             />
             <button
-              className={` px-2 submit font-sm text-slate-300 h-8 overflow-hidden transition-all duration-300 ease-in-out ${
+              className={`px-2 submit font-sm text-slate-300 h-8 overflow-hidden transition-all duration-300 ease-in-out bg-white/10 hover:bg-white/20 border border-white/20 rounded-r-sm ${
                 newInput.trim() !== "" ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 px-0"
               }`}
               type="submit"
@@ -463,9 +466,7 @@ function Home() {
             </div>
           </div>
 
-          <dialog id="modal_2" className="modal">
-            <AboutModal />
-          </dialog>
+
         </div>
 
         {/* Desktop task details sidebar - only show on desktop when a task is selected and settings is not open */}
@@ -536,7 +537,7 @@ function Home() {
       <div className="fixed bottom-0 left-0 right-0 p-4 md:hidden z-10 rounded-t-md">
         <div className="flex justify-between items-center">
           <button
-            className="btn btn-circle btn-ghost text-white"
+            className="w-12 h-12 rounded-full bg-transparent hover:bg-white/10 flex items-center justify-center text-white transition-colors duration-200"
             onClick={() => setShowFilters(!showFilters)}
             aria-label="Filters"
           >
@@ -547,7 +548,7 @@ function Home() {
           
           {drawerOpen && isNewTaskMode ? (
             <button
-              className="btn btn-circle btn-ghost text-white"
+              className="w-12 h-12 rounded-full bg-transparent hover:bg-white/10 flex items-center justify-center text-white transition-colors duration-200"
               // onClick={() => {
               //   setDrawerOpen(false);
               //   setIsNewTaskMode(false);
@@ -560,7 +561,7 @@ function Home() {
             </button>
           ) : (
             <button
-              className="btn btn-circle btn-primary text-white"
+              className="w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center text-white transition-colors duration-200 shadow-lg"
               onClick={openNewTaskDrawer}
               aria-label="Add Task"
             >

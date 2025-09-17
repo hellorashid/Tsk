@@ -110,7 +110,7 @@ export const TaskModal = ({
   return (
     <>
       <div
-        className={`${inDrawer ? "text-white" : "modal-box bg-black"} p-4`}
+        className={`${inDrawer ? "text-white" : "bg-black rounded-lg shadow-xl max-w-2xl w-full mx-4"} p-4`}
         style={inDrawer ? { backgroundColor: getBackgroundColor() } : {}}
       >
         <div className="task-details flex flex-col justify-between rounded-md">
@@ -178,7 +178,7 @@ export const TaskModal = ({
         </div>
       </div>
       {!inDrawer && (
-        <form method="dialog" className="modal-backdrop">
+        <form method="dialog" className="absolute inset-0 -z-10 bg-black/50">
           <button>close</button>
         </form>
       )}

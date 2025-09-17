@@ -114,7 +114,7 @@ export default function SettingsDrawer({
               flex: '1',
               height: '100%',
               flexDirection: 'column',
-              overflow: 'auto' // Ensure content scrolls
+              overflow: 'hidden' // Let inner container handle scrolling
             }}
             aria-labelledby={titleId}
           >
@@ -124,7 +124,7 @@ export default function SettingsDrawer({
             
             <div className="mx-auto w-12 h-1.5 bg-gray-400 dark:bg-gray-600 rounded-full my-4 flex-shrink-0" />
             
-            <div className="w-full px-4 flex-grow">
+            <div className="w-full px-4 flex-grow min-h-0 overflow-y-auto pb-8">
               <SettingsSidebar 
                 onClose={handleCloseSettings} 
                 onViewModeChange={onViewModeChange}
@@ -135,6 +135,7 @@ export default function SettingsDrawer({
                 isDarkMode={isDarkMode}
                 onFontStyleChange={onFontStyleChange}
                 currentFontStyle={currentFontStyle}
+                isMobileDrawer={true}
               />
             </div>
           </Sheet.Content>

@@ -81,24 +81,18 @@ const ListItem: React.FC<ListItemProps> = ({
       case 'compact':
         return {
           container: 'py-1',
-          checkbox: 'checkbox-sm',
           title: 'text-md',
-          deleteButton: 'btn-sm',
         };
       case 'cozy':
         return {
           container: 'py-2',
-          checkbox: 'checkbox-sm',
           title: 'text-base',
-          deleteButton: 'btn-sm',
         };
       case 'chonky':
       default:
         return {
           container: 'py-2',
-          checkbox: 'checkbox-md',
           title: 'text-md',
-          deleteButton: 'btn-sm',
         };
     }
   };
@@ -148,7 +142,7 @@ const ListItem: React.FC<ListItemProps> = ({
                 onChange={handleTitleChange}
                 onBlur={handleTitleBlur}
                 onKeyDown={handleKeyDown}
-                className={`input input-sm w-full bg-transparent ${styles.title} focus:outline-none ${isDarkMode ? 'text-gray-100' : 'text-gray-900'
+                className={`px-2 py-1 text-sm w-full bg-transparent border border-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white/30 ${styles.title} ${isDarkMode ? 'text-gray-100' : 'text-gray-900'
                   }`}
                 autoFocus
               />
@@ -167,7 +161,7 @@ const ListItem: React.FC<ListItemProps> = ({
         {!isMobile && (
           <button
             onClick={handleDelete}
-            className={`rounded-full btn btn-ghost ${styles.deleteButton} transition-opacity duration-200 ${isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-70'
+            className={`w-8 h-8 rounded-full bg-transparent hover:bg-white/10 flex items-center justify-center transition-opacity duration-200 ${isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-70'
               }`}
             aria-label="Delete task"
           >
