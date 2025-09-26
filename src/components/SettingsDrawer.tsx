@@ -30,27 +30,14 @@ export default function SettingsDrawer({
   currentFontStyle
 }: SettingsDrawerProps) {
   const titleId = React.useId();
-  const triggerRef = React.useRef<HTMLButtonElement>(null);
   const viewRef = React.useRef<HTMLDivElement>(null);
-  const wasOpenRef = React.useRef<boolean>(false);
   
   // For Silk Sheet, content placement can be dynamic. We'll default to bottom.
   const largeViewport = useClientMediaQuery("(min-width: 800px)"); // Example, adjust as needed
   const contentPlacement: SheetViewProps["contentPlacement"] = largeViewport ? "center" : "bottom";
   const tracks: SheetViewProps["tracks"] = largeViewport ? ["top", "bottom"] : "bottom";
-
-  React.useEffect(() => {
-    if (isOpen && !wasOpenRef.current && triggerRef.current) {
-      triggerRef.current.click();
-    }
-    wasOpenRef.current = isOpen;
-  }, [isOpen]);
   
   const handleCloseSettings = () => {
-    setIsOpen(false);
-  };
-
-  const handleSheetChange = () => {
     setIsOpen(false);
   };
 
@@ -59,35 +46,25 @@ export default function SettingsDrawer({
     if (!viewRef.current) return;
 
     if (progress < 0.999) {
-      // Example:
-      // const activeElement = document.activeElement as HTMLElement;
-      // if (activeElement && typeof activeElement.blur === 'function') {
-      //   activeElement.blur();
-      // }
+      // Dismiss the on-screen keyboard
+      viewRef.current.focus();
     }
     
-    // Close the drawer when user swipes it away (less than 30%)
-    if (progress < 0.3) {
-      setIsOpen(false);
-    }
-  }, [setIsOpen]);
+    // Close the drawer when user swipes it away - handled by onPresentedChange
+    // if (progress < 0.3) {
+    //   setIsOpen(false);
+    // }
+  }, []);
   
   return (
-    <Sheet.Root license="non-commercial">
-      <Sheet.Trigger asChild>
-        <button 
-          ref={triggerRef} 
-          className="hidden" 
-          aria-hidden="true"
-        >
-          Open Settings
-        </button>
-      </Sheet.Trigger>
-      
+    <Sheet.Root 
+      license="non-commercial"
+      presented={isOpen}
+      onPresentedChange={setIsOpen}
+    >
       <Sheet.Portal>
         <Sheet.View
           ref={viewRef}
-          onChange={handleSheetChange}
           contentPlacement={contentPlacement}
           tracks={tracks}
           swipeOvershoot={false} // Recommended from SilkTaskDrawer
@@ -95,7 +72,7 @@ export default function SettingsDrawer({
           onTravel={travelHandler} // Optional: for swipe-to-close
           style={{ 
             height: '90vh', // Increased height
-            maxHeight: '95vh', // Increased maxHeight
+            maxHeight: '90vh', // Increased maxHeight
             display: 'flex',
             flexDirection: 'column',
           }}
@@ -106,13 +83,13 @@ export default function SettingsDrawer({
           <Sheet.Content 
             style={{
               backgroundColor: isDarkMode ? '#1F1B2F' : '#FFFFFF', // Adjust based on theme
-              color: isDarkMode ? 'text-gray-100' : 'text-gray-900',
               borderTopLeftRadius: '1rem',
               borderTopRightRadius: '1rem',
               padding: '0px', // Reset padding as inner div will handle it
               display: 'flex',
               flex: '1',
-              height: '100%',
+              height: '90vh',
+              maxHeight: '90vh',
               flexDirection: 'column',
               overflow: 'hidden' // Let inner container handle scrolling
             }}
@@ -124,7 +101,7 @@ export default function SettingsDrawer({
             
             <div className="mx-auto w-12 h-1.5 bg-gray-400 dark:bg-gray-600 rounded-full my-4 flex-shrink-0" />
             
-            <div className="w-full px-4 flex-grow min-h-0 overflow-y-auto pb-8">
+            <div className={`w-full px-4 flex-grow min-h-0 overflow-y-auto pb-8 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
               <SettingsSidebar 
                 onClose={handleCloseSettings} 
                 onViewModeChange={onViewModeChange}
