@@ -41,7 +41,8 @@ export async function addTask(task) {
   newTask.date_created = Date.now();
   newTask.id = randomId;
   newTask.done = false;
-  newTask.labels = []
+  newTask.labels = [];
+  newTask.subtasks = []; // Initialize subtasks as empty array
 
   let currentTasks = await getTasks();
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useBasic, useQuery } from "@basictech/react";
-import { Task } from '../utils/types';
+import { Task, Subtask } from '../utils/types';
 import Checkbox from './Checkbox';
+import SubtasksSection from './SubtasksSection';
 interface TaskDetailsSidebarProps {
   task: Task | null;
   onClose: () => void;
@@ -94,6 +95,37 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
     onClose();
   };
 
+  // Subtask handlers
+  const generateSubtaskId = () => {
+    return `subtask-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  };
+
+  const handleAddSubtask = (text: string) => {
+    const newSubtask: Subtask = {
+      id: generateSubtaskId(),
+      text,
+      completed: false
+    };
+    
+    const currentSubtasks = taskDetails?.subtasks || [];
+    const updatedSubtasks = [...currentSubtasks, newSubtask];
+    onUpdate(task?.id || '', { subtasks: updatedSubtasks });
+  };
+
+  const handleUpdateSubtask = (subtaskId: string, changes: Partial<Subtask>) => {
+    const currentSubtasks = taskDetails?.subtasks || [];
+    const updatedSubtasks = currentSubtasks.map((subtask: Subtask) =>
+      subtask.id === subtaskId ? { ...subtask, ...changes } : subtask
+    );
+    onUpdate(task?.id || '', { subtasks: updatedSubtasks });
+  };
+
+  const handleDeleteSubtask = (subtaskId: string) => {
+    const currentSubtasks = taskDetails?.subtasks || [];
+    const updatedSubtasks = currentSubtasks.filter((subtask: Subtask) => subtask.id !== subtaskId);
+    onUpdate(task?.id || '', { subtasks: updatedSubtasks });
+  };
+
   const getBackgroundColor = () => {
     return `${accentColor}90`; // 90% opacity
   };
@@ -149,6 +181,15 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
           style={{ height: 'auto' }}
         />
       </div>
+
+      {/* Subtasks Section */}
+      <SubtasksSection
+        subtasks={taskDetails?.subtasks || []}
+        onAddSubtask={handleAddSubtask}
+        onUpdateSubtask={handleUpdateSubtask}
+        onDeleteSubtask={handleDeleteSubtask}
+        isDarkMode={isDarkMode}
+      />
 
       <div className="mt-auto pt-4">
         <button

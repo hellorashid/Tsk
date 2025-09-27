@@ -1,8 +1,9 @@
 // @ts-nocheck
 
-import { Task } from "../utils/types";
+import { Task, Subtask } from "../utils/types";
 import { useState, useEffect, useRef } from 'react';
 import Checkbox from './Checkbox';
+import SubtasksSection from './SubtasksSection';
 
 export const TaskModal = ({
   task, updateFunction, inDrawer = false, deleteTask, new: isNew = false, accentColor = '#1F1B2F', onDelete
@@ -103,6 +104,43 @@ export const TaskModal = ({
     return accentColor; // No opacity
   };
 
+  // Subtask handlers
+  const generateSubtaskId = () => {
+    return `subtask-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  };
+
+  const handleAddSubtask = (text) => {
+    const newSubtask = {
+      id: generateSubtaskId(),
+      text,
+      completed: false
+    };
+    
+    const currentSubtasks = task?.subtasks || [];
+    const updatedSubtasks = [...currentSubtasks, newSubtask];
+    if (task?.id) {
+      updateFunction(task.id, { subtasks: updatedSubtasks });
+    }
+  };
+
+  const handleUpdateSubtask = (subtaskId, changes) => {
+    const currentSubtasks = task?.subtasks || [];
+    const updatedSubtasks = currentSubtasks.map(subtask =>
+      subtask.id === subtaskId ? { ...subtask, ...changes } : subtask
+    );
+    if (task?.id) {
+      updateFunction(task.id, { subtasks: updatedSubtasks });
+    }
+  };
+
+  const handleDeleteSubtask = (subtaskId) => {
+    const currentSubtasks = task?.subtasks || [];
+    const updatedSubtasks = currentSubtasks.filter(subtask => subtask.id !== subtaskId);
+    if (task?.id) {
+      updateFunction(task.id, { subtasks: updatedSubtasks });
+    }
+  };
+
   if (!task?.id) {
     return <div className="p-4 text-center">No task selected or task data is incomplete.</div>;
   }
@@ -161,6 +199,17 @@ export const TaskModal = ({
             placeholder="Some description..."
             style={{ height: 'auto' }}
           />
+
+          {/* Subtasks Section */}
+          {!isNew && (
+            <SubtasksSection
+              subtasks={task?.subtasks || []}
+              onAddSubtask={handleAddSubtask}
+              onUpdateSubtask={handleUpdateSubtask}
+              onDeleteSubtask={handleDeleteSubtask}
+              isDarkMode={true}
+            />
+          )}
 
           {!isNew && deleteTask && (
             <div className="mt-auto pt-4 flex justify-end">
