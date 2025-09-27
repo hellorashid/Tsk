@@ -53,7 +53,8 @@ const Subtask: React.FC<SubtaskProps> = ({
     onUpdate(subtask.id, { completed: e.target.checked });
   };
 
-  const handleDoubleClick = () => {
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsEditing(true);
   };
 

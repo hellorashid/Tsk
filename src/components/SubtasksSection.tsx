@@ -112,7 +112,10 @@ const SubtasksSection: React.FC<SubtasksSectionProps> = ({
         </div>
       ) : (
         <button
-          onClick={() => setShowInput(true)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowInput(true);
+          }}
           className={`flex items-center gap-2 mt-2 py-1 px-2 text-sm rounded hover:bg-white/5 transition-colors duration-200 ${
             isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
           } focus:outline-none focus:ring-2 focus:ring-white/30`}

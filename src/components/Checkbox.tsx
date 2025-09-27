@@ -62,7 +62,11 @@ export default function Checkbox({
   const tickSizeClass = size === "md" ? "h-4.5 w-4.5" : "h-3.5 w-3.5";
 
   return (
-    <button className="relative flex items-center" type="button"> {/* Changed to type="button" for accessibility if it's just a wrapper */}
+    <button 
+      className="relative flex items-center" 
+      type="button"
+      onClick={(e) => e.stopPropagation()}
+    > {/* Changed to type="button" for accessibility if it's just a wrapper */}
       <input
         type="checkbox"
         className={`border-blue-gray-200 relative cursor-pointer appearance-none rounded-md border transition-all duration-500 ${inputSizeClass}`}
