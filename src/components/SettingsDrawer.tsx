@@ -4,6 +4,33 @@ import React from 'react';
 import { Sheet, useClientMediaQuery, type SheetViewProps } from "@silk-hq/components";
 import SettingsSidebar from './SettingsSidebar';
 
+// Error boundary for Safari compatibility
+class SettingsDrawerErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('SettingsDrawer Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+
+    return this.props.children;
+  }
+}
+
 interface SettingsDrawerProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
@@ -17,7 +44,7 @@ interface SettingsDrawerProps {
   currentFontStyle: 'mono' | 'sans' | 'serif';
 }
 
-export default function SettingsDrawer({ 
+function SettingsDrawerContent({ 
   isOpen, 
   setIsOpen, 
   onViewModeChange,
@@ -32,10 +59,47 @@ export default function SettingsDrawer({
   const titleId = React.useId();
   const viewRef = React.useRef<HTMLDivElement>(null);
   
-  // For Silk Sheet, content placement can be dynamic. We'll default to bottom.
-  const largeViewport = useClientMediaQuery("(min-width: 800px)"); // Example, adjust as needed
-  const contentPlacement: SheetViewProps["contentPlacement"] = largeViewport ? "center" : "bottom";
-  const tracks: SheetViewProps["tracks"] = largeViewport ? ["top", "bottom"] : "bottom";
+  // Safari-compatible media query check with fallback
+  const [largeViewport, setLargeViewport] = React.useState(false);
+  const [mediaQuerySupported, setMediaQuerySupported] = React.useState(true);
+  
+  React.useEffect(() => {
+    try {
+      // Try using the Silk hook first
+      const checkViewport = () => {
+        try {
+          return window.innerWidth >= 800;
+        } catch (e) {
+          return false;
+        }
+      };
+      
+      setLargeViewport(checkViewport());
+      
+      const handleResize = () => {
+        setLargeViewport(checkViewport());
+      };
+      
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    } catch (error) {
+      console.warn('Media query not supported, falling back to mobile view:', error);
+      setMediaQuerySupported(false);
+      setLargeViewport(false);
+    }
+  }, []);
+  
+  // Use Silk's useClientMediaQuery only if supported, otherwise use our fallback
+  let silkLargeViewport = false;
+  try {
+    silkLargeViewport = useClientMediaQuery("(min-width: 800px)");
+  } catch (error) {
+    console.warn('Silk useClientMediaQuery failed, using fallback:', error);
+  }
+  
+  const effectiveLargeViewport = mediaQuerySupported ? (silkLargeViewport || largeViewport) : largeViewport;
+  const contentPlacement: SheetViewProps["contentPlacement"] = effectiveLargeViewport ? "center" : "bottom";
+  const tracks: SheetViewProps["tracks"] = effectiveLargeViewport ? ["top", "bottom"] : "bottom";
   
   const handleCloseSettings = () => {
     setIsOpen(false);
@@ -56,68 +120,150 @@ export default function SettingsDrawer({
     // }
   }, []);
   
-  return (
-    <Sheet.Root 
-      license="non-commercial"
-      presented={isOpen}
-      onPresentedChange={setIsOpen}
-    >
-      <Sheet.Portal>
-        <Sheet.View
-          ref={viewRef}
-          contentPlacement={contentPlacement}
-          tracks={tracks}
-          swipeOvershoot={false} // Recommended from SilkTaskDrawer
-          nativeEdgeSwipePrevention={true} // Recommended
-          onTravel={travelHandler} // Optional: for swipe-to-close
-          style={{ 
-            height: '90vh', // Increased height
-            maxHeight: '90vh', // Increased maxHeight
-            display: 'flex',
-            flexDirection: 'column',
+  // Safari-compatible Sheet rendering with error handling
+  try {
+    return (
+      <Sheet.Root 
+        license="non-commercial"
+        presented={isOpen}
+        onPresentedChange={setIsOpen}
+      >
+        <Sheet.Portal>
+          <Sheet.View
+            ref={viewRef}
+            contentPlacement={contentPlacement}
+            tracks={tracks}
+            swipeOvershoot={false} // Recommended from SilkTaskDrawer
+            nativeEdgeSwipePrevention={true} // Recommended
+            onTravel={travelHandler} // Optional: for swipe-to-close
+            style={{ 
+              height: '90vh', // Increased height
+              maxHeight: '90vh', // Increased maxHeight
+              display: 'flex',
+              flexDirection: 'column',
+              // Safari-specific fixes
+              WebkitTransform: 'translate3d(0,0,0)',
+              transform: 'translate3d(0,0,0)',
+            }}
+          >
+            <Sheet.Backdrop 
+              themeColorDimming="auto" 
+            />
+            <Sheet.Content 
+              style={{
+                backgroundColor: isDarkMode ? '#1F1B2F' : '#FFFFFF', // Adjust based on theme
+                borderTopLeftRadius: '1rem',
+                borderTopRightRadius: '1rem',
+                padding: '0px', // Reset padding as inner div will handle it
+                display: 'flex',
+                flex: '1',
+                height: '90vh',
+                maxHeight: '90vh',
+                flexDirection: 'column',
+                overflow: 'hidden', // Let inner container handle scrolling
+                // Safari-specific fixes
+                WebkitTransform: 'translate3d(0,0,0)',
+                transform: 'translate3d(0,0,0)',
+                WebkitBackfaceVisibility: 'hidden',
+                backfaceVisibility: 'hidden',
+              }}
+              aria-labelledby={titleId}
+            >
+              <h2 id={titleId} className="sr-only">
+                Settings
+              </h2>
+              
+              <div className="mx-auto w-12 h-1.5 bg-gray-400 dark:bg-gray-600 rounded-full my-4 flex-shrink-0" />
+              
+              <div className={`w-full px-4 flex-grow min-h-0 overflow-y-auto pb-8 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+                <SettingsSidebar 
+                  onClose={handleCloseSettings} 
+                  onViewModeChange={onViewModeChange}
+                  currentViewMode={currentViewMode}
+                  onAccentColorChange={onAccentColorChange}
+                  currentAccentColor={currentAccentColor}
+                  onThemeChange={onThemeChange}
+                  isDarkMode={isDarkMode}
+                  onFontStyleChange={onFontStyleChange}
+                  currentFontStyle={currentFontStyle}
+                  isMobileDrawer={true}
+                />
+              </div>
+            </Sheet.Content>
+          </Sheet.View>
+        </Sheet.Portal>
+      </Sheet.Root>
+    );
+  } catch (error) {
+    console.error('Sheet component failed to render:', error);
+    // Fallback to a simple modal for Safari
+    return (
+      <div 
+        className={`fixed inset-0 z-50 ${isOpen ? 'block' : 'hidden'}`}
+        onClick={() => setIsOpen(false)}
+      >
+        <div className="fixed inset-0 bg-black bg-opacity-50" />
+        <div 
+          className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-lg p-4 max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            backgroundColor: isDarkMode ? '#1F1B2F' : '#FFFFFF',
           }}
         >
-          <Sheet.Backdrop 
-            themeColorDimming="auto" 
+          <div className="mx-auto w-12 h-1.5 bg-gray-400 dark:bg-gray-600 rounded-full my-4" />
+          <SettingsSidebar 
+            onClose={handleCloseSettings} 
+            onViewModeChange={onViewModeChange}
+            currentViewMode={currentViewMode}
+            onAccentColorChange={onAccentColorChange}
+            currentAccentColor={currentAccentColor}
+            onThemeChange={onThemeChange}
+            isDarkMode={isDarkMode}
+            onFontStyleChange={onFontStyleChange}
+            currentFontStyle={currentFontStyle}
+            isMobileDrawer={true}
           />
-          <Sheet.Content 
-            style={{
-              backgroundColor: isDarkMode ? '#1F1B2F' : '#FFFFFF', // Adjust based on theme
-              borderTopLeftRadius: '1rem',
-              borderTopRightRadius: '1rem',
-              padding: '0px', // Reset padding as inner div will handle it
-              display: 'flex',
-              flex: '1',
-              height: '90vh',
-              maxHeight: '90vh',
-              flexDirection: 'column',
-              overflow: 'hidden' // Let inner container handle scrolling
-            }}
-            aria-labelledby={titleId}
-          >
-            <h2 id={titleId} className="sr-only">
-              Settings
-            </h2>
-            
-            <div className="mx-auto w-12 h-1.5 bg-gray-400 dark:bg-gray-600 rounded-full my-4 flex-shrink-0" />
-            
-            <div className={`w-full px-4 flex-grow min-h-0 overflow-y-auto pb-8 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-              <SettingsSidebar 
-                onClose={handleCloseSettings} 
-                onViewModeChange={onViewModeChange}
-                currentViewMode={currentViewMode}
-                onAccentColorChange={onAccentColorChange}
-                currentAccentColor={currentAccentColor}
-                onThemeChange={onThemeChange}
-                isDarkMode={isDarkMode}
-                onFontStyleChange={onFontStyleChange}
-                currentFontStyle={currentFontStyle}
-                isMobileDrawer={true}
-              />
-            </div>
-          </Sheet.Content>
-        </Sheet.View>
-      </Sheet.Portal>
-    </Sheet.Root>
+        </div>
+      </div>
+    );
+  }
+}
+
+export default function SettingsDrawer(props: SettingsDrawerProps) {
+  // Fallback component for when Sheet fails
+  const FallbackModal = () => (
+    <div 
+      className={`fixed inset-0 z-50 ${props.isOpen ? 'block' : 'hidden'}`}
+      onClick={() => props.setIsOpen(false)}
+    >
+      <div className="fixed inset-0 bg-black bg-opacity-50" />
+      <div 
+        className="fixed bottom-0 left-0 right-0 rounded-t-lg p-4 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          backgroundColor: props.isDarkMode ? '#1F1B2F' : '#FFFFFF',
+        }}
+      >
+        <div className="mx-auto w-12 h-1.5 bg-gray-400 dark:bg-gray-600 rounded-full my-4" />
+        <SettingsSidebar 
+          onClose={() => props.setIsOpen(false)} 
+          onViewModeChange={props.onViewModeChange}
+          currentViewMode={props.currentViewMode}
+          onAccentColorChange={props.onAccentColorChange}
+          currentAccentColor={props.currentAccentColor}
+          onThemeChange={props.onThemeChange}
+          isDarkMode={props.isDarkMode}
+          onFontStyleChange={props.onFontStyleChange}
+          currentFontStyle={props.currentFontStyle}
+          isMobileDrawer={true}
+        />
+      </div>
+    </div>
+  );
+
+  return (
+    <SettingsDrawerErrorBoundary fallback={<FallbackModal />}>
+      <SettingsDrawerContent {...props} />
+    </SettingsDrawerErrorBoundary>
   );
 } 

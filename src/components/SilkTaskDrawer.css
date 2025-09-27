@@ -14,12 +14,22 @@
   height: 90vh !important;
   max-height: 90vh !important;
   background-color: transparent !important;
+  /* Safari-specific fixes */
+  -webkit-transform: translate3d(0,0,0);
+  transform: translate3d(0,0,0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .SheetWithKeyboard-content {
   height: 90vh !important;
   max-height: 90vh !important;
   background-color: transparent !important;
+  /* Safari-specific fixes */
+  -webkit-transform: translate3d(0,0,0);
+  transform: translate3d(0,0,0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* Remove default background from Silk components */

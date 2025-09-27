@@ -7,6 +7,11 @@
   height: 90vh !important;
   max-height: 90vh !important;
   background-color: transparent !important;
+  /* Safari-specific fixes */
+  -webkit-transform: translate3d(0,0,0);
+  transform: translate3d(0,0,0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .SheetWithKeyboard-content {
@@ -16,6 +21,11 @@
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   background-color: transparent !important;
+  /* Safari-specific fixes */
+  -webkit-transform: translate3d(0,0,0);
+  transform: translate3d(0,0,0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* Remove any default backgrounds from sheet components only */
@@ -31,5 +41,20 @@
     max-height: 90vh !important;
     border-radius: 1rem;
     background-color: transparent !important;
+    /* Safari-specific fixes */
+    -webkit-transform: translate3d(0,0,0);
+    transform: translate3d(0,0,0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+}
+
+/* Safari-specific fixes for touch events and rendering */
+@supports (-webkit-touch-callout: none) {
+  .SheetWithKeyboard-view,
+  .SheetWithKeyboard-content {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    will-change: transform;
   }
 }

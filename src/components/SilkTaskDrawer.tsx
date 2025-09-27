@@ -52,9 +52,46 @@ export default function SilkTaskDrawer({
 }: TaskDrawerProps) {
   const titleId = React.useId();
   const viewRef = useRef<HTMLDivElement>(null);
-  const largeViewport = useClientMediaQuery("(min-width: 800px)");
-  const contentPlacement = largeViewport ? "center" : "bottom";
-  const tracks: SheetViewProps["tracks"] = largeViewport ? ["top", "bottom"] : "bottom";
+  // Safari-compatible media query check with fallback
+  const [largeViewport, setLargeViewport] = React.useState(false);
+  const [mediaQuerySupported, setMediaQuerySupported] = React.useState(true);
+  
+  React.useEffect(() => {
+    try {
+      const checkViewport = () => {
+        try {
+          return window.innerWidth >= 800;
+        } catch (e) {
+          return false;
+        }
+      };
+      
+      setLargeViewport(checkViewport());
+      
+      const handleResize = () => {
+        setLargeViewport(checkViewport());
+      };
+      
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    } catch (error) {
+      console.warn('Media query not supported, falling back to mobile view:', error);
+      setMediaQuerySupported(false);
+      setLargeViewport(false);
+    }
+  }, []);
+  
+  // Use Silk's useClientMediaQuery only if supported, otherwise use our fallback
+  let silkLargeViewport = false;
+  try {
+    silkLargeViewport = useClientMediaQuery("(min-width: 800px)");
+  } catch (error) {
+    console.warn('Silk useClientMediaQuery failed, using fallback:', error);
+  }
+  
+  const effectiveLargeViewport = mediaQuerySupported ? (silkLargeViewport || largeViewport) : largeViewport;
+  const contentPlacement = effectiveLargeViewport ? "center" : "bottom";
+  const tracks: SheetViewProps["tracks"] = effectiveLargeViewport ? ["top", "bottom"] : "bottom";
   
   const [newTaskName, setNewTaskName] = useState('');
   const [createdTasks, setCreatedTasks] = useState<{ id: string; name: string; completed: boolean; description: string }[]>([]);
