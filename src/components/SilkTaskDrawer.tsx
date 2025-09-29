@@ -95,6 +95,7 @@ export default function SilkTaskDrawer({
   
   const [newTaskName, setNewTaskName] = useState('');
   const [createdTasks, setCreatedTasks] = useState<{ id: string; name: string; completed: boolean; description: string }[]>([]);
+  const [isStable, setIsStable] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Memoize the placeholder task to ensure stable reference
@@ -142,20 +143,49 @@ export default function SilkTaskDrawer({
     }
   }, [isOpen, isNewTaskMode]);
 
+  // Track when drawer is stable to prevent premature closing
+  useEffect(() => {
+    if (isOpen) {
+      // Mark as stable after a short delay when opened
+      const timer = setTimeout(() => {
+        setIsStable(true);
+      }, 200);
+      return () => clearTimeout(timer);
+    } else {
+      setIsStable(false);
+    }
+  }, [isOpen]);
+
+  // Enhanced presented change handler to prevent flickering
+  const handlePresentedChange = useCallback((presented: boolean) => {
+    if (!presented) {
+      // Only allow closing if the drawer was stable (open for at least 200ms)
+      if (isStable) {
+        setTimeout(() => {
+          setIsOpen(presented);
+        }, 50);
+      }
+    } else {
+      setIsOpen(presented);
+    }
+  }, [setIsOpen, isStable]);
+
   // Dismiss keyboard when sheet is moved
   const travelHandler = useCallback<Exclude<SheetViewProps["onTravel"], undefined>>(({ progress }) => {
     if (!viewRef.current) return;
 
-    if (progress < 0.999) {
-      // Dismiss the on-screen keyboard
-      viewRef.current.focus();
+    // Only dismiss keyboard when sheet is being moved significantly
+    if (progress < 0.95) {
+      try {
+        // Dismiss the on-screen keyboard safely
+        viewRef.current.focus();
+      } catch (error) {
+        console.warn('Failed to focus viewRef:', error);
+      }
     }
     
-    // Close the drawer when user swipes it away - now handled by onPresentedChange
-    // if (progress < 0.3) {
-    //   setIsOpen(false); 
-    // }
-  }, []); // Removed setIsOpen from dependencies as it's no longer called here
+    // Prevent accidental closing - handled by onPresentedChange with better logic
+  }, []);
 
   // Handle task creation when in new task mode
   const handleNewTaskInternal = () => {
@@ -244,7 +274,7 @@ export default function SilkTaskDrawer({
       <Sheet.Root 
         license="non-commercial"
         presented={isOpen}
-        onPresentedChange={setIsOpen}
+        onPresentedChange={handlePresentedChange}
       >
         <Sheet.Portal>
           <Sheet.View

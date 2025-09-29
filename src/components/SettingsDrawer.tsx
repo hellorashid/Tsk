@@ -62,6 +62,7 @@ function SettingsDrawerContent({
   // Safari-compatible media query check with fallback
   const [largeViewport, setLargeViewport] = React.useState(false);
   const [mediaQuerySupported, setMediaQuerySupported] = React.useState(true);
+  const [isStable, setIsStable] = React.useState(false);
   
   React.useEffect(() => {
     try {
@@ -105,20 +106,50 @@ function SettingsDrawerContent({
     setIsOpen(false);
   };
 
-  // Dismiss keyboard when sheet is moved (if applicable, good practice from SilkTaskDrawer)
+  // Enhanced travel handler to prevent accidental closing
   const travelHandler = React.useCallback<Exclude<SheetViewProps["onTravel"], undefined>>(({ progress }) => {
     if (!viewRef.current) return;
 
-    if (progress < 0.999) {
-      // Dismiss the on-screen keyboard
-      viewRef.current.focus();
+    // Only dismiss keyboard when sheet is being moved significantly
+    if (progress < 0.95) {
+      try {
+        // Dismiss the on-screen keyboard safely
+        viewRef.current.focus();
+      } catch (error) {
+        console.warn('Failed to focus viewRef:', error);
+      }
     }
     
-    // Close the drawer when user swipes it away - handled by onPresentedChange
-    // if (progress < 0.3) {
-    //   setIsOpen(false);
-    // }
+    // Prevent accidental closing - only close when swiped down significantly
+    // This is now handled by onPresentedChange with better logic
   }, []);
+
+  // Track when drawer is stable to prevent premature closing
+  React.useEffect(() => {
+    if (isOpen) {
+      // Mark as stable after a short delay when opened
+      const timer = setTimeout(() => {
+        setIsStable(true);
+      }, 200);
+      return () => clearTimeout(timer);
+    } else {
+      setIsStable(false);
+    }
+  }, [isOpen]);
+
+  // Enhanced presented change handler to prevent flickering
+  const handlePresentedChange = React.useCallback((presented: boolean) => {
+    if (!presented) {
+      // Only allow closing if the drawer was stable (open for at least 200ms)
+      if (isStable) {
+        setTimeout(() => {
+          setIsOpen(presented);
+        }, 50);
+      }
+    } else {
+      setIsOpen(presented);
+    }
+  }, [setIsOpen, isStable]);
   
   // Safari-compatible Sheet rendering with error handling
   try {
@@ -126,16 +157,16 @@ function SettingsDrawerContent({
       <Sheet.Root 
         license="non-commercial"
         presented={isOpen}
-        onPresentedChange={setIsOpen}
+        onPresentedChange={handlePresentedChange}
       >
         <Sheet.Portal>
           <Sheet.View
             ref={viewRef}
             contentPlacement={contentPlacement}
             tracks={tracks}
-            swipeOvershoot={false} // Recommended from SilkTaskDrawer
-            nativeEdgeSwipePrevention={true} // Recommended
-            onTravel={travelHandler} // Optional: for swipe-to-close
+            swipeOvershoot={false}
+            nativeEdgeSwipePrevention={true}
+            onTravel={travelHandler}
             style={{ 
               height: '90vh', // Increased height
               maxHeight: '90vh', // Increased maxHeight
@@ -175,7 +206,10 @@ function SettingsDrawerContent({
               
               <div className="mx-auto w-12 h-1.5 bg-gray-400 dark:bg-gray-600 rounded-full my-4 flex-shrink-0" />
               
-              <div className={`w-full px-4 flex-grow min-h-0 overflow-y-auto pb-8 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+              <div 
+                className={`w-full px-4 flex-grow min-h-0 overflow-y-auto pb-8 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}
+                onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+              >
                 <SettingsSidebar 
                   onClose={handleCloseSettings} 
                   onViewModeChange={onViewModeChange}
