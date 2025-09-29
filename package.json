@@ -12,9 +12,9 @@
   "dependencies": {
     "@basictech/react": "^0.7.0-beta.1",
     "@heroicons/react": "^2.0.18",
-    "@radix-ui/react-popover": "^1.1.13",
-    "@radix-ui/react-switch": "^1.2.4",
-    "@silk-hq/components": "^0.8.15",
+    "@radix-ui/react-popover": "^1.1.15",
+    "@radix-ui/react-switch": "^1.2.6",
+    "@silk-hq/components": "^0.9.12",
     "motion": "^12.6.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
