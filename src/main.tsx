@@ -16,4 +16,4 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   </React.StrictMode>
 );
 
-// uhm vercel pls
+// uhm vercel pls thnx
