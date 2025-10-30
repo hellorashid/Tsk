@@ -52,9 +52,11 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, [theme]);
 
-  // Apply accent color to CSS variables
+  // Apply accent color to CSS variables and body background
   useEffect(() => {
     document.documentElement.style.setProperty('--accent-color', theme.accentColor);
+    document.body.style.backgroundColor = theme.accentColor;
+    document.documentElement.style.backgroundColor = theme.accentColor;
   }, [theme.accentColor]);
 
   // Apply theme to document

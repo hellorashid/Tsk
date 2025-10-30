@@ -89,3 +89,11 @@ body {
 .task-home.drawer-open-scale::before {
   background-color: rgba(0, 0, 0, 0.2); /* Dimming effect */
 }
+
+/* Prevent white border flash on header input focus */
+form input[type="text"]:focus {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none !important;
+}

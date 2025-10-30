@@ -66,7 +66,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
           className={`
             w-full p-3 rounded-lg
             bg-white dark:bg-gray-800
-            border border-gray-300 dark:border-gray-600
+            
             focus:outline-none focus:ring-2 focus:ring-blue-500
             transition-all duration-300 ease-in-out
             ${isExpanded ? 'h-32' : 'h-12'}
@@ -364,8 +364,9 @@ function Home() {
   };
 
   return (
-    <section className={`flex-1 task-home w-full h-screen max-h-screen relative overflow-hidden ${theme.isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} ${isMobile && drawerOpen ? 'drawer-open-scale' : ''}`}
+    <section className={`flex-1 task-home w-full h-screen max-h-screen relative overflow-hidden ${theme.isDarkMode ? 'text-gray-100' : 'text-gray-900'} ${isMobile && drawerOpen ? 'drawer-open-scale' : ''}`}
       style={{
+        backgroundColor: theme.accentColor,
         backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4)), url(${bgImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
@@ -385,18 +386,26 @@ function Home() {
 
           <form
             onSubmit={handleSubmit}
-            className="flex justify-center rounded-sm w-96 h-8"
+            className="flex justify-center w-96 h-8"
           >
             <input
               type="text"
               value={newInput}
               onChange={(e) => setNewInput(e.target.value)}
               placeholder="I want to..."
-              className="font-serif px-3 py-2 border border-white/20 rounded-l-sm w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-white/30 h-8 bg-white/5 text-white placeholder-white/70"
+              className={`font-serif px-3 py-2 w-full max-w-xs border-0 focus:outline-none focus:ring-0 focus:border-0 appearance-none h-8 bg-white/5 text-white placeholder-white/70 transition-all duration-300 ease-in-out ${
+                newInput.trim() !== "" ? "rounded-l-full" : "rounded-full"
+              }`}
+              style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
+              onFocus={(e) => {
+                e.target.style.outline = 'none';
+                e.target.style.border = 'none';
+                e.target.style.boxShadow = 'none';
+              }}
               required
             />
             <button
-              className={`px-2 submit font-sm text-slate-300 h-8 overflow-hidden transition-all duration-300 ease-in-out bg-white/10 hover:bg-white/20 border border-white/20 rounded-r-sm ${
+              className={`px-2 submit font-sm text-slate-300 h-8 overflow-hidden transition-all duration-300 ease-in-out bg-white/10 hover:bg-white/20 rounded-r-full ${
                 newInput.trim() !== "" ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 px-0"
               }`}
               type="submit"
