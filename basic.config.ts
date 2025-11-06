@@ -24,6 +24,10 @@ export const schema = {
 				},
 				"description": {
 					"type": "string"
+				},
+				"parentTaskId": {
+					"type": "string",
+					"indexed": true
 				}
 			}
 		},
@@ -39,8 +43,41 @@ export const schema = {
 					"indexed": true
 				}
 			}
+		},
+		"schedule": {
+			"type": "collection",
+			"fields": {
+				"end": {
+					"type": "json",
+					"indexed": true
+				},
+				"type": {
+					"type": "string",
+					"indexed": true
+				},
+				"color": {
+					"type": "string",
+					"indexed": true
+				},
+				"start": {
+					"type": "json",
+					"indexed": true
+				},
+				"title": {
+					"type": "string",
+					"indexed": true
+				},
+				"taskId": {
+					"type": "string",
+					"indexed": true
+				},
+				"description": {
+					"type": "string",
+					"indexed": true
+				}
+			}
 		}
 	},
-	"version": 2,
+	"version": 4,
 	"project_id": "701b11bc-59a8-45b5-8148-7184d7733e5b"
 }

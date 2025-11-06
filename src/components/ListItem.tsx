@@ -39,12 +39,6 @@ const ListItem: React.FC<ListItemProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleTitleClick = () => {
-    if (!isMobile) {
-      setIsEditing(true);
-    }
-  };
-
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditedTitle(e.target.value);
   };
@@ -80,19 +74,19 @@ const ListItem: React.FC<ListItemProps> = ({
     switch (viewMode) {
       case 'compact':
         return {
-          container: 'py-1',
-          title: 'text-md',
+          container: 'py-2 md:py-1',
+          title: 'text-lg md:text-md',
         };
       case 'cozy':
         return {
-          container: 'py-2',
-          title: 'text-base',
+          container: 'py-3 md:py-2',
+          title: 'text-lg md:text-base',
         };
       case 'chonky':
       default:
         return {
-          container: 'py-2',
-          title: 'text-md',
+          container: 'py-3 md:py-2',
+          title: 'text-lg md:text-md',
         };
     }
   };
@@ -112,27 +106,35 @@ const ListItem: React.FC<ListItemProps> = ({
     return `${accentColor}80`; // 80% opacity
   };
 
+  const handleContainerClick = (e: React.MouseEvent) => {
+    // Don't open task if we're editing
+    if (isEditing) return;
+    handleTaskSelect(task);
+  };
+
   return (
     <div
-      className={`group px-2 relative ${styles.container} ${viewMode === 'compact' ? '' : 'rounded-lg'
+      className={`group px-3 md:px-2 relative ${styles.container} ${viewMode === 'compact' ? '' : 'rounded-lg'
         } transition-all duration-200 backdrop-blur-sm hover:bg-opacity-80 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'
-        }`}
+        } cursor-pointer`}
       style={{
         backgroundColor: getBackgroundColor(),
       }}
+      onClick={handleContainerClick}
+      onDoubleClick={() => setIsEditing(true)}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center flex-1">
 
-          <Checkbox
-            id={task.id}
-            size="md"
-            checked={task.completed}
-            onChange={handleCheckboxChange}
-          />
+          <div onClick={(e) => e.stopPropagation()} className="md:mr-0 mr-2">
+            <Checkbox
+              id={task.id}
+              size="md"
+              checked={task.completed}
+              onChange={handleCheckboxChange}
+            />
+          </div>
           <div className="flex-1"
-            onClick={() => handleTaskSelect(task)}
-            onDoubleClick={() => setIsEditing(true)}
           >
 
             {isEditing ? (
@@ -142,15 +144,17 @@ const ListItem: React.FC<ListItemProps> = ({
                 onChange={handleTitleChange}
                 onBlur={handleTitleBlur}
                 onKeyDown={handleKeyDown}
+                onClick={(e) => e.stopPropagation()}
                 className={`px-2 py-1 text-sm w-full bg-transparent border border-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white/30 ${styles.title} ${isDarkMode ? 'text-gray-100' : 'text-gray-900'
                   }`}
                 autoFocus
+                autoComplete="off"
+                inputMode="text"
               />
             ) : (
               <span
-                className={`pl-2 ${styles.title} ${!isMobile ? 'cursor-pointer' : ''} ${task.completed ? (isDarkMode ? "text-gray-400" : "text-gray-500") : ""
+                className={`pl-2 ${styles.title} ${task.completed ? (isDarkMode ? "text-gray-400" : "text-gray-500") : ""
                   }`}
-                onClick={handleTitleClick}
               >
                 {task.name}
               </span>

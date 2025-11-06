@@ -23,6 +23,19 @@ html, body {
   padding: 0;
 }
 
+/* Dynamic viewport height variable for mobile Chrome address bar fix */
+:root {
+  --vh: 1vh; /* Fallback for legacy browsers, will be set by JavaScript */
+}
+
+/* Use modern dvh (dynamic viewport height) when supported */
+/* dvh tracks the visible viewport and changes as browser UI shows/hides */
+@supports (height: 100dvh) {
+  :root {
+    --vh: 1dvh; /* Use native dvh if supported */
+  }
+}
+
 #root {
   background-color: var(--accent-color);
 }
@@ -41,4 +54,15 @@ html, body {
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* Hide scrollbar for schedule sidebar */
+[data-timeline-container]::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Remove tap highlight on mobile devices */
+button {
+  -webkit-tap-highlight-color: transparent;
+  tap-highlight-color: transparent;
 }

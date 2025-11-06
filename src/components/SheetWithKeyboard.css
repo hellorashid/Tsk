@@ -4,18 +4,32 @@
 }
 
 .SheetWithKeyboard-view {
-  height: 90vh !important;
-  max-height: 90vh !important;
+  height: calc(var(--vh, 1vh) * 90) !important;
+  max-height: calc(var(--vh, 1vh) * 90) !important;
   background-color: transparent !important;
+}
+
+@supports (height: 100dvh) {
+  .SheetWithKeyboard-view {
+    height: 90dvh !important;
+    max-height: 90dvh !important;
+  }
 }
 
 .SheetWithKeyboard-content {
   max-width: 100%;
-  height: 90vh !important;
-  max-height: 90vh !important;
+  height: calc(var(--vh, 1vh) * 90) !important;
+  max-height: calc(var(--vh, 1vh) * 90) !important;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   background-color: transparent !important;
+}
+
+@supports (height: 100dvh) {
+  .SheetWithKeyboard-content {
+    height: 90dvh !important;
+    max-height: 90dvh !important;
+  }
 }
 
 /* Remove any default backgrounds from sheet components only */
@@ -23,13 +37,29 @@
   background-color: transparent !important;
 }
 
+/* Faster drawer animations - override Silk Sheet default transitions */
+.SheetWithKeyboard-view,
+.SheetWithKeyboard-content,
+[data-silk-sheet-view],
+[data-silk-sheet-content] {
+  transition-duration: 150ms !important;
+  transition-timing-function: ease-out !important;
+}
+
 @media (min-width: 800px) {
   .SheetWithKeyboard-content {
     width: 500px;
     max-width: 90vw;
-    height: 90vh !important;
-    max-height: 90vh !important;
+    height: calc(var(--vh, 1vh) * 90) !important;
+    max-height: calc(var(--vh, 1vh) * 90) !important;
     border-radius: 1rem;
     background-color: transparent !important;
+  }
+  
+  @supports (height: 100dvh) {
+    .SheetWithKeyboard-content {
+      height: 90dvh !important;
+      max-height: 90dvh !important;
+    }
   }
 }

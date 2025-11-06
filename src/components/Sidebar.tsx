@@ -2,60 +2,62 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
 interface SidebarProps {
-  filters: {
-    id: string;
-    label: string;
-    count?: number;
-  }[];
-  activeFilter: string;
-  onFilterChange: (filterId: string) => void;
-  onCreateFilter?: (filterName: string, labels: string[]) => void;
+  // Filter props commented out for now
+  // filters: {
+  //   id: string;
+  //   label: string;
+  //   count?: number;
+  // }[];
+  // activeFilter: string;
+  // onFilterChange: (filterId: string) => void;
+  // onCreateFilter?: (filterName: string, labels: string[]) => void;
   accentColor?: string;
   isDarkMode?: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
-  filters,
-  activeFilter,
-  onFilterChange,
-  onCreateFilter,
+  // filters,
+  // activeFilter,
+  // onFilterChange,
+  // onCreateFilter,
   accentColor = '#1F1B2F',
   isDarkMode = true
 }) => {
-  const [isCreating, setIsCreating] = useState(false);
-  const [newFilterName, setNewFilterName] = useState('');
-  const [newFilterLabels, setNewFilterLabels] = useState('');
-  const [isNewFilterButtonHovered, setIsNewFilterButtonHovered] = useState(false);
+  // Filter-related state and handlers - commented out for now
+  // const [isCreating, setIsCreating] = useState(false);
+  // const [newFilterName, setNewFilterName] = useState('');
+  // const [newFilterLabels, setNewFilterLabels] = useState('');
+  // const [isNewFilterButtonHovered, setIsNewFilterButtonHovered] = useState(false);
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
 
-  const handleCreateFilter = () => {
-    if (newFilterName.trim() && onCreateFilter) {
-      // Split labels by comma and trim whitespace
-      const labels = newFilterLabels
-        .split(',')
-        .map(label => label.trim())
-        .filter(label => label !== '');
+  // const handleCreateFilter = () => {
+  //   if (newFilterName.trim() && onCreateFilter) {
+  //     // Split labels by comma and trim whitespace
+  //     const labels = newFilterLabels
+  //       .split(',')
+  //       .map(label => label.trim())
+  //       .filter(label => label !== '');
 
-      onCreateFilter(newFilterName.trim(), labels);
-      setNewFilterName('');
-      setNewFilterLabels('');
-      setIsCreating(false);
-    }
-  };
+  //     onCreateFilter(newFilterName.trim(), labels);
+  //     setNewFilterName('');
+  //     setNewFilterLabels('');
+  //     setIsCreating(false);
+  //   }
+  // };
 
-  const getStyle = (filter : any) => { 
-    if (activeFilter === filter.id) {
-      return {
-        backgroundColor: `${accentColor}80`,
-        backgroundOpacity: 1
-      }
-    } else {
-      return {
-        backgroundColor: `${accentColor}40`,
-        backgroundOpacity: 0.4,
-      }
-    }
-  }
+  // const getStyle = (filter : any) => { 
+  //   if (activeFilter === filter.id) {
+  //     return {
+  //       backgroundColor: `${accentColor}80`,
+  //       backgroundOpacity: 1
+  //     }
+  //   } else {
+  //     return {
+  //       backgroundColor: `${accentColor}40`,
+  //       backgroundOpacity: 0.4,
+  //     }
+  //   }
+  // }
 
 
   return (
@@ -64,7 +66,8 @@ const Sidebar: React.FC<SidebarProps> = ({
       onMouseEnter={() => setIsSidebarHovered(true)}
       onMouseLeave={() => setIsSidebarHovered(false)}
     >
-      <div
+      {/* Filter UI - commented out for now */}
+      {/* <div
         className={`rounded-r-md py-0 backdrop-blur-sm overflow-hidden`}
         style={{ backgroundColor: `${accentColor}66` }}
       >
@@ -164,7 +167,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             New Filter
           </motion.button>
         )}
-      </div>
+      </div> */}
     </div>
   );
 };

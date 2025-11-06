@@ -11,14 +11,18 @@ import { useBasic, useQuery } from "@basictech/react";
 import bgImage from '/bg2.jpg';
 
 import SilkTaskDrawer from "./components/SilkTaskDrawer";
-import Sidebar from "./components/Sidebar";
+// import Sidebar from "./components/Sidebar"; // Removed - sidebar is empty
 import TaskDetailsSidebar from "./components/TaskDetailsSidebar";
 import SettingsSidebar from "./components/SettingsSidebar";
 import SettingsDrawer from "./components/SettingsDrawer";
+import ScheduleSidebar from "./components/ScheduleSidebar";
+import { ScheduleCardData } from "./components/ScheduleCard";
+import DynamicIsland from "./components/DynamicIsland";
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import MobileNavBar from "./components/MobileNavBar";
 
 
- function ExpandableInput() {
+function ExpandableInput() {
   const [isExpanded, setIsExpanded] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -74,7 +78,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
           onClick={() => setIsExpanded(true)}
         />
 
-        <div 
+        <div
           className={`
             absolute bottom-0 left-0 right-0
             bg-white dark:bg-gray-800 border-t
@@ -109,7 +113,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 }
 
 
-function StatusIcon( {status}: {status: string}) {
+function StatusIcon({ status }: { status: string }) {
 
 
   return (
@@ -118,25 +122,25 @@ function StatusIcon( {status}: {status: string}) {
         <div className="text-red-500">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3" />
-        </svg>
-      </div>
-    )}
-    {status === "ONLINE" && (
-      <div className="text-green-500">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3" />
+          </svg>
+        </div>
+      )}
+      {status === "ONLINE" && (
+        <div className="text-green-500">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
-        </svg>
-      </div>
-    )}
-    {status !== "OFFLINE" && status !== "ONLINE" && (
-      <div className="text-gray-500 animate-spin">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-      </div>
-    )}
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+          </svg>
+        </div>
+      )}
+      {status !== "OFFLINE" && status !== "ONLINE" && (
+        <div className="text-gray-500 animate-spin">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </div>
+      )}
     </div>
   )
 }
@@ -149,20 +153,49 @@ function Home() {
   const { db, dbStatus } = useBasic();
   const { theme, setAccentColor, setIsDarkMode, setFontStyle } = useTheme();
 
-  const tasks = useQuery( () => db.collection("tasks").getAll())
-  
+  const tasks = useQuery(() => db.collection("tasks").getAll())
+  const scheduleEventsData = useQuery(() => db.collection("schedule").getAll())
+
   console.log("tasks from DB:", tasks);
+  console.log("schedule from DB:", scheduleEventsData);
   const [selectedTask, setSelectedTask] = useState(null);
-  const [newInput, setNewInput] = useState(""); 
+  const [selectedEvent, setSelectedEvent] = useState<ScheduleCardData | null>(null);
+
+  // Use schedule events from database, fallback to empty array
+  const scheduleEvents = scheduleEventsData || [];
+  
+  // Update a schedule event in the database
+  const updateScheduleEvent = async (id: string, changes: Partial<ScheduleCardData>) => {
+    await db.collection("schedule").update(id, changes);
+  };
+  
+  // Delete a schedule event from the database
+  const deleteScheduleEvent = async (id: string) => {
+    await db.collection("schedule").delete(id);
+  };
+  const [newInput, setNewInput] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [activeFilter, setActiveFilter] = useState('all');
+  // Filter-related state - commented out for now
+  // const [activeFilter, setActiveFilter] = useState('all');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(true);
   const [viewMode, setViewMode] = useState('cozy');
-  const [customFilters, setCustomFilters] = useState([]);
+  // const [customFilters, setCustomFilters] = useState([]);
   const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
+  // const [showFilters, setShowFilters] = useState(false);
   const [isNewTaskMode, setIsNewTaskMode] = useState(false);
+  const [mobileView, setMobileView] = useState<'tasks' | 'calendar'>('tasks');
+
+  // Handle mobile view change - close drawer when switching views
+  const handleMobileViewChange = (view: 'tasks' | 'calendar') => {
+    setMobileView(view);
+    if (drawerOpen) {
+      setDrawerOpen(false);
+      setIsNewTaskMode(false);
+      setSelectedTask(null);
+      setSelectedEvent(null);
+    }
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -177,34 +210,38 @@ function Home() {
     setIsDarkMode(isDark);
   };
 
+  // Filter-related code - commented out for now
   // Define filters
-  const filters = [
-    { id: 'all', label: 'All Tasks', count: tasks?.length },
-    { id: 'active', label: 'Active', count: tasks?.filter(task => !task.completed).length },
-    { id: 'completed', label: 'Completed', count: tasks?.filter(task => task.completed).length },
-    ...customFilters
-  ];
+  // const filters = [
+  //   { id: 'all', label: 'All Tasks', count: tasks?.length },
+  //   { id: 'active', label: 'Active', count: tasks?.filter(task => !task.completed).length },
+  //   { id: 'completed', label: 'Completed', count: tasks?.filter(task => task.completed).length },
+  //   ...customFilters
+  // ];
 
-  // Filter tasks based on active filter
-  const filteredTasks = tasks?.filter(task => {
-    if (activeFilter === 'all') return true;
-    if (activeFilter === 'active') return !task.completed;
-    if (activeFilter === 'completed') return task.completed;
-    
-    // Handle custom filters
-    const customFilter = customFilters.find(f => f.id === activeFilter);
-    if (customFilter) {
-      // Check if the task has any of the filter's labels
-      if (customFilter.labels && customFilter.labels.length > 0) {
-        return customFilter.labels.some(label => 
-          task.labels && task.labels.includes(label)
-        );
-      }
-      return true;
-    }
-    
-    return true;
-  });
+  // Filter tasks based on active filter - commented out, showing all tasks instead
+  // const filteredTasks = tasks?.filter(task => {
+  //   if (activeFilter === 'all') return true;
+  //   if (activeFilter === 'active') return !task.completed;
+  //   if (activeFilter === 'completed') return task.completed;
+  //   
+  //   // Handle custom filters
+  //   const customFilter = customFilters.find(f => f.id === activeFilter);
+  //   if (customFilter) {
+  //     // Check if the task has any of the filter's labels
+  //     if (customFilter.labels && customFilter.labels.length > 0) {
+  //       return customFilter.labels.some(label => 
+  //         task.labels && task.labels.includes(label)
+  //       );
+  //     }
+  //     return true;
+  //   }
+  //   
+  //   return true;
+  // });
+
+  // Filter out subtasks - only show tasks without a parentTaskId
+  const filteredTasks = tasks?.filter((task: Task) => !task.parentTaskId) || [];
 
   // Keyboard navigation for tasks
   useEffect(() => {
@@ -212,24 +249,26 @@ function Home() {
       if (e.key === 'Escape') {
         e.preventDefault();
         setSelectedTask(null);
-        setShowSettings(false);
+        setSelectedEvent(null);
+        setSettingsDrawerOpen(false);
+        setShowSchedule(false);
         if (isMobile) {
           setDrawerOpen(false);
         }
         return;
       }
-      
+
       if (!filteredTasks || filteredTasks.length === 0) return;
-      
+
       if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
         e.preventDefault();
-        
-        const currentIndex = selectedTask 
+
+        const currentIndex = selectedTask
           ? filteredTasks.findIndex(task => task.id === selectedTask.id)
           : -1;
-        
+
         let newIndex;
-        
+
         if (e.key === 'ArrowRight') {
           // Move to next task or first task if at the end
           newIndex = currentIndex < filteredTasks.length - 1 ? currentIndex + 1 : 0;
@@ -237,8 +276,9 @@ function Home() {
           // Move to previous task or last task if at the beginning
           newIndex = currentIndex > 0 ? currentIndex - 1 : filteredTasks.length - 1;
         }
-        
+
         setSelectedTask(filteredTasks[newIndex]);
+        setSelectedEvent(null); // Clear event when navigating tasks
       }
     };
 
@@ -250,20 +290,21 @@ function Home() {
   const handleTaskSelect = (task) => {
     console.log("Selected task:", task);
     console.log("isMobile state:", isMobile);
-    
+
     // Validate the task
     if (!task) {
       console.error("Cannot select null task");
       return;
     }
-    
+
     if (!task.id) {
       console.error("Task is missing ID:", task);
       return;
     }
-    
-    setSelectedTask({...task}); // Use a copy to ensure reactivity
-    setShowSettings(false); // Close settings when selecting a task
+
+    setSelectedTask({ ...task }); // Use a copy to ensure reactivity
+    setSelectedEvent(null); // Clear event selection when selecting a task
+    setSettingsDrawerOpen(false); // Close settings when selecting a task
     setIsNewTaskMode(false); // Ensure we're in edit mode, not new task mode
     if (isMobile) {
       console.log("Opening drawer for mobile view");
@@ -271,28 +312,144 @@ function Home() {
     }
   };
 
+  // Wrapper to ensure mutual exclusivity when selecting tasks
+  const handleTaskSelectWrapper = (task: Task | null) => {
+    setSelectedTask(task);
+    setSelectedEvent(null); // Clear event when selecting task
+  };
+
+  // Wrapper to ensure mutual exclusivity when selecting events
+  const handleEventSelectWrapper = (event: ScheduleCardData | null) => {
+    setSelectedEvent(event);
+    setSelectedTask(null); // Clear task when selecting event
+  };
+
   const handleCloseTaskDetails = () => {
     setSelectedTask(null);
+    setSelectedEvent(null);
     if (isMobile) {
       setDrawerOpen(false);
     }
   };
 
-  const handleOpenSettings = () => {
-    if (isMobile) {
-      setSettingsDrawerOpen(true);
-    } else {
-      setShowSettings(true);
+  // Handle schedule card clicks
+  const handleScheduleCardClick = (cardData: ScheduleCardData) => {
+    if (cardData.type === 'task' && cardData.taskId) {
+      // Find the task in the tasks list and select it
+      const task = tasks.find(t => t.id === cardData.taskId);
+      if (task) {
+        setSelectedTask(task);
+        setSelectedEvent(null); // Clear event selection
+        setIsNewTaskMode(false);
+        if (isMobile) {
+          setDrawerOpen(true);
+        }
+      }
+    } else if (cardData.type === 'event' || cardData.type === 'other') {
+      // Select the event
+      setSelectedEvent(cardData);
+      setSelectedTask(null); // Clear task selection
+      setIsNewTaskMode(false);
+      if (isMobile) {
+        setDrawerOpen(true);
+      }
     }
   };
 
-  const handleCloseSettings = () => {
-    if (isMobile) {
-      setSettingsDrawerOpen(false);
-    } else {
-      setShowSettings(false);
-    }
+  // Convert minutes from midnight to HH:MM format
+  const minutesToTimeString = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60) % 24;
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
   };
+
+  // Get current time in minutes from midnight
+  const getCurrentTimeInMinutes = (): number => {
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+  };
+
+  // Find next available time slot (30 min duration)
+  const findNextAvailableSlot = (durationMinutes: number = 30): { start: Date; end: Date } => {
+    const now = new Date();
+    
+    // Round up to next 15-minute interval
+    const minutes = now.getMinutes();
+    const roundedMinutes = Math.ceil(minutes / 15) * 15;
+    now.setMinutes(roundedMinutes, 0, 0);
+    
+    let candidateStart = new Date(now);
+    let candidateEnd = new Date(candidateStart.getTime() + durationMinutes * 60 * 1000);
+    
+    // Keep trying until we find a free slot (max 50 attempts to avoid infinite loop)
+    let attempts = 0;
+    const maxAttempts = 50;
+    
+    while (attempts < maxAttempts) {
+      // Check if this slot conflicts with any existing event
+      const hasConflict = scheduleEvents.some(event => {
+        if (!event.start.dateTime || !event.end.dateTime) return false;
+        
+        const eventStart = new Date(event.start.dateTime);
+        const eventEnd = new Date(event.end.dateTime);
+        
+        // Check for overlap: candidate starts before event ends AND candidate ends after event starts
+        return candidateStart < eventEnd && candidateEnd > eventStart;
+      });
+      
+      if (!hasConflict) {
+        // Found a free slot!
+        return { start: candidateStart, end: candidateEnd };
+      }
+      
+      // Move to next 15-minute slot
+      candidateStart = new Date(candidateStart.getTime() + 15 * 60 * 1000);
+      candidateEnd = new Date(candidateStart.getTime() + durationMinutes * 60 * 1000);
+      attempts++;
+    }
+    
+    // Fallback: if no slot found, just use current time
+    return { start: now, end: new Date(now.getTime() + durationMinutes * 60 * 1000) };
+  };
+
+  // Handle adding task to schedule
+  const handleAddToSchedule = async (task: Task) => {
+    const { start, end } = findNextAvailableSlot(30); // 30 minute duration
+
+    const newScheduleItem = {
+      title: task.name || 'Untitled Task', // Stored for reference, but display uses task.name from taskId
+      start: {
+        dateTime: start.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      },
+      end: {
+        dateTime: end.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      },
+      color: 'rgba(148, 163, 184, 0.08)',
+      type: 'task',
+      taskId: task.id,
+      description: task.description
+    };
+
+    // Add to database (DB will auto-generate ID)
+    await db.collection("schedule").add(newScheduleItem);
+  };
+
+  // Handle adding new event
+  const handleAddEvent = async (eventData: Omit<ScheduleCardData, 'id'>): Promise<ScheduleCardData> => {
+    const eventId = await db.collection("schedule").add(eventData);
+    return { ...eventData, id: eventId }; // Return with DB-assigned ID
+  };
+
+  const handleOpenSettings = () => {
+    setSettingsDrawerOpen(true);
+  };
+
+  const handleCloseSettings = () => {
+    setSettingsDrawerOpen(false);
+  };
+
 
   const handleViewModeChange = (mode) => {
     setViewMode(mode);
@@ -308,7 +465,7 @@ function Home() {
       alert('Please fill out this field');
       return;
     }
-    
+
     const newTask = await db.collection("tasks").add({
       name: newInput,
       description: "",
@@ -325,30 +482,54 @@ function Home() {
     console.log(`Updating task ${taskId} with:`, changes);
     db.collection("tasks").update(taskId, changes);
   }
+  
+  // Handle task toggle from schedule - wrapper for updateTask
+  const handleTaskToggle = (taskId: string, completed: boolean) => {
+    updateTask(taskId, { completed });
+  };
 
   const deleteTask = (taskId: string) => {
     db.collection("tasks").delete(taskId);
+    // Clear selections if the deleted task was selected
+    if (selectedTask?.id === taskId) {
+      setSelectedTask(null);
+    }
   }
 
-  const handleCreateFilter = (filterName, labels) => {
-    const newFilterId = `custom-${Date.now()}`;
-    const newFilter = {
-      id: newFilterId,
-      label: filterName,
-      labels: labels,
-      count: 0, // This will be updated when tasks are filtered
-    };
-    
-    setCustomFilters([...customFilters, newFilter]);
-    setActiveFilter(newFilterId); // Switch to the new filter
-  };
+  // Filter creation handler - commented out for now
+  // const handleCreateFilter = (filterName, labels) => {
+  //   const newFilterId = `custom-${Date.now()}`;
+  //   const newFilter = {
+  //     id: newFilterId,
+  //     label: filterName,
+  //     labels: labels,
+  //     count: 0, // This will be updated when tasks are filtered
+  //   };
+  //   
+  //   setCustomFilters([...customFilters, newFilter]);
+  //   setActiveFilter(newFilterId); // Switch to the new filter
+  // };
 
-  const handleAddTask = (taskName) => {
-    db.collection("tasks").add({
+  const handleAddTask = async (taskName): Promise<string | null> => {
+    const taskId = await db.collection("tasks").add({
       name: taskName,
       description: "",
       completed: false
     });
+    console.log("newTask ID:", taskId);
+    return taskId || null;
+  };
+
+  // Add subtask to a parent task
+  const handleAddSubtask = async (parentTaskId: string, subtaskName: string): Promise<string | null> => {
+    const subtaskId = await db.collection("tasks").add({
+      name: subtaskName,
+      description: "",
+      completed: false,
+      parentTaskId: parentTaskId
+    });
+    console.log("newSubtask ID:", subtaskId);
+    return subtaskId || null;
   };
 
   // New function to open drawer in "new task" mode
@@ -356,6 +537,7 @@ function Home() {
     console.log("Opening new task drawer");
     setIsNewTaskMode(true);
     setSelectedTask(null);
+    setSelectedEvent(null);
     setDrawerOpen(true);
   };
 
@@ -363,59 +545,59 @@ function Home() {
     setFontStyle(style);
   };
 
+  // Update viewport height on resize for mobile Chrome fix (fallback for older browsers)
+  // Modern browsers use dvh (dynamic viewport height) natively, so this is only needed for legacy support
+  useEffect(() => {
+    // Skip if browser supports dvh natively
+    if (typeof CSS !== 'undefined' && CSS.supports('height', '100dvh')) {
+      return;
+    }
+
+    const updateViewportHeight = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+
+    updateViewportHeight();
+    window.addEventListener('resize', updateViewportHeight);
+    window.addEventListener('orientationchange', updateViewportHeight);
+
+    return () => {
+      window.removeEventListener('resize', updateViewportHeight);
+      window.removeEventListener('orientationchange', updateViewportHeight);
+    };
+  }, []);
+
   return (
-    <section className={`flex-1 task-home w-full h-screen max-h-screen relative overflow-hidden ${theme.isDarkMode ? 'text-gray-100' : 'text-gray-900'} ${isMobile && drawerOpen ? 'drawer-open-scale' : ''}`}
+    <section className={`flex-1 task-home w-full relative overflow-hidden ${theme.isDarkMode ? 'text-gray-100' : 'text-gray-900'} ${isMobile && drawerOpen ? 'drawer-open-scale' : ''}`}
       style={{
         backgroundColor: theme.accentColor,
         backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4)), url(${bgImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
+        // Use dvh (dynamic viewport height) with fallback
+        // Modern browsers: dvh tracks visible viewport and adjusts as address bar shows/hides
+        // Fallback: JavaScript sets --vh for older browsers
+        height: typeof CSS !== 'undefined' && CSS.supports('height', '100dvh') 
+          ? '100dvh' 
+          : 'calc(var(--vh, 1vh) * 100)',
+        maxHeight: typeof CSS !== 'undefined' && CSS.supports('height', '100dvh') 
+          ? '100dvh' 
+          : 'calc(var(--vh, 1vh) * 100)',
         paddingBottom: 'env(safe-area-inset-bottom, 20px)'
       }}>
-      <div className=" h-12 rounded-b-md md:rounded-b-none bg-opacity-95 shadow-md backdrop-blur-sm flex justify-between items-center sticky top-0 z-100"
-        style={{ backgroundColor: theme.accentColor }}>
+      <div className=" h-12 rounded-b-md md:rounded-b-none backdrop-blur-sm flex justify-between items-center sticky top-0 z-100"
+        style={{ backgroundColor: 'transparent' }}>
         <div className="">
           <a className="px-4 py-2 rounded-lg bg-transparent hover:bg-white/10 transition-colors duration-200 text-md flex items-center">
-            <img className="w-6 h-6 mr-2" src='tsk-logo.png'/>tsk.
+            <img className="w-6 h-6 mr-2" src='tsk-logo.png' />tsk.
           </a>
           {/* {isNewTaskMode && 'NT'} {drawerOpen && 'DO'} */}
         </div>
 
-        <div className="hidden md:block"> 
-
-          <form
-            onSubmit={handleSubmit}
-            className="flex justify-center w-96 h-8"
-          >
-            <input
-              type="text"
-              value={newInput}
-              onChange={(e) => setNewInput(e.target.value)}
-              placeholder="I want to..."
-              className={`font-serif px-3 py-2 w-full max-w-xs border-0 focus:outline-none focus:ring-0 focus:border-0 appearance-none h-8 bg-white/5 text-white placeholder-white/70 transition-all duration-300 ease-in-out ${
-                newInput.trim() !== "" ? "rounded-l-full" : "rounded-full"
-              }`}
-              style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
-              onFocus={(e) => {
-                e.target.style.outline = 'none';
-                e.target.style.border = 'none';
-                e.target.style.boxShadow = 'none';
-              }}
-              required
-            />
-            <button
-              className={`px-2 submit font-sm text-slate-300 h-8 overflow-hidden transition-all duration-300 ease-in-out bg-white/10 hover:bg-white/20 rounded-r-full ${
-                newInput.trim() !== "" ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 px-0"
-              }`}
-              type="submit"
-              onClick={handleSubmit}
-            >Add</button>
-          </form>
-        </div>
-
         <div className="flex-none flex items-center pr-2">
-          <button 
+          <button
             onClick={handleOpenSettings}
             className="opacity-60 hover:opacity-100 focus:outline-none mr-2 bg-transparent"
             aria-label="Settings"
@@ -428,58 +610,74 @@ function Home() {
         </div>
       </div>
 
-      <div className="flex h-[calc(100vh-64px)]">
-        <div className="hidden md:block pt-6">
-          <Sidebar 
-            filters={filters}
-            activeFilter={activeFilter}
-            onFilterChange={setActiveFilter}
-            onCreateFilter={handleCreateFilter}
-            accentColor={theme.accentColor}
-            isDarkMode={theme.isDarkMode}
-          />
-        </div>
-        
-        <div className="flex-1 overflow-y-auto pb-24 md:pb-0 px-1 md:px-4">
-          <div className="mt-10 flex justify-center">
-            <div className="w-full max-w-4xl">
-              {filteredTasks?.length == 0 && <div>
-                <p className="text-lg font-bold text-center text-slate-100">No tasks yet.</p>
-                <p className="no-task-blurb text-sm font-serif text-center text-slate-100">which is <em>totally</em> fine. its okay to do nothing. you deserve a rest day.</p>
-                <p className="no-task-blurb text-sm font-serif text-center text-slate-100">but also, you can add a task above.</p>
-              </div>}
+      <div className="flex" style={{ 
+        height: typeof CSS !== 'undefined' && CSS.supports('height', '100dvh') 
+          ? 'calc(100dvh - 64px)' 
+          : 'calc(var(--vh, 1vh) * 100 - 64px)'
+      }}>
+        {/* Sidebar removed - was empty after filters were commented out */}
 
-              <div className={`flex flex-col ${viewMode === 'compact' ? 'space-y-0' : viewMode === 'cozy' ? 'space-y-1' : 'space-y-2'}`}>
-                {filteredTasks?.map((task: Task) => (
-                  <div
-                    key={task.id}
-                    className="w-full "
-                    onClick={() => {
-                      // handleTaskSelect(task);
-                    }}
-                  >
-                    <ListItem 
+        {/* Tasks View - shown on desktop or mobile when tasks tab is selected */}
+        {(!isMobile || mobileView === 'tasks') && (
+          <div className="flex-1 overflow-y-auto px-1 md:px-4 relative tasks-scroll-container" style={{ 
+            paddingBottom: isMobile 
+              ? '8rem' 
+              : (typeof CSS !== 'undefined' && CSS.supports('height', '100dvh') ? '50dvh' : 'calc(var(--vh, 1vh) * 50)')
+          }}>
+            <div className="mt-10 flex justify-center">
+              <div className="w-full max-w-4xl relative">
+                {filteredTasks?.length == 0 && <div>
+                  <p className="text-lg font-bold text-center text-slate-100">No tasks yet.</p>
+                  <p className="no-task-blurb text-sm font-serif text-center text-slate-100">which is <em>totally</em> fine. its okay to do nothing. you deserve a rest day.</p>
+                  <p className="no-task-blurb text-sm font-serif text-center text-slate-100">but also, you can add a task below.</p>
+                </div>}
+
+                <div className={`flex flex-col ${viewMode === 'compact' ? 'space-y-0' : viewMode === 'cozy' ? 'space-y-1' : 'space-y-2'}`}>
+                  {filteredTasks?.map((task: Task) => (
+                    <div
                       key={task.id}
-                      task={task}
-                      deleteTask={deleteTask}
-                      updateTask={updateTask}
-                      isSelected={selectedTask?.id === task.id}
-                      viewMode={viewMode}
-                      accentColor={theme.accentColor}
-                      isDarkMode={theme.isDarkMode}
-                      handleTaskSelect={handleTaskSelect}
-                    />
-                  </div>
-                ))}
+                      className="w-full "
+                      onClick={() => {
+                        // handleTaskSelect(task);
+                      }}
+                    >
+                      <ListItem
+                        key={task.id}
+                        task={task}
+                        deleteTask={deleteTask}
+                        updateTask={updateTask}
+                        isSelected={selectedTask?.id === task.id}
+                        viewMode={viewMode}
+                        accentColor={theme.accentColor}
+                        isDarkMode={theme.isDarkMode}
+                        handleTaskSelect={handleTaskSelect}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
+        )}
 
+        {/* Calendar View - shown on mobile when calendar tab is selected */}
+        {isMobile && mobileView === 'calendar' && (
+          <div className="flex-1 h-full overflow-hidden px-1 relative">
+            <ScheduleSidebar
+              onCardClick={handleScheduleCardClick}
+              events={scheduleEvents}
+              onUpdateEvent={updateScheduleEvent}
+              onDeleteEvent={deleteScheduleEvent}
+              onTaskToggle={handleTaskToggle}
+              onAddEvent={handleAddEvent}
+              accentColor={theme.accentColor}
+              isDarkMode={theme.isDarkMode}
+            />
+          </div>
+        )}
 
-        </div>
-
-        {/* Desktop task details sidebar - only show on desktop when a task is selected and settings is not open */}
-        {!isMobile && selectedTask && !showSettings && (
+        {/* Desktop task details sidebar - disabled in favor of dynamic island */}
+        {false && !isMobile && selectedTask && !settingsDrawerOpen && (
           <div className="hidden md:block md:pl-4 w-1/3 p-2">
 
             <TaskDetailsSidebar
@@ -495,23 +693,43 @@ function Home() {
           </div>
         )}
 
-        {/* Settings sidebar - only show on desktop when settings is open */}
-        {!isMobile && showSettings && (
-          <div className="hidden md:block md:pl-4 w-1/3 p-2">
-            <SettingsSidebar 
-              onClose={handleCloseSettings} 
-              onViewModeChange={handleViewModeChange}
-              currentViewMode={viewMode}
-              onAccentColorChange={handleAccentColorChange}
-              currentAccentColor={theme.accentColor}
-              onThemeChange={handleThemeChange}
+        {/* Schedule sidebar - always show on desktop */}
+        {!isMobile && (
+          <div className="hidden md:block md:pl-4 w-[480px] p-2">
+            <ScheduleSidebar
+              onCardClick={handleScheduleCardClick}
+              events={scheduleEvents}
+              onUpdateEvent={updateScheduleEvent}
+              onDeleteEvent={deleteScheduleEvent}
+              onTaskToggle={handleTaskToggle}
+              onAddEvent={handleAddEvent}
+              accentColor={theme.accentColor}
               isDarkMode={theme.isDarkMode}
-              onFontStyleChange={handleFontStyleChange}
-              currentFontStyle={theme.fontStyle}
             />
           </div>
         )}
       </div>
+
+      {/* Dynamic Island - Desktop - sticky at bottom of tasks column */}
+      {!isMobile && (
+        <DynamicIsland
+          selectedTask={selectedTask}
+          selectedEvent={selectedEvent}
+          onTaskSelect={handleTaskSelectWrapper}
+          onEventSelect={handleEventSelectWrapper}
+          onAddTask={handleAddTask}
+          onAddEvent={handleAddEvent}
+          onUpdateTask={updateTask}
+          onDeleteTask={deleteTask}
+          onUpdateEvent={updateScheduleEvent}
+          onDeleteEvent={deleteScheduleEvent}
+          onAddToSchedule={handleAddToSchedule}
+          onAddSubtask={handleAddSubtask}
+          tasks={tasks}
+          accentColor={theme.accentColor}
+          isDarkMode={theme.isDarkMode}
+        />
+      )}
 
       {/* Combined Task Drawer - handles both edit and new task modes */}
       {isMobile && (
@@ -519,68 +737,49 @@ function Home() {
           isOpen={drawerOpen}
           setIsOpen={setDrawerOpen}
           task={selectedTask}
+          event={selectedEvent}
           updateFunction={updateTask}
           deleteTask={deleteTask}
           accentColor={theme.accentColor}
           isNewTaskMode={isNewTaskMode}
+          currentView={mobileView}
           onAddTask={handleAddTask}
-        />
-      )}
-
-      {/* Settings drawer - only show on mobile when settings is open */}
-      {isMobile && (
-        <SettingsDrawer
-          isOpen={settingsDrawerOpen}
-          setIsOpen={setSettingsDrawerOpen}
-          onViewModeChange={handleViewModeChange}
-          currentViewMode={viewMode}
-          onAccentColorChange={handleAccentColorChange}
-          currentAccentColor={theme.accentColor}
-          onThemeChange={handleThemeChange}
+          onAddToSchedule={handleAddToSchedule}
           isDarkMode={theme.isDarkMode}
-          onFontStyleChange={handleFontStyleChange}
-          currentFontStyle={theme.fontStyle}
+          onUpdateEvent={updateScheduleEvent}
+          onDeleteEvent={deleteScheduleEvent}
+          onAddEvent={handleAddEvent}
+          onAddSubtask={handleAddSubtask}
+          onUpdateSubtask={updateTask}
+          onDeleteSubtask={deleteTask}
+          onTaskSelect={handleTaskSelect}
         />
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 md:hidden z-10 rounded-t-md">
-        <div className="flex justify-between items-center">
-          <button
-            className="w-12 h-12 rounded-full bg-transparent hover:bg-white/10 flex items-center justify-center text-white transition-colors duration-200"
-            onClick={() => setShowFilters(!showFilters)}
-            aria-label="Filters"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-3 3v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
-          </button>
-          
-          {drawerOpen && isNewTaskMode ? (
-            <button
-              className="w-12 h-12 rounded-full bg-transparent hover:bg-white/10 flex items-center justify-center text-white transition-colors duration-200"
-              // onClick={() => {
-              //   setDrawerOpen(false);
-              //   setIsNewTaskMode(false);
-              // }}
-              aria-label="Cancel"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          ) : (
-            <button
-              className="w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center text-white transition-colors duration-200 shadow-lg"
-              onClick={openNewTaskDrawer}
-              aria-label="Add Task"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </button>
-          )}
-        </div>
-      </div>
+      {/* Settings drawer - shown on both mobile and desktop */}
+      <SettingsDrawer
+        isOpen={settingsDrawerOpen}
+        setIsOpen={setSettingsDrawerOpen}
+        onViewModeChange={handleViewModeChange}
+        currentViewMode={viewMode}
+        onAccentColorChange={handleAccentColorChange}
+        currentAccentColor={theme.accentColor}
+        onThemeChange={handleThemeChange}
+        isDarkMode={theme.isDarkMode}
+        onFontStyleChange={handleFontStyleChange}
+        currentFontStyle={theme.fontStyle}
+      />
+
+      {/* Mobile Navigation Bar */}
+      {isMobile && (
+        <MobileNavBar
+          currentView={mobileView}
+          onViewChange={handleMobileViewChange}
+          onCreateNew={openNewTaskDrawer}
+          accentColor={theme.accentColor}
+          isDarkMode={theme.isDarkMode}
+        />
+      )}
     </section>
   );
 }

@@ -130,7 +130,7 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
           onChange={handleTitleChange}
           onBlur={handleTitleBlur}
           onKeyDown={(e) => handleKeyDown(e, 'title')}
-          className="px-2 py-1 w-full bg-transparent focus:outline-none focus:ring-2 focus:ring-white/30 text-lg font-medium min-h-[2rem] resize-none overflow-hidden border border-transparent hover:border-white/20 rounded"
+          className="px-2 py-1 w-full bg-transparent focus:outline-none focus:ring-2 focus:ring-white/30 text-lg font-medium min-h-[2rem] resize-none overflow-hidden border border-transparent rounded"
           rows={1}
           style={{ height: 'auto' }}
         />
@@ -144,7 +144,7 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
           onChange={handleDescriptionChange}
           onBlur={handleDescriptionBlur}
           onKeyDown={(e) => handleKeyDown(e, 'description')}
-          className="px-2 py-1 w-full bg-transparent focus:outline-none focus:ring-2 focus:ring-white/30 min-h-[100px] description resize-none border border-transparent hover:border-white/20 rounded"
+          className="px-2 py-1 w-full bg-transparent focus:outline-none focus:ring-2 focus:ring-white/30 min-h-[100px] description resize-none border border-transparent rounded"
           placeholder="Add a description..."
           style={{ height: 'auto' }}
         />

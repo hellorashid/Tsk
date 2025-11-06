@@ -71,10 +71,13 @@ export default function SettingsDrawer({
           nativeEdgeSwipePrevention={true} // Recommended
           onTravel={travelHandler} // Optional: for swipe-to-close
           style={{ 
-            height: '90vh', // Increased height
-            maxHeight: '90vh', // Increased maxHeight
+            height: typeof CSS !== 'undefined' && CSS.supports('height', '100dvh') ? '100dvh' : 'calc(var(--vh, 1vh) * 100)',
+            maxHeight: typeof CSS !== 'undefined' && CSS.supports('height', '100dvh') ? '100dvh' : 'calc(var(--vh, 1vh) * 100)',
             display: 'flex',
             flexDirection: 'column',
+            alignItems: largeViewport ? 'center' : 'stretch',
+            justifyContent: largeViewport ? 'center' : 'flex-end',
+            padding: largeViewport ? '2rem' : '0',
           }}
         >
           <Sheet.Backdrop 
@@ -83,15 +86,21 @@ export default function SettingsDrawer({
           <Sheet.Content 
             style={{
               backgroundColor: isDarkMode ? '#1F1B2F' : '#FFFFFF', // Adjust based on theme
-              borderTopLeftRadius: '1rem',
-              borderTopRightRadius: '1rem',
+              borderRadius: largeViewport ? '1rem' : '1rem 1rem 0 0',
               padding: '0px', // Reset padding as inner div will handle it
               display: 'flex',
-              flex: '1',
-              height: '90vh',
-              maxHeight: '90vh',
+              flex: largeViewport ? '0 1 auto' : '1',
+              // Modern: use dvh (dynamic viewport height) with fallback
+              height: typeof CSS !== 'undefined' && CSS.supports('height', '100dvh')
+                ? (largeViewport ? 'calc(100dvh - 4rem)' : '90dvh')
+                : (largeViewport ? 'calc(var(--vh, 1vh) * 100 - 4rem)' : 'calc(var(--vh, 1vh) * 90)'),
+              maxHeight: typeof CSS !== 'undefined' && CSS.supports('height', '100dvh')
+                ? (largeViewport ? 'calc(100dvh - 4rem)' : '90dvh')
+                : (largeViewport ? 'calc(var(--vh, 1vh) * 100 - 4rem)' : 'calc(var(--vh, 1vh) * 90)'),
               flexDirection: 'column',
-              overflow: 'hidden' // Let inner container handle scrolling
+              overflow: 'hidden', // Let inner container handle scrolling
+              width: largeViewport ? '90%' : '100%',
+              maxWidth: largeViewport ? '600px' : '100%',
             }}
             aria-labelledby={titleId}
           >
