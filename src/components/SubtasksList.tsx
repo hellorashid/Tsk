@@ -96,19 +96,27 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
     onDeleteSubtask(subtaskId);
   };
 
+  // Convert hex color to rgba with opacity
+  const hexToRgba = (hex: string, opacity: number): string => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+  };
+
   return (
     <div className="mt-4">
-      {subtasks.length > 0 && (
-        <div className="space-y-1 mb-3">
-          {subtasks.map((subtask) => (
+      <div className="rounded-lg" 
+      style={{ backgroundColor: hexToRgba(accentColor, 0.3) }}
+      >
+        {subtasks.length > 0 && (
+          <div>
+            {subtasks.map((subtask, index) => (
             <div
               key={subtask.id}
-              className={`group pl-4 pr-2 py-1.5 rounded-lg transition-all duration-200 backdrop-blur-sm hover:bg-opacity-80 ${
+              className={`group pl-4 pr-2 py-1.5 transition-all duration-200 ${
                 isDarkMode ? 'text-gray-100' : 'text-gray-900'
-              }`}
-              style={{
-                backgroundColor: `${accentColor}50`,
-              }}
+              } ${index === 0 ? 'rounded-t-lg' : ''}`}
               onDoubleClick={() => handleEditStart(subtask)}
             >
               <div className="flex items-center justify-between">
@@ -161,19 +169,22 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
                 </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
 
-      <form onSubmit={handleAddSubtask}>
-        <div
-          className={`pl-4 pr-2 py-2.5 md:py-1.5 rounded-lg transition-all duration-200 backdrop-blur-sm ${
-            isDarkMode ? 'text-gray-100' : 'text-gray-900'
-          }`}
-          style={{
-            backgroundColor: `${accentColor}50`,
-          }}
-        >
+        <form onSubmit={handleAddSubtask}>
+          <div
+            className={`pl-4 pr-2 py-2.5 md:py-1.5 transition-all duration-200 group ${
+              isDarkMode ? 'text-gray-100' : 'text-gray-900'
+            } ${subtasks.length === 0 ? 'rounded-lg' : 'rounded-b-lg'}`}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = hexToRgba(accentColor, 0.8);
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
           <div className="flex items-center">
             <div className="flex-shrink-0 relative opacity-30">
               <Checkbox
@@ -208,6 +219,7 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
           </div>
         </div>
       </form>
+      </div>
     </div>
   );
 };

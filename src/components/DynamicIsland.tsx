@@ -803,7 +803,21 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 />
               )}
 
-              {/* Actions */}
+              {/* Description Section - in the middle */}
+              <textarea
+                ref={descTextareaRef}
+                value={description}
+                onChange={handleDescriptionChange}
+                onBlur={handleDescriptionBlur}
+                onKeyDown={(e) => handleTextareaKeyDown(e, 'description')}
+                className={`w-full bg-transparent focus:outline-none min-h-[100px] resize-none border border-transparent rounded ${
+                  isDarkMode ? 'text-gray-300 placeholder-gray-500' : 'text-gray-700 placeholder-gray-400'
+                }`}
+                placeholder="Add a description..."
+                style={{ height: 'auto' }}
+              />
+
+              {/* Actions Footer */}
               <div className="flex justify-between items-center gap-2 pt-2 border-t border-white/10">
                 <button
                   onClick={handleDelete}
@@ -878,23 +892,6 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   </button>
                 )}
               </div>
-
-              {/* Divider above description */}
-              <div className={`border-t ${isDarkMode ? 'border-white/10' : 'border-gray-300'} w-full mt-4 mb-4`}></div>
-
-              {/* Description Section - moved to bottom */}
-              <textarea
-                ref={descTextareaRef}
-                value={description}
-                onChange={handleDescriptionChange}
-                onBlur={handleDescriptionBlur}
-                onKeyDown={(e) => handleTextareaKeyDown(e, 'description')}
-                className={`w-full bg-transparent focus:outline-none min-h-[100px] resize-none border border-transparent rounded ${
-                  isDarkMode ? 'text-gray-300 placeholder-gray-500' : 'text-gray-700 placeholder-gray-400'
-                }`}
-                placeholder="Add a description..."
-                style={{ height: 'auto' }}
-              />
             </motion.div>
           )}
         </AnimatePresence>
