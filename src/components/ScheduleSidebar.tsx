@@ -41,6 +41,8 @@ interface ScheduleSidebarProps {
   onAddEvent?: (eventData: Omit<ScheduleCardData, 'id'>) => Promise<ScheduleCardData>;
   accentColor?: string;
   isDarkMode?: boolean;
+  viewMode?: 'timeline' | 'agenda';
+  onViewModeChange?: (mode: 'timeline' | 'agenda') => void;
 }
 
 const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
@@ -51,7 +53,9 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   onTaskToggle,
   onAddEvent,
   accentColor = '#1F1B2F',
-  isDarkMode = true
+  isDarkMode = true,
+  viewMode = 'timeline',
+  onViewModeChange
 }) => {
   // Track selected date (defaults to today)
   const [selectedDate, setSelectedDate] = useState<Date>(getStartOfDay(new Date()));
@@ -448,13 +452,15 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
           borderColor: isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)'
         }}
       >
-        <div className="flex items-center justify-between mb-1">
+        <div className="relative flex items-center justify-between mb-3">
           <h3 className={`text-lg font-semibold ${
             isDarkMode ? 'text-gray-100' : 'text-gray-900'
           }`}>
             {isSelectedDateToday ? 'Today' : displayDate.split(',')[0]}
           </h3>
-          <div className="flex items-center gap-1">
+          
+          {/* Center: Date navigation buttons */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1">
             <button
               onClick={goToPreviousDay}
               className={`p-1.5 rounded-md transition-colors ${
@@ -471,13 +477,9 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
             <button
               onClick={goToToday}
               className={`p-1.5 rounded-md transition-colors ${
-                isSelectedDateToday
-                  ? isDarkMode
-                    ? 'bg-white/20 text-white'
-                    : 'bg-gray-800 text-white'
-                  : isDarkMode
-                    ? 'hover:bg-white/10 text-gray-300'
-                    : 'hover:bg-gray-200 text-gray-700'
+                isDarkMode 
+                  ? 'hover:bg-white/10 text-gray-300' 
+                  : 'hover:bg-gray-200 text-gray-700'
               }`}
               aria-label="Go to today"
             >
@@ -499,6 +501,50 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
               </svg>
             </button>
           </div>
+
+          {/* Right: View mode toggle switch with icons */}
+          {onViewModeChange && (
+            <div className={`flex items-center rounded-lg p-0.5 ${
+              isDarkMode ? 'bg-white/10' : 'bg-gray-200'
+            }`}>
+              <button
+                onClick={() => onViewModeChange('timeline')}
+                className={`p-1.5 rounded-md transition-all ${
+                  viewMode === 'timeline'
+                    ? isDarkMode
+                      ? 'bg-white/20 text-white'
+                      : 'bg-white text-gray-900 shadow-sm'
+                    : isDarkMode
+                      ? 'text-gray-400 hover:text-gray-200'
+                      : 'text-gray-500 hover:text-gray-800'
+                }`}
+                aria-label="Timeline view"
+                title="Timeline view"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                </svg>
+              </button>
+              <button
+                onClick={() => onViewModeChange('agenda')}
+                className={`p-1.5 rounded-md transition-all ${
+                  viewMode === 'agenda'
+                    ? isDarkMode
+                      ? 'bg-white/20 text-white'
+                      : 'bg-white text-gray-900 shadow-sm'
+                    : isDarkMode
+                      ? 'text-gray-400 hover:text-gray-200'
+                      : 'text-gray-500 hover:text-gray-800'
+                }`}
+                aria-label="Agenda view"
+                title="Agenda view"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
         <p className={`text-sm ${
           isDarkMode ? 'text-gray-400' : 'text-gray-600'

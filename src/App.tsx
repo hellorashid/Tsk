@@ -17,6 +17,7 @@ import SettingsSidebar from "./components/SettingsSidebar";
 import SettingsDrawer from "./components/SettingsDrawer";
 import ScheduleSidebar from "./components/ScheduleSidebar";
 import { ScheduleCardData } from "./components/ScheduleCard";
+import AgendaView from "./components/AgendaView";
 import DynamicIsland from "./components/DynamicIsland";
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import MobileNavBar from "./components/MobileNavBar";
@@ -185,6 +186,7 @@ function Home() {
   // const [showFilters, setShowFilters] = useState(false);
   const [isNewTaskMode, setIsNewTaskMode] = useState(false);
   const [mobileView, setMobileView] = useState<'tasks' | 'calendar'>('tasks');
+  const [scheduleViewMode, setScheduleViewMode] = useState<'timeline' | 'agenda'>('agenda');
 
   // Handle mobile view change - close drawer when switching views
   const handleMobileViewChange = (view: 'tasks' | 'calendar') => {
@@ -596,10 +598,10 @@ function Home() {
           {/* {isNewTaskMode && 'NT'} {drawerOpen && 'DO'} */}
         </div>
 
-        <div className="flex-none flex items-center pr-2">
+        <div className="flex-none flex items-center pr-2 gap-2">
           <button
             onClick={handleOpenSettings}
-            className="opacity-60 hover:opacity-100 focus:outline-none mr-2 bg-transparent"
+            className="opacity-60 hover:opacity-100 focus:outline-none bg-transparent"
             aria-label="Settings"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -663,16 +665,30 @@ function Home() {
         {/* Calendar View - shown on mobile when calendar tab is selected */}
         {isMobile && mobileView === 'calendar' && (
           <div className="flex-1 h-full overflow-hidden px-1 relative">
-            <ScheduleSidebar
-              onCardClick={handleScheduleCardClick}
-              events={scheduleEvents}
-              onUpdateEvent={updateScheduleEvent}
-              onDeleteEvent={deleteScheduleEvent}
-              onTaskToggle={handleTaskToggle}
-              onAddEvent={handleAddEvent}
-              accentColor={theme.accentColor}
-              isDarkMode={theme.isDarkMode}
-            />
+            {scheduleViewMode === 'timeline' ? (
+              <ScheduleSidebar
+                onCardClick={handleScheduleCardClick}
+                events={scheduleEvents}
+                onUpdateEvent={updateScheduleEvent}
+                onDeleteEvent={deleteScheduleEvent}
+                onTaskToggle={handleTaskToggle}
+                onAddEvent={handleAddEvent}
+                accentColor={theme.accentColor}
+                isDarkMode={theme.isDarkMode}
+                viewMode={scheduleViewMode}
+                onViewModeChange={setScheduleViewMode}
+              />
+            ) : (
+              <AgendaView
+                onCardClick={handleScheduleCardClick}
+                events={scheduleEvents}
+                onTaskToggle={handleTaskToggle}
+                accentColor={theme.accentColor}
+                isDarkMode={theme.isDarkMode}
+                viewMode={scheduleViewMode}
+                onViewModeChange={setScheduleViewMode}
+              />
+            )}
           </div>
         )}
 
@@ -696,16 +712,30 @@ function Home() {
         {/* Schedule sidebar - always show on desktop */}
         {!isMobile && (
           <div className="hidden md:block md:pl-4 w-[480px] p-2">
-            <ScheduleSidebar
-              onCardClick={handleScheduleCardClick}
-              events={scheduleEvents}
-              onUpdateEvent={updateScheduleEvent}
-              onDeleteEvent={deleteScheduleEvent}
-              onTaskToggle={handleTaskToggle}
-              onAddEvent={handleAddEvent}
-              accentColor={theme.accentColor}
-              isDarkMode={theme.isDarkMode}
-            />
+            {scheduleViewMode === 'timeline' ? (
+              <ScheduleSidebar
+                onCardClick={handleScheduleCardClick}
+                events={scheduleEvents}
+                onUpdateEvent={updateScheduleEvent}
+                onDeleteEvent={deleteScheduleEvent}
+                onTaskToggle={handleTaskToggle}
+                onAddEvent={handleAddEvent}
+                accentColor={theme.accentColor}
+                isDarkMode={theme.isDarkMode}
+                viewMode={scheduleViewMode}
+                onViewModeChange={setScheduleViewMode}
+              />
+            ) : (
+              <AgendaView
+                onCardClick={handleScheduleCardClick}
+                events={scheduleEvents}
+                onTaskToggle={handleTaskToggle}
+                accentColor={theme.accentColor}
+                isDarkMode={theme.isDarkMode}
+                viewMode={scheduleViewMode}
+                onViewModeChange={setScheduleViewMode}
+              />
+            )}
           </div>
         )}
       </div>
