@@ -62,6 +62,18 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   
   // Fetch scheduled events for the selected task
   const { db } = useBasic();
+  
+  // Fetch live task data from database (like ScheduleCard does)
+  const liveTask = useQuery(
+    () => selectedTask?.id 
+      ? db.collection('tasks').get(selectedTask.id)
+      : null,
+    [selectedTask?.id]
+  );
+  
+  // Use live task data if available, otherwise fall back to prop
+  const currentTask = liveTask || selectedTask;
+  
   const scheduledEvents = useQuery(
     () => selectedTask?.id 
       ? db.collection('schedule')
@@ -93,15 +105,15 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
 
   // Update title and description when task changes
   useEffect(() => {
-    if (selectedTask) {
-      setTitle(selectedTask.name || '');
-      setDescription(selectedTask.description || '');
+    if (currentTask) {
+      setTitle(currentTask.name || '');
+      setDescription(currentTask.description || '');
     } else {
       setTitle('');
       setDescription('');
       setInputValue('');
     }
-  }, [selectedTask]);
+  }, [currentTask]);
 
   // Calculate end time from start time and duration
   const calculateEndTime = (startTime: string, duration: number): string => {
@@ -754,9 +766,9 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
               {/* Header with checkbox and close button */}
               <div className="flex items-center gap-3">
                 <Checkbox
-                  id={`dynamic-island-${selectedTask?.id}`}
+                  id={`dynamic-island-${currentTask?.id}`}
                   size="sm"
-                  checked={selectedTask?.completed || false}
+                  checked={currentTask?.completed || false}
                   onChange={handleCheckboxChange}
                   accentColor={accentColor}
                 />
