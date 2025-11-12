@@ -65,7 +65,7 @@ export default function Checkbox({
     <button className="relative flex items-center" type="button"> {/* Changed to type="button" for accessibility if it's just a wrapper */}
       <input
         type="checkbox"
-        className={`border-blue-gray-200 relative cursor-pointer appearance-none rounded-md border transition-all duration-500 ${inputSizeClass}`}
+        className={`border-blue-gray-200 relative appearance-none rounded-md border transition-all duration-500 ${inputSizeClass} ${restInputProps.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
         id={id}
         checked={displayChecked}
         onChange={handleChange}

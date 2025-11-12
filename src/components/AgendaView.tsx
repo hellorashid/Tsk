@@ -63,14 +63,22 @@ interface EventItemProps {
 const AgendaEventItem: React.FC<EventItemProps> = ({ event, onCardClick, onTaskToggle, accentColor, isDarkMode }) => {
   const { db } = useBasic();
   
-  // Fetch linked task if this is a task event
+  // Fetch linked task if this is a task event (only if taskId is not empty)
   const linkedTask = useQuery(
-    () => event.taskId ? db.collection('tasks').get(event.taskId) : null,
+    () => event.taskId && event.taskId !== '' ? db.collection('tasks').get(event.taskId) : null,
     [event.taskId]
   );
   
-  const isCompleted = event.type === 'task' && linkedTask?.completed || false;
-  const displayTitle = event.type === 'task' && linkedTask ? linkedTask.name : event.title;
+  // Check if this is a deleted task (has snapshot in metadata, taskId is empty string)
+  const isDeletedTask = event.type === 'task' && (!event.taskId || event.taskId === '') && event.metadata?.taskSnapshot;
+  const taskSnapshot = event.metadata?.taskSnapshot;
+  
+  const isCompleted = event.type === 'task' && (linkedTask?.completed || taskSnapshot?.completed || false);
+  const displayTitle = event.type === 'task' && linkedTask 
+    ? linkedTask.name 
+    : isDeletedTask && taskSnapshot
+    ? taskSnapshot.name
+    : event.title;
   
   const startTime = event.start.dateTime ? formatTime(event.start.dateTime) : '';
   const endTime = event.end.dateTime ? formatTime(event.end.dateTime) : '';
@@ -78,7 +86,8 @@ const AgendaEventItem: React.FC<EventItemProps> = ({ event, onCardClick, onTaskT
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
-    if (event.taskId && onTaskToggle) {
+    // Only allow toggling for active tasks (not deleted)
+    if (event.taskId && event.taskId !== '' && onTaskToggle) {
       onTaskToggle(event.taskId, e.target.checked);
     }
   };
@@ -162,7 +171,7 @@ const AgendaEventItem: React.FC<EventItemProps> = ({ event, onCardClick, onTaskT
         <div className="flex-1 min-w-0">
           {/* Title row with optional checkbox */}
           <div className="flex items-start gap-2 mb-1">
-            {/* Checkbox inline to the left for tasks */}
+            {/* Checkbox inline to the left for tasks (disabled for deleted tasks) */}
             {event.type === 'task' && (
               <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0 pt-0.5">
                 <Checkbox
@@ -171,6 +180,7 @@ const AgendaEventItem: React.FC<EventItemProps> = ({ event, onCardClick, onTaskT
                   checked={isCompleted}
                   onChange={handleCheckboxChange}
                   accentColor={accentColor}
+                  disabled={isDeletedTask}
                 />
               </div>
             )}

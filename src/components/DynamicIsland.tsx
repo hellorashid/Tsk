@@ -84,6 +84,17 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   );
   console.log("scheduledEvents:", scheduledEvents);
 
+  // Query subtasks for deleted task (if viewing a deleted task schedule item)
+  const deletedTaskSubtasks = useQuery(
+    () => selectedEvent?.type === 'task' && 
+          (!selectedEvent?.taskId || selectedEvent?.taskId === '') && 
+          selectedEvent?.metadata?.taskSnapshot?.id 
+      ? db.collection('tasks')
+          .filter((task: any) => task.parentTaskId === selectedEvent.metadata?.taskSnapshot?.id)
+      : null,
+    [selectedEvent?.metadata?.taskSnapshot?.id]
+  );
+
   // Query subtasks for the selected task
   const subtasks = useQuery(
     () => selectedTask?.id && !selectedTask?.parentTaskId
@@ -662,98 +673,223 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
               </div>
             </motion.div>
           ) : isEventView ? (
-            <motion.div
-              key="expanded-event"
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 5 }}
-              transition={{ duration: 0.15, ease: [0.32, 0.72, 0, 1] }}
-              className="p-4 space-y-4"
-            >
-              {/* Header with close button */}
-              <div className="flex items-start gap-3">
-                <div className="flex-1">
-                  <textarea
-                    ref={eventTitleTextareaRef}
-                    value={eventTitle}
-                    onChange={handleEventTitleChange}
-                    onBlur={handleEventTitleBlur}
-                    onKeyDown={handleEventTitleKeyDown}
-                    className={`w-full bg-transparent focus:outline-none text-lg font-medium min-h-[2rem] resize-none overflow-hidden border border-transparent rounded ${
+            // Check if this is a deleted task
+            selectedEvent?.type === 'task' && (!selectedEvent?.taskId || selectedEvent?.taskId === '') && selectedEvent?.metadata?.taskSnapshot ? (
+              // Read-only view for deleted task
+              <motion.div
+                    key="expanded-deleted-task"
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    transition={{ duration: 0.15, ease: [0.32, 0.72, 0, 1] }}
+                    className="p-4 space-y-4"
+                  >
+                    {/* Header with checkbox and close button - matching regular task layout */}
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        id={`dynamic-island-deleted-${selectedEvent.id}`}
+                        size="sm"
+                        checked={selectedEvent.metadata.taskSnapshot.completed}
+                        onChange={() => {}} // No-op for deleted tasks
+                        accentColor={accentColor}
+                        disabled={true}
+                      />
+                      <div className="flex-1">
+                        <div className={`text-lg font-medium ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+                          {selectedEvent.metadata.taskSnapshot.name}
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleClose}
+                        className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${
+                          isDarkMode ? 'text-gray-400 hover:text-gray-100' : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                        aria-label="Close"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Subtasks Section - read-only */}
+                    {deletedTaskSubtasks && deletedTaskSubtasks.length > 0 && (
+                      <div className="space-y-2">
+                        <div className={`text-xs font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          Subtasks ({deletedTaskSubtasks.length})
+                        </div>
+                        <div className="space-y-1">
+                          {deletedTaskSubtasks.map((subtask: any) => (
+                            <div 
+                              key={subtask.id} 
+                              className={`flex items-center gap-2 p-2 rounded ${
+                                isDarkMode ? 'bg-white/5' : 'bg-gray-100'
+                              }`}
+                            >
+                              <Checkbox
+                                id={`deleted-subtask-${subtask.id}`}
+                                size="sm"
+                                checked={subtask.completed}
+                                onChange={() => {}} // No-op
+                                accentColor={accentColor}
+                                disabled={true}
+                              />
+                              <span className={`text-sm ${
+                                subtask.completed ? 'line-through opacity-60' : ''
+                              } ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {subtask.name}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Description Section - matching regular task layout */}
+                <div className={`w-full min-h-[100px] whitespace-pre-wrap ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  {selectedEvent.metadata.taskSnapshot.description || 'No description'}
+                </div>
+
+                {/* Schedule info */}
+                <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Scheduled: {selectedEvent.start.dateTime && new Date(selectedEvent.start.dateTime).toLocaleString()}
+                </div>
+
+                {/* Warning banner */}
+                <div className="p-3 bg-yellow-500/15 border border-yellow-500/25 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <svg 
+                      className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" 
+                      fill="none" 
+                      strokeWidth="2" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-yellow-300">Task Deleted</p>
+                      <p className="text-xs text-yellow-200/80 mt-0.5">
+                        This task was deleted on {new Date(selectedEvent.metadata.taskSnapshot.deletedAt).toLocaleDateString()}. This is read only.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions Footer - matching regular task layout */}
+                <div className="flex justify-start gap-2 pt-2 border-t border-white/10">
+                  <button
+                    onClick={handleEventDelete}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isDarkMode 
+                        ? 'text-red-400 hover:bg-red-400/10' 
+                        : 'text-red-600 hover:bg-red-100'
+                    }`}
+                    aria-label="Remove from schedule"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </motion.div>
+            ) : (
+              // Regular event view
+              <motion.div
+                key="expanded-event"
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 5 }}
+                transition={{ duration: 0.15, ease: [0.32, 0.72, 0, 1] }}
+                className="p-4 space-y-4"
+              >
+                {/* Header with close button */}
+                <div className="flex items-start gap-3">
+                  <div className="flex-1">
+                    <textarea
+                      ref={eventTitleTextareaRef}
+                      value={eventTitle}
+                      onChange={handleEventTitleChange}
+                      onBlur={handleEventTitleBlur}
+                      onKeyDown={handleEventTitleKeyDown}
+                      className={`w-full bg-transparent focus:outline-none text-lg font-medium min-h-[2rem] resize-none overflow-hidden border border-transparent rounded ${
+                        isDarkMode ? 'text-gray-100' : 'text-gray-900'
+                      }`}
+                      rows={1}
+                      style={{ height: 'auto' }}
+                      placeholder="Event title..."
+                    />
+                  </div>
+                  <button
+                    onClick={handleClose}
+                    className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${
+                      isDarkMode ? 'text-gray-400 hover:text-gray-100' : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                    aria-label="Close"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+
+                {/* Time */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="time"
+                    value={eventStartTime}
+                    onChange={handleEventStartTimeChange}
+                    onBlur={handleEventStartTimeBlur}
+                    className={`flex-1 bg-transparent border border-white/10 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-white/30 ${
                       isDarkMode ? 'text-gray-100' : 'text-gray-900'
                     }`}
-                    rows={1}
-                    style={{ height: 'auto' }}
-                    placeholder="Event title..."
+                  />
+                  <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>–</span>
+                  <input
+                    type="time"
+                    value={eventEndTime}
+                    onChange={handleEventEndTimeChange}
+                    onBlur={handleEventEndTimeBlur}
+                    className={`flex-1 bg-transparent border border-white/10 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-white/30 ${
+                      isDarkMode ? 'text-gray-100' : 'text-gray-900'
+                    }`}
                   />
                 </div>
-                <button
-                  onClick={handleClose}
-                  className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${
-                    isDarkMode ? 'text-gray-400 hover:text-gray-100' : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                  aria-label="Close"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </div>
 
-              {/* Time */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="time"
-                  value={eventStartTime}
-                  onChange={handleEventStartTimeChange}
-                  onBlur={handleEventStartTimeBlur}
-                  className={`flex-1 bg-transparent border border-white/10 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-white/30 ${
-                    isDarkMode ? 'text-gray-100' : 'text-gray-900'
+                {/* Description */}
+                <textarea
+                  ref={eventDescTextareaRef}
+                  value={eventDescription}
+                  onChange={handleEventDescriptionChange}
+                  onBlur={handleEventDescriptionBlur}
+                  onKeyDown={handleEventDescriptionKeyDown}
+                  className={`w-full bg-transparent focus:outline-none min-h-[100px] resize-none border border-transparent rounded ${
+                    isDarkMode ? 'text-gray-300 placeholder-gray-500' : 'text-gray-700 placeholder-gray-400'
                   }`}
+                  placeholder="Add a description..."
+                  style={{ height: 'auto' }}
                 />
-                <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>–</span>
-                <input
-                  type="time"
-                  value={eventEndTime}
-                  onChange={handleEventEndTimeChange}
-                  onBlur={handleEventEndTimeBlur}
-                  className={`flex-1 bg-transparent border border-white/10 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-white/30 ${
-                    isDarkMode ? 'text-gray-100' : 'text-gray-900'
-                  }`}
-                />
-              </div>
 
-              {/* Description */}
-              <textarea
-                ref={eventDescTextareaRef}
-                value={eventDescription}
-                onChange={handleEventDescriptionChange}
-                onBlur={handleEventDescriptionBlur}
-                onKeyDown={handleEventDescriptionKeyDown}
-                className={`w-full bg-transparent focus:outline-none min-h-[100px] resize-none border border-transparent rounded ${
-                  isDarkMode ? 'text-gray-300 placeholder-gray-500' : 'text-gray-700 placeholder-gray-400'
-                }`}
-                placeholder="Add a description..."
-                style={{ height: 'auto' }}
-              />
-
-              {/* Actions */}
-              <div className="flex justify-start gap-2 pt-2 border-t border-white/10">
-                <button
-                  onClick={handleEventDelete}
-                  className={`p-2 rounded-lg transition-colors ${
-                    isDarkMode 
-                      ? 'text-red-400 hover:bg-red-400/10' 
-                      : 'text-red-600 hover:bg-red-100'
-                  }`}
-                  aria-label="Delete event"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </div>
-            </motion.div>
+                {/* Actions */}
+                <div className="flex justify-start gap-2 pt-2 border-t border-white/10">
+                  <button
+                    onClick={handleEventDelete}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isDarkMode 
+                        ? 'text-red-400 hover:bg-red-400/10' 
+                        : 'text-red-600 hover:bg-red-100'
+                    }`}
+                    aria-label="Delete event"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </motion.div>
+            )
           ) : (
             <motion.div
               key="expanded-task"

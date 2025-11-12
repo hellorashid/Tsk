@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { TaskModal } from './TaskModal';
 import { EventModal } from './EventModal';
 import ListItem from './ListItem';
+import Checkbox from './Checkbox';
 import { ScheduleCardData } from './ScheduleCard';
 import { useBasic, useQuery } from '@basictech/react';
 import { useModalHistory } from '../hooks/useModalHistory';
@@ -108,6 +109,17 @@ export default function SilkTaskDrawer({
     if (!task?.id || !allScheduleEvents) return [];
     return allScheduleEvents.filter((event: ScheduleCardData) => event.taskId === task.id);
   }, [task?.id, allScheduleEvents]);
+
+  // Query subtasks for deleted task (if viewing a deleted task schedule item)
+  const deletedTaskSubtasks = useQuery(
+    () => event?.type === 'task' && 
+          (!event?.taskId || event?.taskId === '') && 
+          event?.metadata?.taskSnapshot?.id 
+      ? db.collection('tasks')
+          .filter((task: any) => task.parentTaskId === event.metadata?.taskSnapshot?.id)
+      : null,
+    [event?.metadata?.taskSnapshot?.id]
+  );
 
   // Memoize the placeholder task to ensure stable reference
   const placeholderTask = useMemo(() => ({
@@ -566,16 +578,129 @@ export default function SilkTaskDrawer({
                     <p>Loading details...</p>
                   </div>
                 ) : event ? (
-                  <EventModal
-                    key={event.id}
-                    event={event}
-                    updateFunction={onUpdateEvent || (() => {})}
-                    deleteEvent={onDeleteEvent}
-                    inDrawer={true}
-                    accentColor={accentColor}
-                    isDarkMode={isDarkMode}
-                    onDelete={() => setIsOpen(false)}
-                  />
+                  // Check if this is a deleted task schedule item
+                  event.type === 'task' && (!event.taskId || event.taskId === '') && event.metadata?.taskSnapshot ? (
+                    // Read-only view for deleted task - matching TaskModal layout
+                    <div className="flex flex-col h-full">
+                          <div className="flex-1 overflow-y-auto styled-scrollbar">
+                            {/* Header with checkbox and title - matching TaskModal layout */}
+                            <div className="flex items-start w-full mb-4 gap-3">
+                              <div className="mt-2">
+                                <Checkbox
+                                  id={`deleted-task-${event.id}`}
+                                  size="md"
+                                  checked={event.metadata.taskSnapshot.completed}
+                                  onChange={() => {}} // No-op for deleted tasks
+                                  disabled={true}
+                                  accentColor={accentColor}
+                                />
+                              </div>
+
+                              <div className="flex-1 text-start text-xl text-bold py-1 px-2 text-white">
+                                {event.metadata.taskSnapshot.name}
+                              </div>
+                            </div>
+
+                            {/* Schedule info */}
+                            <div className="flex items-center gap-2 pl-3 pr-2 py-2 mb-4 rounded-lg bg-white/5">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                              </svg>
+                              <div className="flex-1 text-sm text-gray-300">
+                                {event.start.dateTime && new Date(event.start.dateTime).toLocaleString()}
+                              </div>
+                            </div>
+
+                            {/* Subtasks Section - read-only */}
+                            {deletedTaskSubtasks && deletedTaskSubtasks.length > 0 && (
+                              <div className="mb-4">
+                                <div className="text-xs font-medium text-gray-400 mb-2">
+                                  Subtasks ({deletedTaskSubtasks.length})
+                                </div>
+                                <div className="space-y-1">
+                                  {deletedTaskSubtasks.map((subtask: any) => (
+                                    <div 
+                                      key={subtask.id} 
+                                      className="flex items-center gap-2 p-2 rounded bg-white/5"
+                                    >
+                                      <Checkbox
+                                        id={`deleted-subtask-${subtask.id}`}
+                                        size="sm"
+                                        checked={subtask.completed}
+                                        onChange={() => {}} // No-op
+                                        accentColor={accentColor}
+                                        disabled={true}
+                                      />
+                                      <span className={`text-sm ${
+                                        subtask.completed ? 'line-through opacity-60' : ''
+                                      } text-gray-300`}>
+                                        {subtask.name}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Description Section - matching TaskModal layout */}
+                        <div className="opacity-70 text-left py-1 px-2 text-white resize-none min-h-[100px] mt-6 mb-4 whitespace-pre-wrap">
+                          {event.metadata.taskSnapshot.description || 'No description'}
+                        </div>
+
+                        {/* Warning banner */}
+                        <div className="p-3 bg-yellow-500/15 border border-yellow-500/25 rounded-lg mb-4">
+                          <div className="flex items-start gap-2">
+                            <svg 
+                              className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" 
+                              fill="none" 
+                              strokeWidth="2" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                            </svg>
+                            <div className="flex-1">
+                              <p className="text-xs font-medium text-yellow-300">Task Deleted</p>
+                              <p className="text-xs text-yellow-200/80 mt-0.5">
+                                This task was deleted on {new Date(event.metadata.taskSnapshot.deletedAt).toLocaleDateString()}. This is read only.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Delete button - sticky at bottom */}
+                      <button
+                        onClick={() => {
+                          if (onDeleteEvent && event.id) {
+                            onDeleteEvent(event.id);
+                            setIsOpen(false);
+                          }
+                        }}
+                        className={`flex items-center justify-center gap-2 w-full p-3 border-t transition-colors ${
+                          isDarkMode
+                            ? 'bg-white/5 hover:bg-red-500/10 text-red-400 border-white/10'
+                            : 'bg-gray-50 hover:bg-red-50 text-red-600 border-gray-200'
+                        }`}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        <span>Remove from Schedule</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <EventModal
+                      key={event.id}
+                      event={event}
+                      updateFunction={onUpdateEvent || (() => {})}
+                      deleteEvent={onDeleteEvent}
+                      inDrawer={true}
+                      accentColor={accentColor}
+                      isDarkMode={isDarkMode}
+                      onDelete={() => setIsOpen(false)}
+                    />
+                  )
                 ) : (
                   <TaskModal
                     key={safeTask.id}

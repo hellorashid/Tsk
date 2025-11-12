@@ -339,8 +339,19 @@ function Home() {
 
   // Handle schedule card clicks
   const handleScheduleCardClick = (cardData: ScheduleCardData) => {
-    if (cardData.type === 'task' && cardData.taskId) {
-      // Find the task in the tasks list and select it
+    // Check if this is a deleted task (empty taskId but has snapshot)
+    const isDeletedTask = cardData.type === 'task' && (!cardData.taskId || cardData.taskId === '') && cardData.metadata?.taskSnapshot;
+    
+    if (isDeletedTask) {
+      // Deleted task - open as event to show read-only view
+      setSelectedEvent(cardData);
+      setSelectedTask(null);
+      setIsNewTaskMode(false);
+      if (isMobile) {
+        setDrawerOpen(true);
+      }
+    } else if (cardData.type === 'task' && cardData.taskId && cardData.taskId !== '') {
+      // Active task - find and select the task
       const task = tasks.find(t => t.id === cardData.taskId);
       if (task) {
         setSelectedTask(task);
@@ -351,7 +362,7 @@ function Home() {
         }
       }
     } else if (cardData.type === 'event' || cardData.type === 'other') {
-      // Select the event
+      // Regular event
       setSelectedEvent(cardData);
       setSelectedTask(null); // Clear task selection
       setIsNewTaskMode(false);
@@ -501,8 +512,41 @@ function Home() {
     updateTask(taskId, { completed });
   };
 
-  const deleteTask = (taskId: string) => {
-    db.collection("tasks").delete(taskId);
+  const deleteTask = async (taskId: string) => {
+    // First, check if this task has any schedule items
+    const scheduleItems = await db.collection("schedule")
+      .filter((item: any) => item.taskId === taskId)
+    
+    // If there are schedule items, we need to snapshot the task data
+    if (scheduleItems && scheduleItems.length > 0) {
+      // Get the task data before deleting
+      const task = await db.collection("tasks").get(taskId);
+      
+      if (task) {
+        // Create snapshot with task data
+        const taskSnapshot = {
+          id: taskId,
+          name: task.name,
+          description: task.description,
+          completed: task.completed,
+          deletedAt: Date.now()
+        };
+        
+        // Update each schedule item to set taskId to empty string and add snapshot
+        for (const item of scheduleItems) {
+          await db.collection("schedule").update(item.id, {
+            taskId: '',
+            metadata: {
+              taskSnapshot
+            }
+          });
+        }
+      }
+    }
+    
+    // Now delete the task
+    await db.collection("tasks").delete(taskId);
+    
     // Clear selections if the deleted task was selected
     if (selectedTask?.id === taskId) {
       setSelectedTask(null);

@@ -19,7 +19,16 @@ export interface ScheduleCardData {
   color: string;
   type?: 'event' | 'task' | 'other';
   description?: string;
-  taskId?: string; // If this is a scheduled task, link to task ID (completion status read from task)
+  taskId?: string; // If this is a scheduled task, link to task ID (empty string if task was deleted)
+  metadata?: {
+    taskSnapshot?: {
+      id: string;
+      name: string;
+      description: string;
+      completed: boolean;
+      deletedAt: number;
+    };
+  };
 }
 
 export interface ScheduleCardProps {
@@ -112,16 +121,24 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
   // Fetch linked task if this is a task event
   const { db } = useBasic();
   const linkedTask = useQuery(
-    () => data.taskId ? db.collection('tasks').get(data.taskId) : null,
+    () => data.taskId && data.taskId !== '' ? db.collection('tasks').get(data.taskId) : null,
     [data.taskId]
   );
   
-  // Get completion status from linked task
-  const isCompleted = data.type === 'task' && linkedTask?.completed || false;
+  // Check if this is a deleted task (has snapshot in metadata, taskId is empty string)
+  const isDeletedTask = data.type === 'task' && (!data.taskId || data.taskId === '') && data.metadata?.taskSnapshot;
+  const taskSnapshot = data.metadata?.taskSnapshot;
   
-  // For scheduled tasks, use task name; otherwise use event title
+  // Get completion status from linked task or snapshot
+  const isCompleted = data.type === 'task' && (
+    linkedTask?.completed || taskSnapshot?.completed || false
+  );
+  
+  // For scheduled tasks, use task name or snapshot; otherwise use event title
   const displayTitle = data.type === 'task' && linkedTask 
     ? linkedTask.name 
+    : isDeletedTask && taskSnapshot
+    ? taskSnapshot.name
     : data.title;
   const [isHovered, setIsHovered] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
