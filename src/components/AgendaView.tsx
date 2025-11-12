@@ -70,8 +70,8 @@ const AgendaEventItem: React.FC<EventItemProps> = ({ event, onCardClick, onTaskT
   );
   
   // Check if this is a deleted task (has snapshot in metadata, taskId is empty string)
-  const isDeletedTask = event.type === 'task' && (!event.taskId || event.taskId === '') && event.metadata?.taskSnapshot;
   const taskSnapshot = event.metadata?.taskSnapshot;
+  const isDeletedTask = event.type === 'task' && (!event.taskId || event.taskId === '') && !!taskSnapshot;
   
   const isCompleted = event.type === 'task' && (linkedTask?.completed || taskSnapshot?.completed || false);
   const displayTitle = event.type === 'task' && linkedTask 
