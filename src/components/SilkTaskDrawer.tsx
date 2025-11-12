@@ -8,6 +8,7 @@ import { EventModal } from './EventModal';
 import ListItem from './ListItem';
 import { ScheduleCardData } from './ScheduleCard';
 import { useBasic, useQuery } from '@basictech/react';
+import { useModalHistory } from '../hooks/useModalHistory';
 import './SilkTaskDrawer.css';
 import './SheetWithKeyboard.css';
 
@@ -80,6 +81,9 @@ export default function SilkTaskDrawer({
   const largeViewport = useClientMediaQuery("(min-width: 800px)");
   const contentPlacement = largeViewport ? "center" : "bottom";
   const tracks: SheetViewProps["tracks"] = largeViewport ? ["top", "bottom"] : "bottom";
+  
+  // Handle browser back button for closing drawer
+  useModalHistory(isOpen, () => setIsOpen(false), 'task-drawer');
   
   const [newTaskName, setNewTaskName] = useState('');
   const [createdTasks, setCreatedTasks] = useState<{ id: string; name: string; completed: boolean; description: string }[]>([]);

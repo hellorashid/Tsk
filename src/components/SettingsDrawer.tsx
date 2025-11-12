@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Sheet, useClientMediaQuery, type SheetViewProps } from "@silk-hq/components";
+import { useModalHistory } from '../hooks/useModalHistory';
 import SettingsSidebar from './SettingsSidebar';
 
 interface SettingsDrawerProps {
@@ -36,6 +37,9 @@ export default function SettingsDrawer({
   const largeViewport = useClientMediaQuery("(min-width: 800px)"); // Example, adjust as needed
   const contentPlacement: SheetViewProps["contentPlacement"] = largeViewport ? "center" : "bottom";
   const tracks: SheetViewProps["tracks"] = largeViewport ? ["top", "bottom"] : "bottom";
+  
+  // Handle browser back button for closing drawer
+  useModalHistory(isOpen, () => setIsOpen(false), 'settings-drawer');
   
   const handleCloseSettings = () => {
     setIsOpen(false);

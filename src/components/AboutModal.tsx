@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Sheet, useClientMediaQuery, type SheetViewProps } from "@silk-hq/components";
+import { useModalHistory } from '../hooks/useModalHistory';
 import AboutContent from './AboutContent';
 
 interface AboutModalProps {
@@ -24,6 +25,9 @@ export default function AboutModal({
   const largeViewport = useClientMediaQuery("(min-width: 800px)"); // Example, adjust as needed
   const contentPlacement: SheetViewProps["contentPlacement"] = largeViewport ? "center" : "bottom";
   const tracks: SheetViewProps["tracks"] = largeViewport ? ["top", "bottom"] : "bottom";
+  
+  // Handle browser back button for closing modal
+  useModalHistory(isOpen, () => setIsOpen(false), 'about-modal');
   
   const handleCloseAbout = () => {
     setIsOpen(false);
