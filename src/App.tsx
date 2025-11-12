@@ -15,6 +15,7 @@ import SilkTaskDrawer from "./components/SilkTaskDrawer";
 import TaskDetailsSidebar from "./components/TaskDetailsSidebar";
 import SettingsSidebar from "./components/SettingsSidebar";
 import SettingsDrawer from "./components/SettingsDrawer";
+import AboutModal from "./components/AboutModal";
 import ScheduleSidebar from "./components/ScheduleSidebar";
 import { ScheduleCardData } from "./components/ScheduleCard";
 import AgendaView from "./components/AgendaView";
@@ -183,6 +184,7 @@ function Home() {
   const [viewMode, setViewMode] = useState('cozy');
   // const [customFilters, setCustomFilters] = useState([]);
   const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
+  const [aboutModalOpen, setAboutModalOpen] = useState(false);
   // const [showFilters, setShowFilters] = useState(false);
   const [isNewTaskMode, setIsNewTaskMode] = useState(false);
   const [mobileView, setMobileView] = useState<'tasks' | 'calendar'>('tasks');
@@ -253,6 +255,7 @@ function Home() {
         setSelectedTask(null);
         setSelectedEvent(null);
         setSettingsDrawerOpen(false);
+        setAboutModalOpen(false);
         setShowSchedule(false);
         if (isMobile) {
           setDrawerOpen(false);
@@ -452,6 +455,14 @@ function Home() {
     setSettingsDrawerOpen(false);
   };
 
+  const handleOpenAbout = () => {
+    setAboutModalOpen(true);
+  };
+
+  const handleCloseAbout = () => {
+    setAboutModalOpen(false);
+  };
+
 
   const handleViewModeChange = (mode) => {
     setViewMode(mode);
@@ -592,9 +603,12 @@ function Home() {
       <div className=" h-12 rounded-b-md md:rounded-b-none backdrop-blur-sm flex justify-between items-center sticky top-0 z-100"
         style={{ backgroundColor: 'transparent' }}>
         <div className="">
-          <a className="px-4 py-2 rounded-lg bg-transparent hover:bg-white/10 transition-colors duration-200 text-md flex items-center">
+          <button 
+            onClick={handleOpenAbout}
+            className="px-4 py-2 rounded-lg bg-transparent hover:bg-white/10 transition-colors duration-200 text-md flex items-center cursor-pointer"
+          >
             <img className="w-6 h-6 mr-2" src='tsk-logo.png' />tsk.
-          </a>
+          </button>
           {/* {isNewTaskMode && 'NT'} {drawerOpen && 'DO'} */}
         </div>
 
@@ -798,6 +812,14 @@ function Home() {
         isDarkMode={theme.isDarkMode}
         onFontStyleChange={handleFontStyleChange}
         currentFontStyle={theme.fontStyle}
+      />
+
+      {/* About modal - shown on both mobile and desktop */}
+      <AboutModal
+        isOpen={aboutModalOpen}
+        setIsOpen={setAboutModalOpen}
+        isDarkMode={theme.isDarkMode}
+        currentAccentColor={theme.accentColor}
       />
 
       {/* Mobile Navigation Bar */}

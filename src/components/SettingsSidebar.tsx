@@ -176,30 +176,6 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
             </div>
           </div>
         </div>
-
-        {/* About */}
-        <div className="border border-white border-opacity-10 p-4 rounded-md">
-          <h3 className="text-lg font-medium mb-4">About</h3>
-          <div className="space-y-4">
-            <p className="about-blurb whitespace-pre-wrap overflow-hidden break-words text-left text-sm">
-              {`tldr: tsk is a cozy & customizable task manager. 
-
-• tsk is built to be fully customizable and expandable - it can be a simple todo list, or a planner for your entire life.
-• your data is private, and yours. everything is stored locally on your device.
-• open source - add your own features & fixes, and let the community benefit
-• free.
-
-v0.2.3`}
-            </p>
-            
-            <div className="border-t border-white/20 pt-4">
-              <h6 className="font-mono text-sm mb-2">
-                built by: <a target="_blank" href="https://twitter.com/_ingriddsss" className="hover:underline">@_ingriddsss</a> & <a target="_blank" href="https://twitter.com/razberrychai" className="hover:underline">@razberrychai</a>
-              </h6>
-              <p className="text-sm opacity-80">we'd love to hear your feedback!</p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
