@@ -1,5 +1,7 @@
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import ScheduleCard, { ScheduleCardData, getEventDuration, getTimeFromDateTime, minutesToDateTime } from './ScheduleCard';
+import TimelineView from './TimelineView';
+import { getWeatherEmoji } from '../utils/weather';
 
 // Format date
 const formatDate = (date: Date): string => {
@@ -43,6 +45,8 @@ interface ScheduleSidebarProps {
   isDarkMode?: boolean;
   viewMode?: 'timeline' | 'agenda';
   onViewModeChange?: (mode: 'timeline' | 'agenda') => void;
+  location?: { latitude: number; longitude: number; name: string };
+  onFetchWeather?: (date: Date) => Promise<void>;
 }
 
 const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
@@ -55,7 +59,9 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   accentColor = '#1F1B2F',
   isDarkMode = true,
   viewMode = 'timeline',
-  onViewModeChange
+  onViewModeChange,
+  location,
+  onFetchWeather
 }) => {
   // Track selected date (defaults to today)
   const [selectedDate, setSelectedDate] = useState<Date>(getStartOfDay(new Date()));
@@ -145,7 +151,7 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Filter events to only show those on the selected date
+  // Filter events to only show those on the selected date (exclude weather type)
   const events = useMemo(() => {
     if (!externalEvents || externalEvents.length === 0) return [];
     
@@ -167,7 +173,9 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
       return eventYear === targetYear && eventMonth === targetMonth && eventDay === targetDay;
     };
     
-    return externalEvents.filter(event => isEventOnDate(event, selectedDate));
+    return externalEvents.filter(event => 
+      event.type !== 'weather' && isEventOnDate(event, selectedDate)
+    );
   }, [externalEvents, selectedDate]);
 
   // Generate hour slots (12 AM to 11 PM)
@@ -431,24 +439,21 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   const displayDate = formatDate(selectedDate);
   const isSelectedDateToday = isToday(selectedDate);
 
-  return (
+  // Find weather event for the selected date
+  const weatherEvent = useMemo(() => {
+    return externalEvents?.find(event => {
+      if (event.type !== 'weather' || !event.start.dateTime) return false;
+      const eventDate = new Date(event.start.dateTime);
+      return eventDate.toDateString() === selectedDate.toDateString();
+    });
+  }, [externalEvents, selectedDate]);
+
+  // Render header component (shared between timeline and old schedule views)
+  const renderHeader = (isTimeline: boolean = false) => (
     <div
-      ref={outerScrollableRef}
-      className={`w-full h-full px-6 pb-6 overflow-y-auto backdrop-blur-3xl flex flex-col rounded-md ${
-        isDarkMode ? 'text-gray-100' : 'text-gray-900'
-      }`}
+      className={`${isTimeline ? 'px-6' : 'sticky top-0 z-50 -mx-6 px-6 mb-4'} py-4 border-b backdrop-blur-md`}
       style={{ 
         backgroundColor: getBackgroundColor(),
-        scrollbarWidth: 'none', // Firefox
-        msOverflowStyle: 'none', // IE/Edge
-      }}
-      data-timeline-container
-    >
-      {/* Sticky header with date navigation */}
-      <div 
-        className="sticky top-0 z-50 py-4 mb-4 border-b backdrop-blur-md -mx-6 px-6"
-        style={{ 
-          backgroundColor: getBackgroundColor(),
           borderColor: isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)'
         }}
       >
@@ -546,12 +551,71 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
             </div>
           )}
         </div>
-        <p className={`text-sm ${
-          isDarkMode ? 'text-gray-400' : 'text-gray-600'
-        }`}>
-          {displayDate}
-        </p>
+        <div className="flex items-center justify-between">
+          <p className={`text-sm ${
+            isDarkMode ? 'text-gray-400' : 'text-gray-600'
+          }`}>
+            {displayDate}
+          </p>
+          {weatherEvent && weatherEvent.metadata?.weather && (
+            <div className={`flex items-center gap-1.5 text-sm ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              <span>{getWeatherEmoji(weatherEvent.metadata.weather.condition)}</span>
+              <span>{weatherEvent.metadata.weather.temperature}°F</span>
+            </div>
+          )}
+        </div>
       </div>
+  );
+
+  // If timeline mode, render the new TimelineView
+  if (viewMode === 'timeline') {
+    return (
+      <div
+        className={`w-full h-full backdrop-blur-3xl flex flex-col rounded-md overflow-hidden ${
+          isDarkMode ? 'text-gray-100' : 'text-gray-900'
+        }`}
+        style={{ 
+          backgroundColor: getBackgroundColor(),
+        }}
+      >
+        {renderHeader(true)}
+
+        {/* New Timeline View */}
+        <div className="flex-1 overflow-hidden">
+          <TimelineView
+            events={events}
+            onCardClick={onCardClick}
+            onTaskToggle={handleTaskToggle}
+            onAddEvent={onAddEvent}
+            onUpdateEvent={onUpdateEvent}
+            weatherData={weatherEvent}
+            accentColor={accentColor}
+            isDarkMode={isDarkMode}
+            selectedDate={selectedDate}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Otherwise, render the old schedule grid view (with draggable cards)
+  return (
+    <div
+      ref={outerScrollableRef}
+      className={`w-full h-full px-6 pb-6 overflow-y-auto backdrop-blur-3xl flex flex-col rounded-md ${
+        isDarkMode ? 'text-gray-100' : 'text-gray-900'
+      }`}
+      style={{ 
+        backgroundColor: getBackgroundColor(),
+        scrollbarWidth: 'none', // Firefox
+        msOverflowStyle: 'none', // IE/Edge
+      }}
+      data-timeline-container
+    >
+      {/* Sticky header with date navigation */}
+      {renderHeader()}
 
       <div 
         ref={scrollableContainerRef}

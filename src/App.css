@@ -100,6 +100,6 @@ form input[type="text"]:focus {
 
 /* Fade out effect at the top and bottom of tasks list */
 .tasks-scroll-container {
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 80px), transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 80px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 60px, black calc(100% - 80px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 60px, black calc(100% - 80px), transparent 100%);
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Task } from '../utils/types';
+import { Task, Folder } from '../utils/types';
 import { ScheduleCardData, getEventDuration, getTimeFromDateTime, minutesToDateTime } from './ScheduleCard';
 import Checkbox from './Checkbox';
 import { useBasic, useQuery } from '@basictech/react';
@@ -19,9 +19,18 @@ interface DynamicIslandProps {
   onDeleteEvent?: (id: string) => void;
   onAddToSchedule?: (task: Task) => void;
   onAddSubtask?: (parentTaskId: string, name: string) => Promise<string | null>;
+  onEnterFocus?: (task: Task) => void;
   tasks?: Task[]; // Add tasks list to find newly created task
+  folders?: Folder[]; // Add folders list
+  activeFolder?: string | null;
+  onFolderSelect?: (folderId: string | null) => void;
   accentColor?: string;
   isDarkMode?: boolean;
+  mode?: 'default' | 'task' | 'event' | 'command';
+  onModeChange?: (mode: 'default' | 'task' | 'event' | 'command') => void;
+  onOpenSettings?: () => void;
+  onToggleView?: () => void;
+  currentView?: 'timeline' | 'agenda';
 }
 
 const DynamicIsland: React.FC<DynamicIslandProps> = ({
@@ -37,9 +46,18 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   onDeleteEvent,
   onAddToSchedule,
   onAddSubtask,
+  onEnterFocus,
   tasks,
+  folders,
+  activeFolder,
+  onFolderSelect,
   accentColor = '#1F1B2F',
-  isDarkMode = true
+  isDarkMode = true,
+  mode = 'default',
+  onModeChange,
+  onOpenSettings,
+  onToggleView,
+  currentView
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [title, setTitle] = useState('');
@@ -49,7 +67,14 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   const [eventStartTime, setEventStartTime] = useState('');
   const [eventEndTime, setEventEndTime] = useState('');
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
-  const [creationMode, setCreationMode] = useState<'task' | 'event'>('task');
+  const [showFolderDropdown, setShowFolderDropdown] = useState(false);
+  // Internal creationMode is replaced by the controlled 'mode' prop
+  // const [creationMode, setCreationMode] = useState<'task' | 'event'>('task');
+  
+  // Derive effective creation mode for UI rendering logic
+  // If mode is 'command', we don't use this derived value directly for rendering the input form
+  const creationMode = mode === 'event' ? 'event' : 'task';
+
   const [isInputFocused, setIsInputFocused] = useState(false);
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
   const descTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -57,7 +82,9 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   const eventDescTextareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isExpanded = selectedTask !== null || selectedEvent !== null;
+  // Check if ANY mode is active (task, event, command) to determine if island is expanded
+  // Previously it only checked for selectedTask/selectedEvent, but now we have 'command' mode
+  const isExpanded = selectedTask !== null || selectedEvent !== null || mode === 'command';
   const isEventView = selectedEvent !== null;
   
   // Fetch scheduled events for the selected task
@@ -71,8 +98,17 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
     [selectedTask?.id]
   );
   
-  // Use live task data if available, otherwise fall back to prop
+  // Fetch live event data from database (same pattern as tasks)
+  const liveEvent = useQuery(
+    () => selectedEvent?.id 
+      ? db.collection('schedule').get(selectedEvent.id)
+      : null,
+    [selectedEvent?.id]
+  );
+  
+  // Use live data if available, otherwise fall back to props
   const currentTask = liveTask || selectedTask;
+  const currentEvent = liveEvent || selectedEvent;
   
   const scheduledEvents = useQuery(
     () => selectedTask?.id 
@@ -187,11 +223,11 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
 
   // Update event fields when event changes
   useEffect(() => {
-    if (selectedEvent) {
-      setEventTitle(selectedEvent.title || '');
-      setEventDescription(selectedEvent.description || '');
-      const startTime = selectedEvent.start.dateTime ? getTimeFromDateTime(selectedEvent.start.dateTime) : '';
-      const endTime = selectedEvent.end.dateTime ? getTimeFromDateTime(selectedEvent.end.dateTime) : '';
+    if (currentEvent) {
+      setEventTitle(currentEvent.title || '');
+      setEventDescription(currentEvent.description || '');
+      const startTime = currentEvent.start.dateTime ? getTimeFromDateTime(currentEvent.start.dateTime) : '';
+      const endTime = currentEvent.end.dateTime ? getTimeFromDateTime(currentEvent.end.dateTime) : '';
       setEventStartTime(startTime);
       setEventEndTime(endTime);
     } else {
@@ -200,7 +236,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
       setEventStartTime('');
       setEventEndTime('');
     }
-  }, [selectedEvent]);
+  }, [currentEvent]);
 
   // Auto-resize textareas
   useEffect(() => {
@@ -231,33 +267,182 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
     }
   }, [eventDescription]);
 
-  // Focus input when collapsed
+  // Focus input when collapsed or when mode changes to task/event/command
   useEffect(() => {
     if (!isExpanded && inputRef.current) {
+      // In default mode (collapsed), focus the input
       inputRef.current.focus();
+    } else if ((mode === 'task' || mode === 'event') && !selectedTask && !selectedEvent) {
+      // When switching to task/event creation mode (and NOT viewing an existing one), focus input
+      inputRef.current?.focus();
     }
-  }, [isExpanded]);
+  }, [isExpanded, mode, selectedTask, selectedEvent]);
 
-  // Handle Esc key to close dialog when not focused on description
+  // Command Palette State
+  const [commandSearch, setCommandSearch] = useState('');
+  const [selectedActionIndex, setSelectedActionIndex] = useState(0);
+  const commandInputRef = useRef<HTMLInputElement>(null);
+
+  // Reset command search when entering command mode
+  useEffect(() => {
+    if (mode === 'command') {
+      setCommandSearch('');
+      setSelectedActionIndex(0);
+    }
+  }, [mode]);
+
+  // Define available commands
+  const folderCommands = folders?.map(folder => ({
+    id: `folder-${folder.id}`,
+    label: `Switch to ${folder.name.charAt(0).toUpperCase() + folder.name.slice(1).toLowerCase()}`,
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+      </svg>
+    ),
+    action: () => {
+      onFolderSelect?.(folder.id);
+      onModeChange?.('default');
+    }
+  })) || [];
+
+  const commands = [
+    {
+      id: 'folder-all',
+      label: 'Switch to All Tasks',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      ),
+      action: () => {
+        onFolderSelect?.(null);
+        onModeChange?.('default');
+      }
+    },
+    ...folderCommands,
+    {
+      id: 'new-task',
+      label: 'Create New Task',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+        </svg>
+      ),
+      action: () => onModeChange?.('task')
+    },
+    {
+      id: 'new-event',
+      label: 'Create New Event',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+        </svg>
+      ),
+      action: () => onModeChange?.('event')
+    },
+    {
+      id: 'focus-mode',
+      label: 'Start Focus Mode',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+        </svg>
+      ),
+      action: () => {
+        if (selectedTask && onEnterFocus) {
+          onEnterFocus(selectedTask);
+          onModeChange?.('default');
+        }
+      },
+      disabled: !selectedTask
+    },
+    {
+      id: 'toggle-view',
+      label: `Switch to ${currentView === 'agenda' ? 'Timeline' : 'Agenda'} View`,
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+        </svg>
+      ),
+      action: () => {
+        onToggleView?.();
+        onModeChange?.('default');
+      },
+      disabled: !onToggleView
+    },
+    {
+      id: 'settings',
+      label: 'Open Settings',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+        </svg>
+      ),
+      action: () => {
+        onOpenSettings?.();
+        onModeChange?.('default');
+      },
+      disabled: !onOpenSettings
+    }
+  ];
+
+  // Filter commands based on search
+  const filteredCommands = commands.filter(cmd => 
+    cmd.label.toLowerCase().includes(commandSearch.toLowerCase()) &&
+    !cmd.disabled
+  );
+
+  const handleCommandKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedActionIndex(prev => 
+        prev < filteredCommands.length - 1 ? prev + 1 : 0
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedActionIndex(prev => 
+        prev > 0 ? prev - 1 : filteredCommands.length - 1
+      );
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filteredCommands[selectedActionIndex]) {
+        filteredCommands[selectedActionIndex].action();
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      onModeChange?.('default');
+    }
+  };
+
+  // Handle Esc key to close dialog
   useEffect(() => {
     const handleEscKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isExpanded) {
-        // Check if the active element is a description textarea
-        const activeElement = document.activeElement;
-        const isDescriptionFocused = 
-          activeElement === descTextareaRef.current ||
-          activeElement === eventDescTextareaRef.current;
-        
-        // Only close if description is not focused
-        if (!isDescriptionFocused) {
-          handleClose();
-        }
+        // Always close when expanded on Esc, regardless of focus
+        // This overrides the previous check that prevented closing when textarea was focused
+        e.preventDefault();
+        e.stopPropagation();
+        handleClose();
+        onModeChange?.('default');
       }
     };
 
+    // Use capturing phase to intercept before other handlers if needed, 
+    // though bubbling (default) is usually fine if we stop propagation.
+    // We'll stick to standard bubbling but ensure we catch it.
     document.addEventListener('keydown', handleEscKey);
     return () => document.removeEventListener('keydown', handleEscKey);
-  }, [isExpanded]);
+  }, [isExpanded, onModeChange]);
+
+  // Textarea specific key handlers (Enter for submit/newline, but NOT Esc since that's handled globally now)
+  const handleTextareaKeyDown = (e: React.KeyboardEvent, type: 'title' | 'description') => {
+    if (e.key === 'Enter' && !e.shiftKey && type === 'title') {
+      e.preventDefault();
+      descTextareaRef.current?.focus();
+    } 
+    // Esc handling removed from here as the global handler above covers it
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -295,12 +480,35 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   };
 
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      handleClose();
+      onModeChange?.('default');
+      return;
+    }
+
     if (e.key === 'Tab') {
       // Tab: cycle between task and event modes
       e.preventDefault();
       e.stopPropagation();
-      setCreationMode(prev => prev === 'task' ? 'event' : 'task');
+      // Toggle mode via prop
+      if (mode === 'task') {
+        onModeChange?.('event');
+      } else if (mode === 'event') {
+        onModeChange?.('task');
+      } else {
+         // Default behavior if in some other mode (e.g. default -> task)
+         onModeChange?.('task');
+      }
       return;
+    }
+
+    if (e.key === '/') {
+       // Slash command to open command palette
+       e.preventDefault();
+       onModeChange?.('command');
+       return;
     }
 
     if (e.key === 'Enter' && e.shiftKey) {
@@ -427,12 +635,12 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
 
   // Handle switching to event mode
   const handleSwitchToEvent = () => {
-    setCreationMode('event');
+    onModeChange?.('event');
   };
 
   // Handle switching to task mode
   const handleSwitchToTask = () => {
-    setCreationMode('task');
+    onModeChange?.('task');
   };
 
 
@@ -442,8 +650,8 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   };
 
   const handleEventTitleBlur = () => {
-    if (selectedEvent && eventTitle.trim() !== selectedEvent.title && onUpdateEvent) {
-      onUpdateEvent(selectedEvent.id, { title: eventTitle.trim() });
+    if (currentEvent && eventTitle.trim() !== currentEvent.title && onUpdateEvent) {
+      onUpdateEvent(currentEvent.id, { title: eventTitle.trim() });
     }
   };
 
@@ -460,17 +668,18 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   };
 
   const handleEventDescriptionBlur = () => {
-    if (selectedEvent && eventDescription !== selectedEvent.description && onUpdateEvent) {
-      onUpdateEvent(selectedEvent.id, { description: eventDescription });
+    if (currentEvent && eventDescription !== currentEvent.description && onUpdateEvent) {
+      onUpdateEvent(currentEvent.id, { description: eventDescription });
     }
   };
 
   const handleEventDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Esc handling is now global, but we can keep this if we want to explicitly blur first?
+    // Actually, the global handler calls handleClose which resets everything, so this is redundant/conflicting.
+    // Removing the stopPropagation here so the global handler catches it.
     if (e.key === 'Escape') {
-      e.preventDefault();
-      e.stopPropagation();
-      handleEventDescriptionBlur();
-      eventDescTextareaRef.current?.blur();
+       // Let global handler take over
+       return; 
     }
   };
 
@@ -479,10 +688,10 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   };
 
   const handleEventStartTimeBlur = () => {
-    const currentStartTime = selectedEvent?.start.dateTime ? getTimeFromDateTime(selectedEvent.start.dateTime) : '';
-    if (selectedEvent && eventStartTime !== currentStartTime && onUpdateEvent) {
+    const currentStartTime = currentEvent?.start.dateTime ? getTimeFromDateTime(currentEvent.start.dateTime) : '';
+    if (currentEvent && eventStartTime !== currentStartTime && onUpdateEvent) {
       // Parse the time and update the event
-      const baseDate = selectedEvent.start.dateTime ? new Date(selectedEvent.start.dateTime) : new Date();
+      const baseDate = currentEvent.start.dateTime ? new Date(currentEvent.start.dateTime) : new Date();
       const [hours, minutes] = eventStartTime.split(':').map(Number);
       baseDate.setHours(hours, minutes, 0, 0);
       
@@ -492,28 +701,28 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
         const endDate = new Date(baseDate);
         endDate.setHours(endHours, endMinutes, 0, 0);
         
-        onUpdateEvent(selectedEvent.id, {
+        onUpdateEvent(currentEvent.id, {
           start: {
-            ...selectedEvent.start,
+            ...currentEvent.start,
             dateTime: baseDate.toISOString()
           },
           end: {
-            ...selectedEvent.end,
+            ...currentEvent.end,
             dateTime: endDate.toISOString()
           }
         });
       } else {
         // Just update start time, keep duration the same
-        const currentDuration = getEventDuration(selectedEvent);
+        const currentDuration = getEventDuration(currentEvent);
         const endDate = new Date(baseDate.getTime() + currentDuration * 60000);
         
-        onUpdateEvent(selectedEvent.id, {
+        onUpdateEvent(currentEvent.id, {
           start: {
-            ...selectedEvent.start,
+            ...currentEvent.start,
             dateTime: baseDate.toISOString()
           },
           end: {
-            ...selectedEvent.end,
+            ...currentEvent.end,
             dateTime: endDate.toISOString()
           }
         });
@@ -527,17 +736,17 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   };
 
   const handleEventEndTimeBlur = () => {
-    const currentEndTime = selectedEvent?.end.dateTime ? getTimeFromDateTime(selectedEvent.end.dateTime) : '';
-    if (selectedEvent && eventEndTime !== currentEndTime && onUpdateEvent) {
+    const currentEndTime = currentEvent?.end.dateTime ? getTimeFromDateTime(currentEvent.end.dateTime) : '';
+    if (currentEvent && eventEndTime !== currentEndTime && onUpdateEvent) {
       // Parse the end time and update the event
-      const baseDate = selectedEvent.start.dateTime ? new Date(selectedEvent.start.dateTime) : new Date();
+      const baseDate = currentEvent.start.dateTime ? new Date(currentEvent.start.dateTime) : new Date();
       const [endHours, endMinutes] = eventEndTime.split(':').map(Number);
       const endDate = new Date(baseDate);
       endDate.setHours(endHours, endMinutes, 0, 0);
       
-      onUpdateEvent(selectedEvent.id, {
+      onUpdateEvent(currentEvent.id, {
         end: {
-          ...selectedEvent.end,
+          ...currentEvent.end,
           dateTime: endDate.toISOString()
         }
       });
@@ -545,21 +754,9 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   };
 
   const handleEventDelete = () => {
-    if (selectedEvent && onDeleteEvent) {
-      onDeleteEvent(selectedEvent.id);
+    if (currentEvent && onDeleteEvent) {
+      onDeleteEvent(currentEvent.id);
       onEventSelect(null);
-    }
-  };
-
-  const handleTextareaKeyDown = (e: React.KeyboardEvent, type: 'title' | 'description') => {
-    if (e.key === 'Enter' && !e.shiftKey && type === 'title') {
-      e.preventDefault();
-      descTextareaRef.current?.focus();
-    } else if (e.key === 'Escape' && type === 'description') {
-      e.preventDefault();
-      e.stopPropagation();
-      handleDescriptionBlur();
-      descTextareaRef.current?.blur();
     }
   };
 
@@ -593,7 +790,71 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
         }}
       >
         <AnimatePresence mode="wait">
-          {!isExpanded ? (
+          {mode === 'command' ? (
+             <motion.div
+              key="command-palette"
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 5 }}
+              transition={{ duration: 0.1 }}
+              className="flex flex-col-reverse max-h-[300px]"
+            >
+              <div className="flex items-center h-14 px-4 gap-3 border-t border-white/10">
+                <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                </svg>
+                <input
+                  ref={commandInputRef}
+                  type="text"
+                  value={commandSearch}
+                  onChange={(e) => {
+                    setCommandSearch(e.target.value);
+                    setSelectedActionIndex(0);
+                  }}
+                  onKeyDown={handleCommandKeyDown}
+                  placeholder="Type a command..."
+                  autoFocus
+                  className={`flex-1 bg-transparent border-none outline-none ${
+                    isDarkMode ? 'text-gray-100 placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'
+                  } text-sm`}
+                  autoComplete="off"
+                />
+                <div className={`text-xs px-1.5 py-0.5 rounded ${isDarkMode ? 'bg-white/10 text-gray-400' : 'bg-gray-200 text-gray-500'}`}>
+                  ESC
+                </div>
+              </div>
+              
+              <div className="overflow-y-auto py-2">
+                {filteredCommands.length > 0 ? (
+                  filteredCommands.map((cmd, index) => (
+                    <button
+                      key={cmd.id}
+                      onClick={() => cmd.action()}
+                      className={`w-full px-4 py-2 flex items-center gap-3 text-left transition-colors ${
+                        index === selectedActionIndex
+                          ? isDarkMode ? 'bg-white/10' : 'bg-gray-100'
+                          : 'hover:bg-white/5'
+                      } ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}
+                    >
+                      <div className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {cmd.icon}
+                      </div>
+                      <span className="flex-1">{cmd.label}</span>
+                      {index === selectedActionIndex && (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 opacity-50" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
+                  ))
+                ) : (
+                  <div className={`px-4 py-3 text-center text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                    No commands found
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          ) : !isExpanded ? (
             <motion.div
               key="collapsed"
               initial={{ opacity: 0 }}
@@ -673,8 +934,76 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
               </div>
             </motion.div>
           ) : isEventView ? (
-            // Check if this is a deleted task
-            selectedEvent?.type === 'task' && (!selectedEvent?.taskId || selectedEvent?.taskId === '') && selectedEvent?.metadata?.taskSnapshot ? (
+            // Check if this is a completion event
+            currentEvent?.type === 'task:completed' ? (
+              // Simple read-only view for task completion
+              <motion.div
+                key="expanded-completion"
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 5 }}
+                transition={{ duration: 0.15, ease: [0.32, 0.72, 0, 1] }}
+                className="p-4 space-y-4"
+              >
+                {/* Header with checkmark and close button */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0">
+                    <svg className="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <div className={`text-lg font-medium ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+                      {currentEvent.title}
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleClose}
+                    className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${
+                      isDarkMode ? 'text-gray-400 hover:text-gray-100' : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                    aria-label="Close"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Completion info */}
+                <div className={`space-y-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <div className="flex items-start gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-sm">
+                      Completed: {currentEvent.start.dateTime && new Date(currentEvent.start.dateTime).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Info banner */}
+                <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <svg 
+                      className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" 
+                      fill="none" 
+                      strokeWidth="2" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-green-300">Task Completed</p>
+                      <p className="text-xs text-green-200/80 mt-0.5">
+                        This is a completion activity record.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ) : currentEvent?.type === 'task' && (!currentEvent?.taskId || currentEvent?.taskId === '') && currentEvent?.metadata?.taskSnapshot ? (
               // Read-only view for deleted task
               <motion.div
                     key="expanded-deleted-task"
@@ -687,16 +1016,16 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                     {/* Header with checkbox and close button - matching regular task layout */}
                     <div className="flex items-center gap-3">
                       <Checkbox
-                        id={`dynamic-island-deleted-${selectedEvent.id}`}
+                        id={`dynamic-island-deleted-${currentEvent.id}`}
                         size="sm"
-                        checked={selectedEvent.metadata.taskSnapshot.completed}
+                        checked={currentEvent.metadata.taskSnapshot.completed}
                         onChange={() => {}} // No-op for deleted tasks
                         accentColor={accentColor}
                         disabled={true}
                       />
                       <div className="flex-1">
                         <div className={`text-lg font-medium ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                          {selectedEvent.metadata.taskSnapshot.name}
+                          {currentEvent.metadata.taskSnapshot.name}
                         </div>
                       </div>
                       <button
@@ -749,12 +1078,12 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 <div className={`w-full min-h-[100px] whitespace-pre-wrap ${
                   isDarkMode ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  {selectedEvent.metadata.taskSnapshot.description || 'No description'}
+                  {currentEvent.metadata.taskSnapshot.description || 'No description'}
                 </div>
 
                 {/* Schedule info */}
                 <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Scheduled: {selectedEvent.start.dateTime && new Date(selectedEvent.start.dateTime).toLocaleString()}
+                  Scheduled: {currentEvent.start.dateTime && new Date(currentEvent.start.dateTime).toLocaleString()}
                 </div>
 
                 {/* Warning banner */}
@@ -772,7 +1101,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                     <div className="flex-1">
                       <p className="text-xs font-medium text-yellow-300">Task Deleted</p>
                       <p className="text-xs text-yellow-200/80 mt-0.5">
-                        This task was deleted on {new Date(selectedEvent.metadata.taskSnapshot.deletedAt).toLocaleDateString()}. This is read only.
+                        This task was deleted on {currentEvent?.metadata?.taskSnapshot?.deletedAt ? new Date(currentEvent.metadata.taskSnapshot.deletedAt).toLocaleDateString() : 'unknown date'}. This is read only.
                       </p>
                     </div>
                   </div>
@@ -831,9 +1160,9 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </div>
+                    </svg>
+                  </button>
+                </div>
 
                 {/* Time */}
                 <div className="flex items-center gap-2">
@@ -965,80 +1294,242 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 style={{ height: 'auto' }}
               />
 
+              {/* Activity Section - show scheduled events if any exist */}
+              {scheduledEvents && scheduledEvents.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className={`text-xs font-semibold uppercase tracking-wider ${
+                    isDarkMode ? 'text-gray-500' : 'text-gray-500'
+                  }`}>
+                    Activity
+                  </h4>
+                  <div className="space-y-1">
+                    {scheduledEvents.map((event: ScheduleCardData) => {
+                      const isCompletion = event.type === 'task:completed';
+                      const isTask = event.type === 'task';
+                      
+                      // Format text for completion events
+                      let displayText = '';
+                      if (isCompletion) {
+                        const completedDate = event.start.dateTime ? new Date(event.start.dateTime) : new Date();
+                        const today = new Date();
+                        const dateStr = completedDate.toDateString() === today.toDateString() 
+                          ? 'Today' 
+                          : completedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        const timeStr = completedDate.toLocaleTimeString('en-US', { 
+                          hour: 'numeric', 
+                          minute: '2-digit',
+                          hour12: true 
+                        });
+                        displayText = `completed ${dateStr} at ${timeStr}`;
+                      } else {
+                        displayText = formatScheduledTime(event);
+                      }
+                      
+                      return (
+                        <div
+                          key={event.id}
+                          className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg ${
+                            isDarkMode ? 'bg-white/5' : 'bg-gray-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            {isCompletion ? (
+                              <svg className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            ) : isTask ? (
+                              <svg className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                              </svg>
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                            <span className={`text-sm truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              {displayText}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (onDeleteEvent) {
+                                onDeleteEvent(event.id);
+                              }
+                            }}
+                            className={`p-1 rounded transition-colors flex-shrink-0 ${
+                              isDarkMode 
+                                ? 'text-gray-400 hover:text-red-400 hover:bg-red-400/10' 
+                                : 'text-gray-500 hover:text-red-600 hover:bg-red-100'
+                            }`}
+                            aria-label="Remove from schedule"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Actions Footer */}
               <div className="flex justify-between items-center gap-2 pt-2 border-t border-white/10">
-                <button
-                  onClick={handleDelete}
-                  className={`p-2 rounded-lg transition-colors ${
-                    isDarkMode 
-                      ? 'text-red-400 hover:bg-red-400/10' 
-                      : 'text-red-600 hover:bg-red-100'
-                  }`}
-                  aria-label="Delete task"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                </button>
-                
-                {/* Show scheduled times or Add to Schedule button */}
-                {scheduledEvents && scheduledEvents.length > 0 ? (
-                  <div className="flex flex-col gap-1 items-end">
-                    {scheduledEvents.map((event: ScheduleCardData) => (
-                      <div
-                        key={event.id}
-                        className={`flex items-center gap-2 pl-3 pr-2 py-2 rounded-lg h-[36px] ${
-                          isDarkMode ? 'bg-white/5' : 'bg-gray-100'
-                        }`}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                        </svg>
-                        <span className={`text-sm whitespace-nowrap ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                          {formatScheduledTime(event)}
-                        </span>
-                        <button
-                          onClick={() => {
-                            if (onDeleteEvent) {
-                              onDeleteEvent(event.id);
-                            }
-                          }}
-                          className={`p-1 rounded transition-colors flex-shrink-0 ${
-                            isDarkMode 
-                              ? 'text-gray-400 hover:text-red-400 hover:bg-red-400/10' 
-                              : 'text-gray-500 hover:text-red-600 hover:bg-red-100'
-                          }`}
-                          aria-label="Remove from schedule"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={() => {
-                      if (selectedTask && onAddToSchedule) {
-                        onAddToSchedule(selectedTask);
-                      }
-                    }}
-                    disabled={!selectedTask || !onAddToSchedule}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors h-[36px] ${
-                      selectedTask && onAddToSchedule
-                        ? isDarkMode 
-                          ? 'bg-white/10 hover:bg-white/20 text-white' 
-                          : 'bg-gray-800 hover:bg-gray-700 text-white'
-                        : 'opacity-50 cursor-not-allowed'
+                    onClick={handleDelete}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isDarkMode 
+                        ? 'text-red-400 hover:bg-red-400/10' 
+                        : 'text-red-600 hover:bg-red-100'
                     }`}
+                    aria-label="Delete task"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
-                    Add to Schedule
                   </button>
-                )}
+
+                  {/* Folder Dropdown */}
+                  {folders && folders.length > 0 && (
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowFolderDropdown(!showFolderDropdown)}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm transition-colors h-[36px] ${
+                          isDarkMode 
+                            ? 'text-gray-300 hover:bg-white/10 bg-white/5' 
+                            : 'text-gray-600 hover:bg-gray-100 bg-gray-50'
+                        }`}
+                        aria-label="Select folder"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                        </svg>
+                        {(() => {
+                          const taskLabels = currentTask?.labels?.split(',').map(l => l.trim()) || [];
+                          const folderLabel = taskLabels.find(l => l.startsWith('folder:'));
+                          if (folderLabel) {
+                            const folderName = folderLabel.replace('folder:', '');
+                            return <span className="capitalize">{folderName}</span>;
+                          }
+                          return <span>Folder</span>;
+                        })()}
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+
+                      {showFolderDropdown && (
+                        <>
+                          {/* Backdrop to close dropdown */}
+                          <div 
+                            className="fixed inset-0 z-40" 
+                            onClick={() => setShowFolderDropdown(false)}
+                          />
+                          
+                          {/* Dropdown menu */}
+                          <div 
+                            className={`absolute bottom-full left-0 mb-1 min-w-[140px] rounded-lg shadow-lg border z-50 ${
+                              isDarkMode 
+                                ? 'bg-gray-800 border-white/10' 
+                                : 'bg-white border-gray-200'
+                            }`}
+                            style={{
+                              backdropFilter: 'blur(12px)',
+                            }}
+                          >
+                            {/* None option */}
+                            <button
+                              onClick={() => {
+                                if (currentTask) {
+                                  const taskLabels = currentTask.labels?.split(',').map(l => l.trim()) || [];
+                                  const newLabels = taskLabels.filter(l => !l.startsWith('folder:')).join(',');
+                                  onUpdateTask(currentTask.id, { labels: newLabels });
+                                }
+                                setShowFolderDropdown(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                                isDarkMode 
+                                  ? 'hover:bg-white/10 text-gray-300' 
+                                  : 'hover:bg-gray-100 text-gray-700'
+                              }`}
+                            >
+                              None
+                            </button>
+
+                            {/* Folder options */}
+                            {folders.map((folder) => (
+                              <button
+                                key={folder.id}
+                                onClick={() => {
+                                  if (currentTask) {
+                                    const taskLabels = currentTask.labels?.split(',').map(l => l.trim()) || [];
+                                    const labelsWithoutFolder = taskLabels.filter(l => !l.startsWith('folder:'));
+                                    const newLabels = [...labelsWithoutFolder, `folder:${folder.name.toLowerCase()}`].join(',');
+                                    onUpdateTask(currentTask.id, { labels: newLabels });
+                                  }
+                                  setShowFolderDropdown(false);
+                                }}
+                                className={`w-full text-left px-3 py-2 text-sm transition-colors capitalize ${
+                                  isDarkMode 
+                                    ? 'hover:bg-white/10 text-gray-300' 
+                                    : 'hover:bg-gray-100 text-gray-700'
+                                }`}
+                              >
+                                {folder.name.charAt(0).toUpperCase() + folder.name.slice(1).toLowerCase()}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Add to Schedule button or Focus button */}
+                <div className="flex items-center gap-2">
+                  {!(scheduledEvents && scheduledEvents.length > 0) && (
+                    <button
+                      onClick={() => {
+                        if (selectedTask && onAddToSchedule) {
+                          onAddToSchedule(selectedTask);
+                        }
+                      }}
+                      disabled={!selectedTask || !onAddToSchedule}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors h-[36px] ${
+                        selectedTask && onAddToSchedule
+                          ? isDarkMode 
+                            ? 'bg-white/10 hover:bg-white/20 text-white' 
+                            : 'bg-gray-800 hover:bg-gray-700 text-white'
+                          : 'opacity-50 cursor-not-allowed'
+                      }`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                      </svg>
+                      Add to Schedule
+                    </button>
+                  )}
+                  
+                  {/* Focus button - positioned on the right */}
+                  {onEnterFocus && currentTask && (
+                    <button
+                      onClick={() => onEnterFocus(currentTask)}
+                      className={`p-2 rounded-lg transition-colors ${
+                        isDarkMode 
+                          ? 'text-purple-400 hover:bg-purple-400/10' 
+                          : 'text-purple-600 hover:bg-purple-100'
+                      }`}
+                      aria-label="Enter focus mode"
+                      title="Focus mode"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}
@@ -1049,4 +1540,3 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
 };
 
 export default DynamicIsland;
-

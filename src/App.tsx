@@ -20,8 +20,14 @@ import ScheduleSidebar from "./components/ScheduleSidebar";
 import { ScheduleCardData } from "./components/ScheduleCard";
 import AgendaView from "./components/AgendaView";
 import DynamicIsland from "./components/DynamicIsland";
+import FocusView from "./components/FocusView";
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import MobileNavBar from "./components/MobileNavBar";
+import { fetchWeatherData } from "./utils/weather";
+import FoldersBar from "./components/FoldersBar";
+import FolderDrawer from "./components/FolderDrawer";
+import FolderSettings from "./components/FolderSettings";
+import { Folder } from "./utils/types";
 
 
 function ExpandableInput() {
@@ -157,11 +163,16 @@ function Home() {
 
   const tasks = useQuery(() => db.collection("tasks").getAll())
   const scheduleEventsData = useQuery(() => db.collection("schedule").getAll())
+  const folders = useQuery(() => db.collection("filters").getAll())
 
   console.log("tasks from DB:", tasks);
   console.log("schedule from DB:", scheduleEventsData);
+  console.log("folders from DB:", folders);
   const [selectedTask, setSelectedTask] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleCardData | null>(null);
+  const [focusedTask, setFocusedTask] = useState<Task | null>(null);
+  const [focusSessionEventId, setFocusSessionEventId] = useState<string | null>(null);
+  const fetchingWeatherDatesRef = useRef<Set<string>>(new Set());
 
   // Use schedule events from database, fallback to empty array
   const scheduleEvents = scheduleEventsData || [];
@@ -189,6 +200,25 @@ function Home() {
   const [isNewTaskMode, setIsNewTaskMode] = useState(false);
   const [mobileView, setMobileView] = useState<'tasks' | 'calendar'>('tasks');
   const [scheduleViewMode, setScheduleViewMode] = useState<'timeline' | 'agenda'>('agenda');
+  
+  // Dynamic Island mode state (Lifted State)
+  const [islandMode, setIslandMode] = useState<'default' | 'task' | 'event' | 'command'>('default');
+
+  // Folder state
+  const [activeFolder, setActiveFolder] = useState<string | null>(null); // null = "All"
+  const [folderDrawerOpen, setFolderDrawerOpen] = useState(false);
+  const [folderSettingsOpen, setFolderSettingsOpen] = useState(false);
+
+  // Auto-fetch weather for today on initial load (with delay to ensure app is fully initialized)
+  useEffect(() => {
+    if (scheduleEvents) {
+      const timer = setTimeout(() => {
+        handleFetchWeather(new Date());
+      }, 3000); // Wait 3 seconds after schedule loads
+      
+      return () => clearTimeout(timer);
+    }
+  }, [scheduleEvents]);
 
   // Handle mobile view change - close drawer when switching views
   const handleMobileViewChange = (view: 'tasks' | 'calendar') => {
@@ -198,6 +228,164 @@ function Home() {
       setIsNewTaskMode(false);
       setSelectedTask(null);
       setSelectedEvent(null);
+    }
+  };
+
+  // Focus mode handlers
+  const handleEnterFocus = async (task: Task) => {
+    setFocusedTask(task);
+    // Close any open modals/drawers
+    setSelectedTask(null);
+    setSelectedEvent(null);
+    setDrawerOpen(false);
+    
+    // Create a focus session event
+    const now = new Date();
+    const sessionEvent = {
+      title: `${task.name} (focus session)`,
+      start: {
+        dateTime: now.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      },
+      end: {
+        dateTime: now.toISOString(), // Will be updated when session ends
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      },
+      color: 'rgba(148, 163, 184, 0.08)',
+      type: 'task' as const,
+      taskId: task.id,
+      description: 'Focus session'
+    };
+    
+    const eventId = await db.collection("schedule").add(sessionEvent);
+    setFocusSessionEventId(eventId);
+  };
+
+  const handleExitFocus = async () => {
+    // Update the focus session event's end time
+    if (focusSessionEventId) {
+      const now = new Date();
+      await db.collection("schedule").update(focusSessionEventId, {
+        end: {
+          dateTime: now.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        }
+      });
+      setFocusSessionEventId(null);
+    }
+    
+    setFocusedTask(null);
+  };
+
+  // Fetch weather and create weather events
+  const handleFetchWeather = async (date: Date) => {
+    const dateStr = date.toDateString();
+    
+    // Check if already fetching for this date (race condition prevention)
+    if (fetchingWeatherDatesRef.current.has(dateStr)) {
+      return;
+    }
+    
+    // Wait for scheduleEvents to be loaded (not undefined)
+    if (!scheduleEvents) {
+      return;
+    }
+    
+    // Check if weather already exists for this date to prevent duplicates
+    const existingWeather = scheduleEvents.find(event => {
+      if (event.type !== 'weather' || !event.start.dateTime) return false;
+      const eventDate = new Date(event.start.dateTime);
+      return eventDate.toDateString() === dateStr;
+    });
+    
+    if (existingWeather) {
+      // Weather already exists, don't fetch again
+      return;
+    }
+
+    // Mark this date as being fetched
+    fetchingWeatherDatesRef.current.add(dateStr);
+
+    try {
+      const weatherData = await fetchWeatherData(
+        theme.location.latitude,
+        theme.location.longitude,
+        date
+      );
+
+      // Create weather event (for header display)
+      const weatherEvent = {
+        title: 'Weather',
+        start: {
+          dateTime: new Date(date.setHours(12, 0, 0, 0)).toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        end: {
+          dateTime: new Date(date.setHours(12, 0, 0, 0)).toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        color: 'rgba(148, 163, 184, 0.05)',
+        type: 'weather' as const,
+        description: `${weatherData.condition}`,
+        metadata: {
+          weather: {
+            temperature: weatherData.temperature,
+            condition: weatherData.condition,
+            sunrise: weatherData.sunrise,
+            sunset: weatherData.sunset,
+            fetchedAt: new Date().toISOString(),
+            hourlyTemperatures: weatherData.hourlyTemperatures
+          }
+        }
+      };
+
+      // Create sunrise event
+      const sunriseDate = new Date(weatherData.sunrise);
+      const sunriseEvent = {
+        title: 'Sunrise',
+        start: {
+          dateTime: sunriseDate.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        end: {
+          dateTime: sunriseDate.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        color: 'rgba(251, 146, 60, 0.15)',
+        type: 'sunrise' as const,
+        description: 'Sunrise'
+      };
+
+      // Create sunset event
+      const sunsetDate = new Date(weatherData.sunset);
+      const sunsetEvent = {
+        title: 'Sunset',
+        start: {
+          dateTime: sunsetDate.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        end: {
+          dateTime: sunsetDate.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        color: 'rgba(249, 115, 22, 0.15)',
+        type: 'sunset' as const,
+        description: 'Sunset'
+      };
+
+      // Add all three events to database
+      await Promise.all([
+        db.collection("schedule").add(weatherEvent),
+        db.collection("schedule").add(sunriseEvent),
+        db.collection("schedule").add(sunsetEvent)
+      ]);
+      
+      // Remove from fetching set after successful creation
+      fetchingWeatherDatesRef.current.delete(dateStr);
+    } catch (error) {
+      console.error('Failed to fetch weather:', error);
+      // Remove from fetching set on error too
+      fetchingWeatherDatesRef.current.delete(dateStr);
     }
   };
 
@@ -244,12 +432,81 @@ function Home() {
   //   return true;
   // });
 
-  // Filter out subtasks - only show tasks without a parentTaskId
-  const filteredTasks = tasks?.filter((task: Task) => !task.parentTaskId) || [];
+  // Filter tasks based on active folder
+  const filteredTasks = (() => {
+    // First filter out subtasks - only show tasks without a parentTaskId
+    const topLevelTasks = tasks?.filter((task: Task) => !task.parentTaskId) || [];
+    
+    // If no folder is selected, show all top-level tasks
+    if (activeFolder === null) {
+      return topLevelTasks;
+    }
+    
+    // Find the selected folder
+    const selectedFolder = folders?.find((f: Folder) => f.id === activeFolder);
+    if (!selectedFolder) {
+      return topLevelTasks;
+    }
+    
+    // Get folder labels (comma-separated)
+    const folderLabels = selectedFolder.labels
+      ? selectedFolder.labels.split(',').map(l => l.trim()).filter(l => l)
+      : [];
+    
+    // If folder has no labels, show all tasks
+    if (folderLabels.length === 0) {
+      return topLevelTasks;
+    }
+    
+    // Filter tasks that match ANY label in the folder's labels
+    return topLevelTasks.filter((task: Task) => {
+      if (!task.labels) return false;
+      
+      const taskLabels = task.labels.split(',').map(l => l.trim());
+      
+      // Check if task has any of the folder's labels
+      return folderLabels.some(folderLabel => 
+        taskLabels.some(taskLabel => taskLabel === folderLabel)
+      );
+    });
+  })();
 
-  // Keyboard navigation for tasks
+    // Keyboard navigation for tasks and global shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Global shortcuts - only when no input is focused
+      const activeElement = document.activeElement;
+      const isInputFocused = activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement;
+
+      if (!isInputFocused) {
+        if (e.key === 't') {
+          e.preventDefault();
+          setIslandMode('task');
+          return;
+        }
+        
+        if (e.key === 'e') {
+          e.preventDefault();
+          setIslandMode('event');
+          return;
+        }
+        
+        if (e.key === '/') {
+          e.preventDefault();
+          setIslandMode(prev => prev === 'command' ? 'default' : 'command');
+          return;
+        }
+
+        if (e.key === ' ') {
+          // Space to focus task
+          if (selectedTask) {
+             e.preventDefault();
+             handleEnterFocus(selectedTask);
+             return;
+          }
+        }
+      }
+
       if (e.key === 'Escape') {
         e.preventDefault();
         setSelectedTask(null);
@@ -257,15 +514,77 @@ function Home() {
         setSettingsDrawerOpen(false);
         setAboutModalOpen(false);
         setShowSchedule(false);
+        setIslandMode('default');
         if (isMobile) {
           setDrawerOpen(false);
         }
         return;
       }
 
-      if (!filteredTasks || filteredTasks.length === 0) return;
+      // Tab to cycle through folders (only when Dynamic Island is not open/focused)
+      if (e.key === 'Tab' && !isInputFocused && islandMode === 'default' && !selectedTask && !selectedEvent) {
+        e.preventDefault();
+        
+        // Build array of folder IDs with null (All) at the start
+        const folderIds = [null, ...(folders?.map(f => f.id) || [])];
+        const currentIndex = folderIds.indexOf(activeFolder);
+        const nextIndex = (currentIndex + 1) % folderIds.length;
+        
+        setActiveFolder(folderIds[nextIndex]);
+        return;
+      }
 
-      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      // Schedule Navigation (ArrowUp / ArrowDown)
+      if (scheduleEvents && scheduleEvents.length > 0 && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+         // Only if no task is selected (or maybe allow switching context?)
+         // For now let's prioritize schedule navigation if we are not in input
+         if (!isInputFocused) {
+            e.preventDefault();
+            
+            // Sort events by time
+            const sortedEvents = [...scheduleEvents].sort((a, b) => {
+               const startA = a.start?.dateTime ? new Date(a.start.dateTime).getTime() : 0;
+               const startB = b.start?.dateTime ? new Date(b.start.dateTime).getTime() : 0;
+               return startA - startB;
+            });
+
+            // Filter for Today
+            const now = new Date();
+            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+            const todaysEvents = sortedEvents.filter(ev => {
+              if (!ev.start?.dateTime) return false;
+              const eventDate = new Date(ev.start.dateTime);
+              return eventDate >= startOfDay && eventDate <= endOfDay;
+            });
+            
+            if (todaysEvents.length === 0) return;
+
+            const currentIndex = selectedEvent 
+               ? todaysEvents.findIndex(ev => ev.id === selectedEvent.id)
+               : -1;
+            
+            let newIndex;
+            if (e.key === 'ArrowDown') {
+               // If nothing selected, start at 0. If at end, cycle to 0.
+               newIndex = currentIndex < todaysEvents.length - 1 ? currentIndex + 1 : 0;
+            } else {
+               // If nothing selected (currentIndex -1), wrapping implies going to last? 
+               // Actually currentIndex > 0 check handles -1 because -1 > 0 is false, so it goes to else -> last item.
+               // That feels natural for "Up" (start from bottom).
+               newIndex = currentIndex > 0 ? currentIndex - 1 : todaysEvents.length - 1;
+            }
+            
+            const nextEvent = todaysEvents[newIndex];
+            // Use the wrapper logic to select event and clear task
+            handleEventSelectWrapper(nextEvent);
+            return; 
+         }
+      }
+
+      // Task List Navigation
+      if (filteredTasks && filteredTasks.length > 0 && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
         e.preventDefault();
 
         const currentIndex = selectedTask
@@ -344,6 +663,14 @@ function Home() {
     
     if (isDeletedTask) {
       // Deleted task - open as event to show read-only view
+      setSelectedEvent(cardData);
+      setSelectedTask(null);
+      setIsNewTaskMode(false);
+      if (isMobile) {
+        setDrawerOpen(true);
+      }
+    } else if (cardData.type === 'task:completed') {
+      // Completion event - open as event to show completion view
       setSelectedEvent(cardData);
       setSelectedTask(null);
       setIsNewTaskMode(false);
@@ -502,10 +829,65 @@ function Home() {
     setNewInput("");
   };
 
-  const updateTask = (taskId: string, changes: any) => {
+  const updateTask = async (taskId: string, changes: any) => {
     console.log(`Updating task ${taskId} with:`, changes);
-    db.collection("tasks").update(taskId, changes);
+    
+    // Check if task is being marked as complete
+    if (changes.completed === true) {
+      const task = await db.collection("tasks").get(taskId);
+      
+      // Only create completion event if task wasn't already completed
+      if (task && !task.completed) {
+        await createTaskCompletionEvent(task);
+      }
+    }
+    
+    await db.collection("tasks").update(taskId, changes);
   }
+  
+  // Create or update a completion activity event
+  const createTaskCompletionEvent = async (task: Task) => {
+    const now = new Date();
+    
+    // Check if a completion event already exists for this task today
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(now);
+    todayEnd.setHours(23, 59, 59, 999);
+    
+    const existingCompletionEvents = await db.collection("schedule")
+      .filter((event: ScheduleCardData) => 
+        event.type === 'task:completed' && 
+        event.taskId === task.id &&
+        event.start.dateTime &&
+        new Date(event.start.dateTime) >= todayStart &&
+        new Date(event.start.dateTime) <= todayEnd
+      );
+    
+    const completionEventData = {
+      title: task.name || 'Untitled Task',
+      start: {
+        dateTime: now.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      },
+      end: {
+        dateTime: now.toISOString(), // Same as start - no duration
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      },
+      color: 'rgba(148, 163, 184, 0.08)',
+      type: 'task:completed' as const,
+      taskId: task.id,
+      description: `Completed: ${task.name}`
+    };
+    
+    if (existingCompletionEvents && existingCompletionEvents.length > 0) {
+      // Update existing completion event with new time
+      await db.collection("schedule").update(existingCompletionEvents[0].id, completionEventData);
+    } else {
+      // Create new completion event
+      await db.collection("schedule").add(completionEventData);
+    }
+  };
   
   // Handle task toggle from schedule - wrapper for updateTask
   const handleTaskToggle = (taskId: string, completed: boolean) => {
@@ -568,10 +950,20 @@ function Home() {
   // };
 
   const handleAddTask = async (taskName): Promise<string | null> => {
+    // Auto-add current folder label if a folder is selected
+    let labels = '';
+    if (activeFolder) {
+      const selectedFolder = folders?.find((f: Folder) => f.id === activeFolder);
+      if (selectedFolder) {
+        labels = `folder:${selectedFolder.name.toLowerCase()}`;
+      }
+    }
+    
     const taskId = await db.collection("tasks").add({
       name: taskName,
       description: "",
-      completed: false
+      completed: false,
+      labels: labels
     });
     console.log("newTask ID:", taskId);
     return taskId || null;
@@ -602,6 +994,41 @@ function Home() {
     setFontStyle(style);
   };
 
+  // Folder handlers
+  const handleFolderSelect = (folderId: string | null) => {
+    setActiveFolder(folderId);
+  };
+
+  const handleCreateFolder = async (name: string, labels?: string) => {
+    // Auto-generate folder label if not provided
+    const folderLabel = `folder:${name.toLowerCase()}`;
+    const allLabels = labels ? `${folderLabel},${labels}` : folderLabel;
+    
+    await db.collection("filters").add({
+      name: name.toLowerCase(), // Store lowercase
+      labels: allLabels
+    });
+  };
+
+  const handleUpdateFolder = async (folderId: string, name: string, labels: string) => {
+    await db.collection("filters").update(folderId, {
+      name: name.toLowerCase(), // Store lowercase
+      labels: labels
+    });
+  };
+
+  const handleDeleteFolder = async (folderId: string) => {
+    await db.collection("filters").delete(folderId);
+    // If deleted folder was active, switch to "All"
+    if (activeFolder === folderId) {
+      setActiveFolder(null);
+    }
+  };
+
+  const handleOpenFolderSettings = () => {
+    setFolderSettingsOpen(true);
+  };
+
   // Update viewport height on resize for mobile Chrome fix (fallback for older browsers)
   // Modern browsers use dvh (dynamic viewport height) natively, so this is only needed for legacy support
   useEffect(() => {
@@ -626,6 +1053,20 @@ function Home() {
   }, []);
 
   return (
+    <>
+      {/* Focus Mode - renders on top of everything */}
+      {focusedTask && (
+        <FocusView
+          task={focusedTask}
+          onExit={handleExitFocus}
+          onUpdateTask={updateTask}
+          onTaskToggle={handleTaskToggle}
+          onAddSubtask={handleAddSubtask}
+          accentColor={theme.accentColor}
+          isDarkMode={theme.isDarkMode}
+        />
+      )}
+
     <section className={`flex-1 task-home w-full relative overflow-hidden ${theme.isDarkMode ? 'text-gray-100' : 'text-gray-900'} ${isMobile && drawerOpen ? 'drawer-open-scale' : ''}`}
       style={{
         backgroundColor: theme.accentColor,
@@ -679,13 +1120,25 @@ function Home() {
 
         {/* Tasks View - shown on desktop or mobile when tasks tab is selected */}
         {(!isMobile || mobileView === 'tasks') && (
-          <div className="flex-1 overflow-y-auto px-1 md:px-4 relative tasks-scroll-container" style={{ 
-            paddingBottom: isMobile 
-              ? '8rem' 
-              : (typeof CSS !== 'undefined' && CSS.supports('height', '100dvh') ? '50dvh' : 'calc(var(--vh, 1vh) * 50)')
-          }}>
-            <div className="mt-10 flex justify-center">
-              <div className="w-full max-w-4xl relative">
+          <div className="flex-1 flex flex-col relative">
+            {/* Folders Bar - outside scroll container */}
+            <FoldersBar
+              folders={folders || []}
+              activeFolder={activeFolder}
+              onFolderSelect={handleFolderSelect}
+              accentColor={theme.accentColor}
+              isDarkMode={theme.isDarkMode}
+              onOpenSettings={handleOpenFolderSettings}
+            />
+            
+            {/* Tasks scroll container */}
+            <div className="flex-1 overflow-y-auto px-1 md:px-4 relative tasks-scroll-container" style={{ 
+              paddingBottom: isMobile 
+                ? '8rem' 
+                : (typeof CSS !== 'undefined' && CSS.supports('height', '100dvh') ? '50dvh' : 'calc(var(--vh, 1vh) * 50)')
+            }}>
+              <div className="mt-10 flex justify-center">
+              <div className="w-full max-w-2xl relative">
                 {filteredTasks?.length == 0 && <div>
                   <p className="text-lg font-bold text-center text-slate-100">No tasks yet.</p>
                   <p className="no-task-blurb text-sm font-serif text-center text-slate-100">which is <em>totally</em> fine. its okay to do nothing. you deserve a rest day.</p>
@@ -711,11 +1164,14 @@ function Home() {
                         accentColor={theme.accentColor}
                         isDarkMode={theme.isDarkMode}
                         handleTaskSelect={handleTaskSelect}
+                        onEnterFocus={handleEnterFocus}
+                        onAddToSchedule={handleAddToSchedule}
                       />
                     </div>
                   ))}
                 </div>
               </div>
+            </div>
             </div>
           </div>
         )}
@@ -735,6 +1191,8 @@ function Home() {
                 isDarkMode={theme.isDarkMode}
                 viewMode={scheduleViewMode}
                 onViewModeChange={setScheduleViewMode}
+                location={theme.location}
+                onFetchWeather={handleFetchWeather}
               />
             ) : (
               <AgendaView
@@ -745,6 +1203,8 @@ function Home() {
                 isDarkMode={theme.isDarkMode}
                 viewMode={scheduleViewMode}
                 onViewModeChange={setScheduleViewMode}
+                location={theme.location}
+                onFetchWeather={handleFetchWeather}
               />
             )}
           </div>
@@ -782,6 +1242,8 @@ function Home() {
                 isDarkMode={theme.isDarkMode}
                 viewMode={scheduleViewMode}
                 onViewModeChange={setScheduleViewMode}
+                location={theme.location}
+                onFetchWeather={handleFetchWeather}
               />
             ) : (
               <AgendaView
@@ -792,6 +1254,8 @@ function Home() {
                 isDarkMode={theme.isDarkMode}
                 viewMode={scheduleViewMode}
                 onViewModeChange={setScheduleViewMode}
+                location={theme.location}
+                onFetchWeather={handleFetchWeather}
               />
             )}
           </div>
@@ -813,9 +1277,18 @@ function Home() {
           onDeleteEvent={deleteScheduleEvent}
           onAddToSchedule={handleAddToSchedule}
           onAddSubtask={handleAddSubtask}
+          onEnterFocus={handleEnterFocus}
           tasks={tasks}
+          folders={folders}
+          activeFolder={activeFolder}
+          onFolderSelect={handleFolderSelect}
           accentColor={theme.accentColor}
           isDarkMode={theme.isDarkMode}
+          mode={islandMode}
+          onModeChange={setIslandMode}
+          onOpenSettings={handleOpenSettings}
+          onToggleView={() => setScheduleViewMode(prev => prev === 'agenda' ? 'timeline' : 'agenda')}
+          currentView={scheduleViewMode}
         />
       )}
 
@@ -841,6 +1314,8 @@ function Home() {
           onUpdateSubtask={updateTask}
           onDeleteSubtask={deleteTask}
           onTaskSelect={handleTaskSelect}
+          onEnterFocus={handleEnterFocus}
+          folders={folders}
         />
       )}
 
@@ -868,15 +1343,90 @@ function Home() {
 
       {/* Mobile Navigation Bar */}
       {isMobile && (
-        <MobileNavBar
-          currentView={mobileView}
-          onViewChange={handleMobileViewChange}
-          onCreateNew={openNewTaskDrawer}
-          accentColor={theme.accentColor}
+        <>
+          <MobileNavBar
+            currentView={mobileView}
+            onViewChange={handleMobileViewChange}
+            onCreateNew={openNewTaskDrawer}
+            accentColor={theme.accentColor}
+            isDarkMode={theme.isDarkMode}
+          />
+          
+          {/* Mobile Folder Button - Bottom Left - Only show on tasks view */}
+          {mobileView === 'tasks' && (
+            <div
+              className="fixed bottom-0 left-0 z-50 md:hidden"
+              style={{
+                paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)',
+              }}
+            >
+              <div className="flex px-6 mb-2">
+                <div
+                  className="flex items-center justify-center px-2 py-2 rounded-full backdrop-blur-3xl shadow-lg border"
+                  style={{
+                    backgroundColor: `${theme.accentColor}E6`,
+                    borderColor: theme.isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+                  }}
+                >
+                  <button
+                    onClick={() => setFolderDrawerOpen(true)}
+                    className={`flex items-center justify-center w-12 h-12 rounded-full transition-colors duration-200 ${
+                      theme.isDarkMode
+                        ? 'text-gray-300 hover:bg-white/10'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                    aria-label="Folders"
+                  >
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      className="h-6 w-6" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" 
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Folder Drawer - Mobile only */}
+      {isMobile && (
+        <FolderDrawer
+          isOpen={folderDrawerOpen}
+          setIsOpen={setFolderDrawerOpen}
+          folders={folders || []}
+          activeFolder={activeFolder}
+          onFolderSelect={handleFolderSelect}
+          onOpenSettings={handleOpenFolderSettings}
           isDarkMode={theme.isDarkMode}
+          accentColor={theme.accentColor}
         />
       )}
+
+      {/* Folder Settings */}
+      <FolderSettings
+        isOpen={folderSettingsOpen}
+        setIsOpen={setFolderSettingsOpen}
+        folders={folders || []}
+        onCreateFolder={handleCreateFolder}
+        onUpdateFolder={handleUpdateFolder}
+        onDeleteFolder={handleDeleteFolder}
+        isDarkMode={theme.isDarkMode}
+        accentColor={theme.accentColor}
+      />
     </section>
+    </>
   );
 }
 

@@ -5,6 +5,11 @@ export interface Theme {
   accentColor: string;
   fontStyle: 'mono' | 'sans' | 'serif';
   isDarkMode: boolean;
+  location: {
+    latitude: number;
+    longitude: number;
+    name: string;
+  };
   // Add other theme-related properties here if needed
 }
 
@@ -15,6 +20,7 @@ interface ThemeContextType {
   setAccentColor: (color: string) => void;
   setFontStyle: (style: 'mono' | 'sans' | 'serif') => void;
   setIsDarkMode: (isDark: boolean) => void;
+  setLocation: (latitude: number, longitude: number, name: string) => void;
 }
 
 // Create the context with a default value
@@ -25,6 +31,11 @@ const initialTheme: Theme = {
   accentColor: '#1F1B2F', // Default accent color
   fontStyle: 'sans',     // Default font style
   isDarkMode: true,      // Default to dark mode
+  location: {
+    latitude: 37.7749,   // San Francisco
+    longitude: -122.4194,
+    name: 'San Francisco'
+  }
 };
 
 // Create the ThemeProvider component
@@ -87,8 +98,12 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setTheme(prevTheme => ({ ...prevTheme, isDarkMode: isDark }));
   };
 
+  const setLocation = (latitude: number, longitude: number, name: string) => {
+    setTheme(prevTheme => ({ ...prevTheme, location: { latitude, longitude, name } }));
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, setAccentColor, setFontStyle, setIsDarkMode }}>
+    <ThemeContext.Provider value={{ theme, setTheme, setAccentColor, setFontStyle, setIsDarkMode, setLocation }}>
       {children}
     </ThemeContext.Provider>
   );

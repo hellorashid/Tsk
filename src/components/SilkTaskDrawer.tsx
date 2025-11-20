@@ -54,6 +54,8 @@ interface TaskDrawerProps {
   onUpdateSubtask?: (id: string, changes: any) => void;
   onDeleteSubtask?: (id: string) => void;
   onTaskSelect?: (task: any) => void;
+  onEnterFocus?: (task: any) => void;
+  folders?: any[];
 }
 
 export default function SilkTaskDrawer({ 
@@ -75,7 +77,9 @@ export default function SilkTaskDrawer({
   onAddSubtask,
   onUpdateSubtask,
   onDeleteSubtask,
-  onTaskSelect
+  onTaskSelect,
+  onEnterFocus,
+  folders
 }: TaskDrawerProps) {
   const titleId = React.useId();
   const viewRef = useRef<HTMLDivElement>(null);
@@ -719,6 +723,8 @@ export default function SilkTaskDrawer({
                     onAddSubtask={onAddSubtask}
                     onUpdateSubtask={onUpdateSubtask}
                     onDeleteSubtask={onDeleteSubtask}
+                    onEnterFocus={onEnterFocus}
+                    folders={folders}
                   />
                 )}
               </div>

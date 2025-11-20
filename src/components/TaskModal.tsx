@@ -1,6 +1,6 @@
 // @ts-nocheck
 
-import { Task } from "../utils/types";
+import { Task, Folder } from "../utils/types";
 import { useState, useEffect, useRef } from 'react';
 import Checkbox from './Checkbox';
 import { ScheduleCardData, getTimeFromDateTime, getEventDuration } from './ScheduleCard';
@@ -8,7 +8,7 @@ import { useBasic, useQuery } from '@basictech/react';
 import SubtasksList from './SubtasksList';
 
 export const TaskModal = ({
-  task, updateFunction, inDrawer = false, deleteTask, new: isNew = false, accentColor = '#1F1B2F', onDelete, onAddToSchedule, scheduledEvents, isDarkMode = true, onUpdateEvent, onDeleteEvent, onAddSubtask, onUpdateSubtask, onDeleteSubtask
+  task, updateFunction, inDrawer = false, deleteTask, new: isNew = false, accentColor = '#1F1B2F', onDelete, onAddToSchedule, scheduledEvents, isDarkMode = true, onUpdateEvent, onDeleteEvent, onAddSubtask, onUpdateSubtask, onDeleteSubtask, onEnterFocus, folders, onFolderSelect
 }: {
   task: Task;
   updateFunction: any;
@@ -25,7 +25,12 @@ export const TaskModal = ({
   onAddSubtask?: (parentTaskId: string, name: string) => void;
   onUpdateSubtask?: (id: string, changes: Partial<Task>) => void;
   onDeleteSubtask?: (id: string) => void;
+  onEnterFocus?: (task: Task) => void;
+  folders?: Folder[];
+  onFolderSelect?: (folderId: string | null) => void;
 }) => {
+  const [showFolderDropdown, setShowFolderDropdown] = useState(false);
+  
   // Log task for debugging
   useEffect(() => {
     console.log("TaskModal received task:", task);
@@ -610,7 +615,7 @@ export const TaskModal = ({
 
       </div>
       
-      {/* Sticky Delete Button */}
+      {/* Sticky Delete Button - bottom left */}
       {!isNew && deleteTask && inDrawer && (
         <button
           onClick={(e) => {
@@ -626,6 +631,122 @@ export const TaskModal = ({
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+        </button>
+      )}
+      
+      {/* Folder Selector - bottom center */}
+      {!isNew && inDrawer && folders && folders.length > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowFolderDropdown(!showFolderDropdown);
+            }}
+            className={`flex items-center gap-2 px-4 py-4 rounded-full transition-colors shadow-lg ${
+              isDarkMode 
+                ? 'bg-white/10 hover:bg-white/20 text-gray-100 backdrop-blur-xl' 
+                : 'bg-gray-800 hover:bg-gray-900 text-white'
+            }`}
+            aria-label="Select folder"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+            <span className="text-sm font-medium">
+              {(() => {
+                const taskLabels = task?.labels?.split(',').map(l => l.trim()) || [];
+                const folderLabel = taskLabels.find(l => l.startsWith('folder:'));
+                if (folderLabel) {
+                  const folderName = folderLabel.replace('folder:', '');
+                  return folderName.charAt(0).toUpperCase() + folderName.slice(1).toLowerCase();
+                }
+                return 'Folder';
+              })()}
+            </span>
+          </button>
+
+          {showFolderDropdown && (
+            <>
+              {/* Backdrop to close dropdown */}
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setShowFolderDropdown(false)}
+              />
+              
+              {/* Dropdown menu */}
+              <div 
+                className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 min-w-[180px] rounded-lg shadow-lg border z-50 max-h-[300px] overflow-y-auto ${
+                  isDarkMode 
+                    ? 'bg-gray-800 border-white/10' 
+                    : 'bg-white border-gray-200'
+                }`}
+                style={{
+                  backdropFilter: 'blur(12px)',
+                }}
+              >
+                {/* None option */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const taskLabels = task.labels?.split(',').map(l => l.trim()) || [];
+                    const newLabels = taskLabels.filter(l => !l.startsWith('folder:')).join(',');
+                    updateFunction(task.id, { labels: newLabels });
+                    setShowFolderDropdown(false);
+                  }}
+                  className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                    isDarkMode 
+                      ? 'hover:bg-white/10 text-gray-300' 
+                      : 'hover:bg-gray-100 text-gray-700'
+                  }`}
+                >
+                  None
+                </button>
+
+                {/* Folder options */}
+                {folders.map((folder) => (
+                  <button
+                    key={folder.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const taskLabels = task.labels?.split(',').map(l => l.trim()) || [];
+                      const labelsWithoutFolder = taskLabels.filter(l => !l.startsWith('folder:'));
+                      const newLabels = [...labelsWithoutFolder, `folder:${folder.name.toLowerCase()}`].join(',');
+                      updateFunction(task.id, { labels: newLabels });
+                      setShowFolderDropdown(false);
+                    }}
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors capitalize ${
+                      isDarkMode 
+                        ? 'hover:bg-white/10 text-gray-300' 
+                        : 'hover:bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {folder.name.charAt(0).toUpperCase() + folder.name.slice(1).toLowerCase()}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Sticky Focus Button - bottom right */}
+      {!isNew && onEnterFocus && inDrawer && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEnterFocus(task);
+          }}
+          className={`fixed bottom-4 right-4 p-4 rounded-full transition-colors shadow-lg z-50 ${
+            isDarkMode 
+              ? 'bg-green-500/20 hover:bg-green-500/30 text-green-400 hover:text-green-300' 
+              : 'bg-green-100 hover:bg-green-200 text-green-600 hover:text-green-700'
+          }`}
+          aria-label="Enter focus mode"
+          title="Focus mode"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
           </svg>
         </button>
       )}

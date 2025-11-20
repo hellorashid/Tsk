@@ -17,7 +17,7 @@ export interface ScheduleCardData {
     timeZone?: string; // IANA timezone
   };
   color: string;
-  type?: 'event' | 'task' | 'other';
+  type?: 'event' | 'task' | 'task:completed' | 'weather' | 'sunrise' | 'sunset' | 'other';
   description?: string;
   taskId?: string; // If this is a scheduled task, link to task ID (empty string if task was deleted)
   metadata?: {
@@ -27,6 +27,14 @@ export interface ScheduleCardData {
       description: string;
       completed: boolean;
       deletedAt: number;
+    };
+    weather?: {
+      temperature: number;
+      condition: string;
+      sunrise: string;
+      sunset: string;
+      fetchedAt: string;
+      hourlyTemperatures?: { time: string; temperature: number; weatherCode: number; condition: string }[];
     };
   };
 }

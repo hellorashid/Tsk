@@ -28,7 +28,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({
     >
       <div className="flex justify-center px-4 mb-2">
         <div
-          className="flex items-center justify-center gap-5 px-4 py-2 rounded-full backdrop-blur-3xl shadow-lg border"
+          className="flex items-center justify-center gap-5 px-2 py-2 rounded-full backdrop-blur-3xl shadow-lg border"
           style={{
             backgroundColor: getBackgroundColor(),
             borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',

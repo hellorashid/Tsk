@@ -13,6 +13,8 @@ interface ListItemProps {
   accentColor?: string;
   isDarkMode?: boolean;
   handleTaskSelect: (task: Task) => void;
+  onEnterFocus?: (task: Task) => void;
+  onAddToSchedule?: (task: Task) => void;
 }
 
 const ListItem: React.FC<ListItemProps> = ({
@@ -23,7 +25,9 @@ const ListItem: React.FC<ListItemProps> = ({
   viewMode = 'cozy',
   accentColor = '#1F1B2F',
   isDarkMode = true,
-  handleTaskSelect
+  handleTaskSelect,
+  onEnterFocus,
+  onAddToSchedule
 }) => {
   const { dbStatus } = useBasic();
   const [isEditing, setIsEditing] = useState(false);
@@ -163,16 +167,40 @@ const ListItem: React.FC<ListItemProps> = ({
         </div>
 
         {!isMobile && (
+          <div className="flex gap-1">
+            {onAddToSchedule && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddToSchedule(task);
+                }}
+                className={`w-8 h-8 rounded-full bg-transparent hover:bg-white/10 flex items-center justify-center transition-opacity duration-200 ${isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-70'
+                  }`}
+                aria-label="Add to schedule"
+                title="Add to schedule"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
+            {onEnterFocus && (
           <button
-            onClick={handleDelete}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEnterFocus(task);
+                }}
             className={`w-8 h-8 rounded-full bg-transparent hover:bg-white/10 flex items-center justify-center transition-opacity duration-200 ${isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-70'
               }`}
-            aria-label="Delete task"
+                aria-label="Enter focus mode"
+                title="Focus mode"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
             </svg>
           </button>
+            )}
+          </div>
         )}
 
 

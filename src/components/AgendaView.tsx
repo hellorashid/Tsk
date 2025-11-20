@@ -1,7 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ScheduleCardData, getEventDuration, getTimeFromDateTime } from './ScheduleCard';
 import Checkbox from './Checkbox';
 import { useBasic, useQuery } from '@basictech/react';
+import TimelineView from './TimelineView';
+import { getWeatherEmoji } from '../utils/weather';
 
 // Format date
 const formatDate = (date: Date): string => {
@@ -84,6 +86,12 @@ const AgendaEventItem: React.FC<EventItemProps> = ({ event, onCardClick, onTaskT
   const endTime = event.end.dateTime ? formatTime(event.end.dateTime) : '';
   const duration = getEventDuration(event);
 
+  // Check if this is a completion event
+  const isCompletionEvent = event.type === 'task:completed';
+  
+  // Check if this is a sunrise/sunset event
+  const isSunEvent = event.type === 'sunrise' || event.type === 'sunset';
+
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
     // Only allow toggling for active tasks (not deleted)
@@ -101,7 +109,8 @@ const AgendaEventItem: React.FC<EventItemProps> = ({ event, onCardClick, onTaskT
     return Math.min(Math.max(calculatedHeight, 60), 180); // min 60px, max 180px
   };
 
-  const cardHeight = calculateHeight(duration);
+  // Completion and sun event cards are compact (just one line), regular cards use calculated height
+  const cardHeight = (isCompletionEvent || isSunEvent) ? 40 : calculateHeight(duration);
 
   // Calculate progress for current/past events
   const calculateProgress = (): number => {
@@ -127,14 +136,64 @@ const AgendaEventItem: React.FC<EventItemProps> = ({ event, onCardClick, onTaskT
 
   return (
     <div
-      onClick={() => onCardClick?.(event)}
-      className={`group p-3 rounded-lg border cursor-pointer transition-all flex flex-col ${
-        isDarkMode 
+      onClick={() => !isSunEvent && onCardClick?.(event)}
+      className={`group rounded-lg transition-all flex flex-col ${
+        isSunEvent
+          ? 'p-2 cursor-default border-0'
+          : (isCompletionEvent
+            ? 'p-2 cursor-default border' 
+            : 'p-3 cursor-pointer border')
+      } ${
+        isDarkMode && !isSunEvent
           ? 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20' 
-          : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+          : !isDarkMode && !isSunEvent
+            ? 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+            : ''
       }`}
-      style={{ height: `${cardHeight}px` }}
+      style={{ 
+        height: `${cardHeight}px`,
+        background: isSunEvent 
+          ? `linear-gradient(to right, transparent, ${event.color} 20%, ${event.color} 80%, transparent)`
+          : undefined
+      }}
     >
+      {isSunEvent ? (
+        // Minimal sunrise/sunset card - center aligned
+        <div className="flex items-center justify-center gap-2 w-full">
+          {event.type === 'sunrise' ? (
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M7.646 1.146a.5.5 0 0 1 .708 0l1.5 1.5a.5.5 0 0 1-.708.708L8.5 2.707V4.5a.5.5 0 0 1-1 0V2.707l-.646.647a.5.5 0 1 1-.708-.708zM2.343 4.343a.5.5 0 0 1 .707 0l1.414 1.414a.5.5 0 0 1-.707.707L2.343 5.05a.5.5 0 0 1 0-.707m11.314 0a.5.5 0 0 1 0 .707l-1.414 1.414a.5.5 0 1 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0M8 7a3 3 0 0 1 2.599 4.5H5.4A3 3 0 0 1 8 7m3.71 4.5a4 4 0 1 0-7.418 0H.499a.5.5 0 0 0 0 1h15a.5.5 0 0 0 0-1h-3.79zM0 10a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2A.5.5 0 0 1 0 10m13 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/>
+            </svg>
+          ) : (
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M6 .278a.77.77 0 0 1 .08.858 7.2 7.2 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277q.792-.001 1.533-.16a.79.79 0 0 1 .81.316.73.73 0 0 1-.031.893A8.35 8.35 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.75.75 0 0 1 6 .278M4.858 1.311A7.27 7.27 0 0 0 1.025 7.71c0 4.02 3.279 7.276 7.319 7.276a7.32 7.32 0 0 0 5.205-2.162q-.506.063-1.029.063c-4.61 0-8.343-3.714-8.343-8.29 0-1.167.242-2.278.681-3.286"/>
+              <path d="M10.794 3.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387a1.73 1.73 0 0 0-1.097 1.097l-.387 1.162a.217.217 0 0 1-.412 0l-.387-1.162A1.73 1.73 0 0 0 9.31 6.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387a1.73 1.73 0 0 0 1.097-1.097zM13.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.16 1.16 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.16 1.16 0 0 0-.732-.732l-.774-.258a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732z"/>
+            </svg>
+          )}
+          <span className={`text-sm font-medium ${
+            isDarkMode ? 'text-gray-200' : 'text-gray-800'
+          }`}>
+            {event.type === 'sunrise' ? 'Sunrise' : 'Sunset'}
+          </span>
+        </div>
+      ) : isCompletionEvent ? (
+        // Compact completion card layout
+        <div className="flex items-center gap-2">
+          <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          <span className={`text-sm font-medium truncate ${
+            isDarkMode ? 'text-gray-200' : 'text-gray-800'
+          }`}>
+            {displayTitle} - completed
+          </span>
+          <span className={`text-xs ml-auto flex-shrink-0 ${
+            isDarkMode ? 'text-gray-500' : 'text-gray-600'
+          }`}>
+            {startTime}
+          </span>
+        </div>
+      ) : (
       <div className="flex items-stretch gap-3 flex-1">
         {/* Time column - stacked start, duration, and end times */}
         <div className={`flex-shrink-0 text-xs text-right ${
@@ -185,15 +244,24 @@ const AgendaEventItem: React.FC<EventItemProps> = ({ event, onCardClick, onTaskT
               </div>
             )}
             
-            <div className={`flex-1 font-medium ${
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className={`font-medium truncate ${
               isCompleted && event.type === 'task' ? 'line-through opacity-60' : ''
             } ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
               {displayTitle}
+                </div>
+                {event.type === 'task' && duration > 0 && (
+                  <span className={`text-xs flex-shrink-0 ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    ({Math.round(duration)}m)
+                  </span>
+                )}
             </div>
           </div>
 
           {/* Description */}
-          {event.description && (
+          {event.type !== 'task' && event.description && (
             <div className={`text-sm mt-1 ${
               isDarkMode ? 'text-gray-400' : 'text-gray-600'
             }`}>
@@ -202,6 +270,7 @@ const AgendaEventItem: React.FC<EventItemProps> = ({ event, onCardClick, onTaskT
           )}
         </div>
       </div>
+      )}
     </div>
   );
 };
@@ -214,6 +283,8 @@ interface AgendaViewProps {
   isDarkMode?: boolean;
   viewMode?: 'timeline' | 'agenda';
   onViewModeChange?: (mode: 'timeline' | 'agenda') => void;
+  location?: { latitude: number; longitude: number; name: string };
+  onFetchWeather?: (date: Date) => Promise<void>;
 }
 
 const AgendaView: React.FC<AgendaViewProps> = ({
@@ -223,14 +294,16 @@ const AgendaView: React.FC<AgendaViewProps> = ({
   accentColor = '#1F1B2F',
   isDarkMode = true,
   viewMode = 'agenda',
-  onViewModeChange
+  onViewModeChange,
+  location,
+  onFetchWeather
 }) => {
   const { db } = useBasic();
   
   // Track selected date (defaults to today)
   const [selectedDate, setSelectedDate] = useState<Date>(getStartOfDay(new Date()));
 
-  // Filter events to only show those on the selected date
+  // Filter events to only show those on the selected date (exclude weather type)
   const events = useMemo(() => {
     if (!externalEvents || externalEvents.length === 0) return [];
     
@@ -250,7 +323,9 @@ const AgendaView: React.FC<AgendaViewProps> = ({
       return eventYear === targetYear && eventMonth === targetMonth && eventDay === targetDay;
     };
     
-    return externalEvents.filter(event => isEventOnDate(event, selectedDate));
+    return externalEvents.filter(event => 
+      event.type !== 'weather' && isEventOnDate(event, selectedDate)
+    );
   }, [externalEvents, selectedDate]);
 
   // Sort events by start time
@@ -314,20 +389,19 @@ const AgendaView: React.FC<AgendaViewProps> = ({
   const displayDate = formatDate(selectedDate);
   const isSelectedDateToday = isToday(selectedDate);
 
-  return (
+  // Find weather event for the selected date
+  const weatherEvent = useMemo(() => {
+    return externalEvents?.find(event => {
+      if (event.type !== 'weather' || !event.start.dateTime) return false;
+      const eventDate = new Date(event.start.dateTime);
+      return eventDate.toDateString() === selectedDate.toDateString();
+    });
+  }, [externalEvents, selectedDate]);
+
+  // Render header component (shared between timeline and agenda views)
+  const renderHeader = (isTimelineView: boolean) => (
     <div
-      className={`w-full h-full px-6 pb-6 overflow-y-auto backdrop-blur-3xl flex flex-col rounded-md ${
-        isDarkMode ? 'text-gray-100' : 'text-gray-900'
-      }`}
-      style={{ 
-        backgroundColor: getBackgroundColor(),
-        scrollbarWidth: 'none', // Firefox
-        msOverflowStyle: 'none', // IE/Edge
-      }}
-    >
-      {/* Sticky header with date navigation */}
-      <div 
-        className="sticky top-0 z-50 py-4 mb-4 border-b backdrop-blur-md -mx-6 px-6"
+      className={`${isTimelineView ? 'flex-shrink-0' : 'sticky top-0 z-50 -mx-6 px-6 mb-4'} py-4 ${isTimelineView ? 'px-6' : ''} border-b backdrop-blur-md`}
         style={{ 
           backgroundColor: getBackgroundColor(),
           borderColor: isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)'
@@ -391,7 +465,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
               <button
                 onClick={() => onViewModeChange('timeline')}
                 className={`p-1.5 rounded-md transition-all ${
-                  viewMode === 'timeline'
+                isTimelineView
                     ? isDarkMode
                       ? 'bg-white/20 text-white'
                       : 'bg-white text-gray-900 shadow-sm'
@@ -409,7 +483,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
               <button
                 onClick={() => onViewModeChange('agenda')}
                 className={`p-1.5 rounded-md transition-all ${
-                  viewMode === 'agenda'
+                !isTimelineView
                     ? isDarkMode
                       ? 'bg-white/20 text-white'
                       : 'bg-white text-gray-900 shadow-sm'
@@ -427,12 +501,67 @@ const AgendaView: React.FC<AgendaViewProps> = ({
             </div>
           )}
         </div>
+        <div className="flex items-center justify-between">
         <p className={`text-sm ${
           isDarkMode ? 'text-gray-400' : 'text-gray-600'
         }`}>
           {displayDate}
         </p>
+          {weatherEvent && weatherEvent.metadata?.weather && (
+            <div className={`flex items-center gap-1.5 text-sm ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              <span>{getWeatherEmoji(weatherEvent.metadata.weather.condition)}</span>
+              <span>{weatherEvent.metadata.weather.temperature}°F</span>
+            </div>
+          )}
+        </div>
       </div>
+  );
+
+  // If timeline mode, render TimelineView instead
+  if (viewMode === 'timeline') {
+    return (
+      <div
+        className={`w-full h-full backdrop-blur-3xl flex flex-col rounded-md ${
+          isDarkMode ? 'text-gray-100' : 'text-gray-900'
+        }`}
+        style={{ 
+          backgroundColor: getBackgroundColor(),
+        }}
+      >
+        {renderHeader(true)}
+
+        {/* Timeline View */}
+        <div className="flex-1 overflow-hidden">
+          <TimelineView
+            events={sortedEvents}
+            onCardClick={onCardClick}
+            onTaskToggle={onTaskToggle}
+            weatherData={weatherEvent}
+            accentColor={accentColor}
+            isDarkMode={isDarkMode}
+            selectedDate={selectedDate}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Otherwise render agenda list view
+  return (
+    <div
+      className={`w-full h-full px-6 pb-6 overflow-y-auto backdrop-blur-3xl flex flex-col rounded-md ${
+        isDarkMode ? 'text-gray-100' : 'text-gray-900'
+      }`}
+      style={{ 
+        backgroundColor: getBackgroundColor(),
+        scrollbarWidth: 'none', // Firefox
+        msOverflowStyle: 'none', // IE/Edge
+      }}
+    >
+      {/* Sticky header with date navigation */}
+      {renderHeader(false)}
 
       {/* Events list */}
       <div className="flex-1 pb-[200px] md:pb-0">
