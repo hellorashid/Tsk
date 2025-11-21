@@ -533,17 +533,54 @@ const TimelineView: React.FC<TimelineViewProps> = ({
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  // Auto-scroll to current time on mount (if viewing today)
+  // Track if we've already auto-scrolled for this date
+  const hasAutoScrolledRef = useRef<string | null>(null);
+  
+  // Save scroll position to localStorage
   useEffect(() => {
-    if (isToday && timelineContentRef.current) {
-      const scrollPosition = (currentTimeMinutes - timeRange.startMinutes) * pixelsPerMinute - 200; // Offset for visibility
+    const timelineContent = timelineContentRef.current;
+    if (!timelineContent) return;
+    
+    const handleScroll = () => {
+      const dateKey = selectedDate.toDateString();
+      localStorage.setItem(`tsk-timeline-scroll-${dateKey}`, timelineContent.scrollTop.toString());
+    };
+    
+    timelineContent.addEventListener('scroll', handleScroll);
+    return () => timelineContent.removeEventListener('scroll', handleScroll);
+  }, [selectedDate]);
+
+  // Restore scroll position or auto-scroll to current time
+  useEffect(() => {
+    const dateKey = selectedDate.toDateString();
+    
+    if (!timelineContentRef.current) return;
+    
+    // Check if we've already scrolled for this date in this session
+    if (hasAutoScrolledRef.current === dateKey) return;
+    
+    // Try to restore saved scroll position
+    const savedScroll = localStorage.getItem(`tsk-timeline-scroll-${dateKey}`);
+    
+    if (savedScroll !== null) {
+      // Restore saved position without animation
+      timelineContentRef.current.scrollTo({
+        top: parseInt(savedScroll, 10),
+        behavior: 'auto'
+      });
+    } else if (isToday) {
+      // Only auto-scroll to current time if no saved position AND viewing today
+      const scrollPosition = (currentTimeMinutes - timeRange.startMinutes) * pixelsPerMinute - 200;
       
       timelineContentRef.current.scrollTo({
         top: Math.max(0, scrollPosition),
         behavior: 'smooth'
       });
     }
-  }, [selectedDate, isToday, timeRange.startMinutes, pixelsPerMinute]); // Don't include currentTimeMinutes to avoid scrolling every minute
+    
+    // Mark that we've scrolled for this date
+    hasAutoScrolledRef.current = dateKey;
+  }, [selectedDate, isToday, timeRange.startMinutes, pixelsPerMinute]);
 
   return (
     <div className="flex flex-col h-full relative">
@@ -709,18 +746,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                 />
               )}
               
-              {/* Activity line - Spotify (prototype) - 4PM to 6PM */}
-              <div
-                className="absolute pointer-events-none rounded-full"
-                style={{
-                  left: '14px',
-                  top: `${((16 * 60 - timeRange.startMinutes) * pixelsPerMinute) + 16}px`, // 4 PM
-                  height: `${(2 * 60) * pixelsPerMinute}px`, // 2 hours
-                  width: isTimelineHovered ? '8px' : '6px',
-                  backgroundColor: isDarkMode ? 'rgba(34, 197, 94, 0.6)' : 'rgba(22, 163, 74, 0.6)',
-                  transition: 'width 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                }}
-              />
+              {/* Activity lines - Placeholder for future integrations (Spotify, etc.) */}
             </div>
             
           </div>
@@ -767,44 +793,8 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                     );
                   })()}
                   
-                  {/* Spotify tooltip */}
-                  {(() => {
-                    const minutesFromTop = (activityHoverY / pixelsPerMinute) + timeRange.startMinutes;
-                    const isInSpotifyRange = minutesFromTop >= 16 * 60 && minutesFromTop < 18 * 60;
-                    
-                    if (!isInSpotifyRange) return null;
-                    
-                    const spotifySongs = [
-                      { time: '4:00 PM', song: 'Blinding Lights', artist: 'The Weeknd' },
-                      { time: '4:15 PM', song: 'Levitating', artist: 'Dua Lipa' },
-                      { time: '4:30 PM', song: 'Save Your Tears', artist: 'The Weeknd' },
-                      { time: '4:45 PM', song: 'Good 4 U', artist: 'Olivia Rodrigo' },
-                      { time: '5:00 PM', song: 'Peaches', artist: 'Justin Bieber' },
-                      { time: '5:15 PM', song: 'drivers license', artist: 'Olivia Rodrigo' },
-                      { time: '5:30 PM', song: 'Montero', artist: 'Lil Nas X' },
-                      { time: '5:45 PM', song: 'Stay', artist: 'The Kid LAROI' },
-                    ];
-                    
-                    const minutesIntoRange = minutesFromTop - (16 * 60);
-                    const songIndex = Math.floor(minutesIntoRange / 15);
-                    const song = spotifySongs[Math.min(songIndex, spotifySongs.length - 1)];
-                    
-                    return (
-                      <motion.div
-                        key="spotify-tooltip"
-                        layout="position"
-                        transition={{ duration: 0.15, ease: 'easeOut' }}
-                        className="px-2 py-1.5 rounded-md backdrop-blur-xl text-xs font-medium whitespace-nowrap shadow-lg text-white"
-                        style={{ 
-                          backgroundColor: isDarkMode ? 'rgba(34, 197, 94, 0.85)' : 'rgba(22, 163, 74, 0.85)',
-                          border: `1px solid ${isDarkMode ? 'rgba(134, 239, 172, 0.5)' : 'rgba(34, 197, 94, 0.5)'}`,
-                        }}
-                      >
-                        🎵 {song.song} - {song.artist}
-                      </motion.div>
-                    );
-                  })()}
-                </div>
+                  {/* Activity tooltips - Placeholder for future integrations (Spotify, etc.) */}
+                  </div>
               </motion.div>
               )}
             </AnimatePresence>,

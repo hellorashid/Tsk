@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Sheet, useClientMediaQuery, type SheetViewProps } from "@silk-hq/components";
 import { useModalHistory } from '../hooks/useModalHistory';
 import { Folder } from '../utils/types';
+import * as Switch from '@radix-ui/react-switch';
 
 interface FolderSettingsProps {
   isOpen: boolean;
@@ -12,6 +13,10 @@ interface FolderSettingsProps {
   onCreateFolder: (name: string, labels?: string, color?: string) => Promise<void>;
   onUpdateFolder: (folderId: string, name: string, labels: string, color?: string) => Promise<void>;
   onDeleteFolder: (folderId: string) => Promise<void>;
+  showAllFolder: boolean;
+  showOtherFolder: boolean;
+  onToggleAllFolder: (show: boolean) => void;
+  onToggleOtherFolder: (show: boolean) => void;
   isDarkMode: boolean;
   accentColor: string;
 }
@@ -36,6 +41,10 @@ export default function FolderSettings({
   onCreateFolder,
   onUpdateFolder,
   onDeleteFolder,
+  showAllFolder,
+  showOtherFolder,
+  onToggleAllFolder,
+  onToggleOtherFolder,
   isDarkMode,
   accentColor
 }: FolderSettingsProps) {
@@ -177,8 +186,9 @@ export default function FolderSettings({
             themeColorDimming="auto" 
           />
           <Sheet.Content 
+            className="backdrop-blur-3xl"
             style={{
-              backgroundColor: isDarkMode ? '#1F1B2F' : '#FFFFFF',
+              backgroundColor: `${accentColor}E6`, // 90% opacity
               borderRadius: largeViewport ? '1rem' : '1rem 1rem 0 0',
               padding: '0px',
               display: 'flex',
@@ -290,12 +300,90 @@ export default function FolderSettings({
                 </div>
               </div>
 
-              {/* Existing Folders */}
+              {/* Default Folders */}
+              <div className="mb-6">
+                <h4 className={`text-sm font-medium mb-3 ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Default Folders
+                </h4>
+                
+                <div className="space-y-2">
+                  {/* All Folder Toggle */}
+                  <div className={`p-3 rounded-lg border flex items-center justify-between ${
+                    isDarkMode
+                      ? 'bg-white/5 border-white/10'
+                      : 'bg-gray-50 border-gray-200'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                      <span className="font-medium">All Tasks</span>
+                    </div>
+                    <Switch.Root
+                      checked={showAllFolder}
+                      onCheckedChange={onToggleAllFolder}
+                      className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${
+                        showAllFolder 
+                          ? 'bg-white/30' 
+                          : isDarkMode ? 'bg-white/10' : 'bg-gray-300'
+                      }`}
+                    >
+                      <Switch.Thumb
+                        className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
+                          showAllFolder 
+                            ? 'translate-x-5 bg-white' 
+                            : 'translate-x-0.5 bg-gray-400'
+                        }`}
+                      />
+                    </Switch.Root>
+                  </div>
+
+                  {/* Other Folder Toggle */}
+                  <div className={`p-3 rounded-lg border flex items-center justify-between ${
+                    isDarkMode
+                      ? 'bg-white/5 border-white/10'
+                      : 'bg-gray-50 border-gray-200'
+                  }`}>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                        </svg>
+                        <span className="font-medium">Other</span>
+                      </div>
+                      <p className={`text-xs mt-1 ml-7 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Tasks not in any folder
+                      </p>
+                    </div>
+                    <Switch.Root
+                      checked={showOtherFolder}
+                      onCheckedChange={onToggleOtherFolder}
+                      className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${
+                        showOtherFolder 
+                          ? 'bg-white/30' 
+                          : isDarkMode ? 'bg-white/10' : 'bg-gray-300'
+                      }`}
+                    >
+                      <Switch.Thumb
+                        className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
+                          showOtherFolder 
+                            ? 'translate-x-5 bg-white' 
+                            : 'translate-x-0.5 bg-gray-400'
+                        }`}
+                      />
+                    </Switch.Root>
+                  </div>
+                </div>
+              </div>
+
+              {/* Custom Folders */}
               <div>
                 <h4 className={`text-sm font-medium mb-3 ${
                   isDarkMode ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  Existing Folders
+                  Custom Folders
                 </h4>
                 
                 {folders && folders.length > 0 ? (

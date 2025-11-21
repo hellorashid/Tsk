@@ -199,15 +199,33 @@ function Home() {
   // const [showFilters, setShowFilters] = useState(false);
   const [isNewTaskMode, setIsNewTaskMode] = useState(false);
   const [mobileView, setMobileView] = useState<'tasks' | 'calendar'>('tasks');
-  const [scheduleViewMode, setScheduleViewMode] = useState<'timeline' | 'agenda'>('agenda');
+  
+  // Initialize from localStorage
+  const [scheduleViewMode, setScheduleViewMode] = useState<'timeline' | 'agenda'>(() => {
+    const saved = localStorage.getItem('tsk-schedule-view-mode');
+    return (saved === 'timeline' || saved === 'agenda') ? saved : 'agenda';
+  });
   
   // Dynamic Island mode state (Lifted State)
   const [islandMode, setIslandMode] = useState<'default' | 'task' | 'event' | 'command'>('default');
 
-  // Folder state
-  const [activeFolder, setActiveFolder] = useState<string | null>(null); // null = "All"
+  // Folder state - initialize from localStorage
+  const [activeFolder, setActiveFolder] = useState<string | null>(() => {
+    const saved = localStorage.getItem('tsk-active-folder');
+    return saved === 'null' ? null : saved;
+  });
   const [folderDrawerOpen, setFolderDrawerOpen] = useState(false);
   const [folderSettingsOpen, setFolderSettingsOpen] = useState(false);
+  
+  // Default folders toggle state
+  const [showAllFolder, setShowAllFolder] = useState<boolean>(() => {
+    const saved = localStorage.getItem('tsk-show-all-folder');
+    return saved !== 'false'; // Default to true
+  });
+  const [showOtherFolder, setShowOtherFolder] = useState<boolean>(() => {
+    const saved = localStorage.getItem('tsk-show-other-folder');
+    return saved === 'true'; // Default to false
+  });
 
   // Auto-fetch weather for today on initial load (with delay to ensure app is fully initialized)
   useEffect(() => {
@@ -437,9 +455,21 @@ function Home() {
     // First filter out subtasks - only show tasks without a parentTaskId
     const topLevelTasks = tasks?.filter((task: Task) => !task.parentTaskId) || [];
     
-    // If no folder is selected, show all top-level tasks
-    if (activeFolder === null) {
+    // If "All" folder is selected, show all top-level tasks
+    if (activeFolder === null || activeFolder === 'all') {
       return topLevelTasks;
+    }
+    
+    // If "Other" folder is selected, show tasks not in any folder
+    if (activeFolder === 'other') {
+      return topLevelTasks.filter((task: Task) => {
+        if (!task.labels) return true; // No labels = not in any folder
+        
+        const taskLabels = task.labels.split(',').map(l => l.trim());
+        // Check if task has any folder labels
+        const hasFolder = taskLabels.some(label => label.startsWith('folder:'));
+        return !hasFolder;
+      });
     }
     
     // Find the selected folder
@@ -525,9 +555,14 @@ function Home() {
       if (e.key === 'Tab' && !isInputFocused && islandMode === 'default' && !selectedTask && !selectedEvent) {
         e.preventDefault();
         
-        // Build array of folder IDs with null (All) at the start
-        const folderIds = [null, ...(folders?.map(f => f.id) || [])];
-        const currentIndex = folderIds.indexOf(activeFolder);
+        // Build array of folder IDs including special folders
+        const folderIds = [
+          ...(showAllFolder ? ['all'] : []),
+          ...(folders?.map(f => f.id) || []),
+          ...(showOtherFolder ? ['other'] : [])
+        ];
+        
+        const currentIndex = folderIds.indexOf(activeFolder || 'all');
         const nextIndex = (currentIndex + 1) % folderIds.length;
         
         setActiveFolder(folderIds[nextIndex]);
@@ -994,6 +1029,25 @@ function Home() {
     setFontStyle(style);
   };
 
+  // Save activeFolder to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('tsk-active-folder', activeFolder === null ? 'null' : activeFolder);
+  }, [activeFolder]);
+
+  // Save scheduleViewMode to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('tsk-schedule-view-mode', scheduleViewMode);
+  }, [scheduleViewMode]);
+
+  // Save default folder toggles to localStorage
+  useEffect(() => {
+    localStorage.setItem('tsk-show-all-folder', showAllFolder.toString());
+  }, [showAllFolder]);
+
+  useEffect(() => {
+    localStorage.setItem('tsk-show-other-folder', showOtherFolder.toString());
+  }, [showOtherFolder]);
+
   // Folder handlers
   const handleFolderSelect = (folderId: string | null) => {
     setActiveFolder(folderId);
@@ -1129,6 +1183,8 @@ function Home() {
               folders={folders || []}
               activeFolder={activeFolder}
               onFolderSelect={handleFolderSelect}
+              showAllFolder={showAllFolder}
+              showOtherFolder={showOtherFolder}
               accentColor={theme.accentColor}
               isDarkMode={theme.isDarkMode}
               onOpenSettings={handleOpenFolderSettings}
@@ -1290,6 +1346,8 @@ function Home() {
           activeFolder={activeFolder}
           onFolderSelect={handleFolderSelect}
           onOpenFolderSettings={handleOpenFolderSettings}
+          showAllFolder={showAllFolder}
+          showOtherFolder={showOtherFolder}
           accentColor={theme.accentColor}
           isDarkMode={theme.isDarkMode}
           mode={islandMode}
@@ -1417,6 +1475,8 @@ function Home() {
           activeFolder={activeFolder}
           onFolderSelect={handleFolderSelect}
           onOpenSettings={handleOpenFolderSettings}
+          showAllFolder={showAllFolder}
+          showOtherFolder={showOtherFolder}
           isDarkMode={theme.isDarkMode}
           accentColor={theme.accentColor}
         />
@@ -1430,6 +1490,10 @@ function Home() {
         onCreateFolder={handleCreateFolder}
         onUpdateFolder={handleUpdateFolder}
         onDeleteFolder={handleDeleteFolder}
+        showAllFolder={showAllFolder}
+        showOtherFolder={showOtherFolder}
+        onToggleAllFolder={setShowAllFolder}
+        onToggleOtherFolder={setShowOtherFolder}
         isDarkMode={theme.isDarkMode}
         accentColor={theme.accentColor}
       />

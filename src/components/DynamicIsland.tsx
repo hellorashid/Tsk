@@ -25,6 +25,8 @@ interface DynamicIslandProps {
   activeFolder?: string | null;
   onFolderSelect?: (folderId: string | null) => void;
   onOpenFolderSettings?: () => void;
+  showAllFolder?: boolean;
+  showOtherFolder?: boolean;
   accentColor?: string;
   isDarkMode?: boolean;
   mode?: 'default' | 'task' | 'event' | 'command';
@@ -53,6 +55,8 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   activeFolder,
   onFolderSelect,
   onOpenFolderSettings,
+  showAllFolder = true,
+  showOtherFolder = false,
   accentColor = '#1F1B2F',
   isDarkMode = true,
   mode = 'default',
@@ -309,8 +313,8 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
     disabled: false
   })) || [];
 
-  const commands = [
-    {
+  const defaultFolderCommands = [
+    ...(showAllFolder ? [{
       id: 'folder-all',
       label: 'Switch to All Tasks',
       icon: (
@@ -319,11 +323,29 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
         </svg>
       ),
       action: () => {
-        onFolderSelect?.(null);
+        onFolderSelect?.('all');
         onModeChange?.('default');
       },
       disabled: false
-    },
+    }] : []),
+    ...(showOtherFolder ? [{
+      id: 'folder-other',
+      label: 'Switch to Other',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+        </svg>
+      ),
+      action: () => {
+        onFolderSelect?.('other');
+        onModeChange?.('default');
+      },
+      disabled: false
+    }] : [])
+  ];
+
+  const commands = [
+    ...defaultFolderCommands,
     ...folderCommands,
     {
       id: 'new-task',

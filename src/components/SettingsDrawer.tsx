@@ -88,8 +88,9 @@ export default function SettingsDrawer({
             themeColorDimming="auto" 
           />
           <Sheet.Content 
+            className="backdrop-blur-3xl"
             style={{
-              backgroundColor: isDarkMode ? '#1F1B2F' : '#FFFFFF', // Adjust based on theme
+              backgroundColor: `${currentAccentColor}E6`, // 90% opacity with accent color
               borderRadius: largeViewport ? '1rem' : '1rem 1rem 0 0',
               padding: '0px', // Reset padding as inner div will handle it
               display: 'flex',

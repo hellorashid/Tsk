@@ -3,8 +3,10 @@ import { Folder } from '../utils/types';
 
 interface FoldersBarProps {
   folders: Folder[];
-  activeFolder: string | null; // null = "All"
+  activeFolder: string | null; // null or 'all' = "All", 'other' = "Other"
   onFolderSelect: (folderId: string | null) => void;
+  showAllFolder?: boolean;
+  showOtherFolder?: boolean;
   accentColor?: string;
   isDarkMode?: boolean;
   onOpenSettings?: () => void;
@@ -14,6 +16,8 @@ const FoldersBar: React.FC<FoldersBarProps> = ({
   folders,
   activeFolder,
   onFolderSelect,
+  showAllFolder = true,
+  showOtherFolder = false,
   accentColor = '#1F1B2F',
   isDarkMode = true,
   onOpenSettings
@@ -42,22 +46,24 @@ const FoldersBar: React.FC<FoldersBarProps> = ({
           }}
         >
         {/* "All" option */}
-        <button
-          onClick={() => onFolderSelect(null)}
-          className={`flex-shrink-0 px-3 py-1.5 rounded-md transition-all duration-100 font-medium whitespace-nowrap text-base ${
-            activeFolder === null ? 'backdrop-blur-md' : ''
-          }`}
-          style={{
-            color: activeFolder === null ? getActiveColor() : getInactiveColor(),
-            backgroundColor: activeFolder === null 
-              ? isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-              : 'transparent',
-            transform: activeFolder === null ? 'scale(1.125)' : 'scale(1)',
-            transformOrigin: 'left center',
-          }}
-        >
-          All
-        </button>
+        {showAllFolder && (
+          <button
+            onClick={() => onFolderSelect('all')}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-md transition-all duration-100 font-medium whitespace-nowrap text-base ${
+              (activeFolder === null || activeFolder === 'all') ? 'backdrop-blur-md' : ''
+            }`}
+            style={{
+              color: (activeFolder === null || activeFolder === 'all') ? getActiveColor() : getInactiveColor(),
+              backgroundColor: (activeFolder === null || activeFolder === 'all')
+                ? isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                : 'transparent',
+              transform: (activeFolder === null || activeFolder === 'all') ? 'scale(1.125)' : 'scale(1)',
+              transformOrigin: 'left center',
+            }}
+          >
+            All
+          </button>
+        )}
 
         {/* Folder options */}
         {folders?.map((folder) => (
@@ -79,6 +85,26 @@ const FoldersBar: React.FC<FoldersBarProps> = ({
             {folder.name.charAt(0).toUpperCase() + folder.name.slice(1).toLowerCase()}
           </button>
         ))}
+
+        {/* "Other" option - tasks not in any folder */}
+        {showOtherFolder && (
+          <button
+            onClick={() => onFolderSelect('other')}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-md transition-all duration-100 font-medium whitespace-nowrap text-base ${
+              activeFolder === 'other' ? 'backdrop-blur-md' : ''
+            }`}
+            style={{
+              color: activeFolder === 'other' ? getActiveColor() : getInactiveColor(),
+              backgroundColor: activeFolder === 'other'
+                ? isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                : 'transparent',
+              transform: activeFolder === 'other' ? 'scale(1.125)' : 'scale(1)',
+              transformOrigin: 'left center',
+            }}
+          >
+            Other
+          </button>
+        )}
 
         {/* Settings button - shown on hover on desktop */}
         {onOpenSettings && (

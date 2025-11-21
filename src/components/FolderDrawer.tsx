@@ -12,6 +12,8 @@ interface FolderDrawerProps {
   activeFolder: string | null;
   onFolderSelect: (folderId: string | null) => void;
   onOpenSettings: () => void;
+  showAllFolder?: boolean;
+  showOtherFolder?: boolean;
   isDarkMode: boolean;
   accentColor: string;
 }
@@ -23,6 +25,8 @@ export default function FolderDrawer({
   activeFolder,
   onFolderSelect,
   onOpenSettings,
+  showAllFolder = true,
+  showOtherFolder = false,
   isDarkMode,
   accentColor
 }: FolderDrawerProps) {
@@ -87,8 +91,9 @@ export default function FolderDrawer({
             themeColorDimming="auto" 
           />
           <Sheet.Content 
+            className="backdrop-blur-3xl"
             style={{
-              backgroundColor: isDarkMode ? '#1F1B2F' : '#FFFFFF',
+              backgroundColor: `${accentColor}E6`, // 90% opacity
               borderRadius: '1rem 1rem 0 0',
               padding: '0px',
               display: 'flex',
@@ -109,36 +114,38 @@ export default function FolderDrawer({
               
               <div className="space-y-2">
                 {/* All option */}
-                <button
-                  onClick={() => handleFolderClick(null)}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-colors duration-200 ${
-                    activeFolder === null
-                      ? isDarkMode
-                        ? 'bg-white/20'
-                        : 'bg-gray-200'
-                      : isDarkMode
-                        ? 'bg-white/5 hover:bg-white/10'
-                        : 'bg-gray-50 hover:bg-gray-100'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      className="h-5 w-5" 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor"
-                    >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={2} 
-                        d="M4 6h16M4 12h16M4 18h16" 
-                      />
-                    </svg>
-                    <span className="font-medium">All Tasks</span>
-                  </div>
-                </button>
+                {showAllFolder && (
+                  <button
+                    onClick={() => handleFolderClick('all')}
+                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors duration-200 ${
+                      (activeFolder === null || activeFolder === 'all')
+                        ? isDarkMode
+                          ? 'bg-white/20'
+                          : 'bg-gray-200'
+                        : isDarkMode
+                          ? 'bg-white/5 hover:bg-white/10'
+                          : 'bg-gray-50 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className="h-5 w-5" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M4 6h16M4 12h16M4 18h16" 
+                        />
+                      </svg>
+                      <span className="font-medium">All Tasks</span>
+                    </div>
+                  </button>
+                )}
 
                 {/* Folder options */}
                 {folders?.map((folder) => (
@@ -174,6 +181,40 @@ export default function FolderDrawer({
                     </div>
                   </button>
                 ))}
+
+                {/* Other option */}
+                {showOtherFolder && (
+                  <button
+                    onClick={() => handleFolderClick('other')}
+                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors duration-200 ${
+                      activeFolder === 'other'
+                        ? isDarkMode
+                          ? 'bg-white/20'
+                          : 'bg-gray-200'
+                        : isDarkMode
+                          ? 'bg-white/5 hover:bg-white/10'
+                          : 'bg-gray-50 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className="h-5 w-5" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" 
+                        />
+                      </svg>
+                      <span className="font-medium">Other</span>
+                    </div>
+                  </button>
+                )}
 
                 {/* Folder Settings button */}
                 <button
