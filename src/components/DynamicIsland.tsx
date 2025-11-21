@@ -303,7 +303,8 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
     action: () => {
       onFolderSelect?.(folder.id);
       onModeChange?.('default');
-    }
+    },
+    disabled: false
   })) || [];
 
   const commands = [
@@ -318,7 +319,8 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
       action: () => {
         onFolderSelect?.(null);
         onModeChange?.('default');
-      }
+      },
+      disabled: false
     },
     ...folderCommands,
     {
@@ -329,7 +331,8 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
         </svg>
       ),
-      action: () => onModeChange?.('task')
+      action: () => onModeChange?.('task'),
+      disabled: false
     },
     {
       id: 'new-event',
@@ -339,7 +342,8 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
           <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
         </svg>
       ),
-      action: () => onModeChange?.('event')
+      action: () => onModeChange?.('event'),
+      disabled: false
     },
     {
       id: 'focus-mode',
@@ -369,7 +373,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
         onToggleView?.();
         onModeChange?.('default');
       },
-      disabled: !onToggleView
+      disabled: !onToggleView || false
     },
     {
       id: 'settings',
@@ -1407,8 +1411,8 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                         </svg>
                         {(() => {
-                          const taskLabels = currentTask?.labels?.split(',').map(l => l.trim()) || [];
-                          const folderLabel = taskLabels.find(l => l.startsWith('folder:'));
+                          const taskLabels = currentTask?.labels?.split(',').map((l: string) => l.trim()) || [];
+                          const folderLabel = taskLabels.find((l: string) => l.startsWith('folder:'));
                           if (folderLabel) {
                             const folderName = folderLabel.replace('folder:', '');
                             return <span className="capitalize">{folderName}</span>;
@@ -1443,8 +1447,8 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                             <button
                               onClick={() => {
                                 if (currentTask) {
-                                  const taskLabels = currentTask.labels?.split(',').map(l => l.trim()) || [];
-                                  const newLabels = taskLabels.filter(l => !l.startsWith('folder:')).join(',');
+                                  const taskLabels = currentTask.labels?.split(',').map((l: string) => l.trim()) || [];
+                                  const newLabels = taskLabels.filter((l: string) => !l.startsWith('folder:')).join(',');
                                   onUpdateTask(currentTask.id, { labels: newLabels });
                                 }
                                 setShowFolderDropdown(false);
@@ -1464,8 +1468,8 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                                 key={folder.id}
                                 onClick={() => {
                                   if (currentTask) {
-                                    const taskLabels = currentTask.labels?.split(',').map(l => l.trim()) || [];
-                                    const labelsWithoutFolder = taskLabels.filter(l => !l.startsWith('folder:'));
+                                    const taskLabels = currentTask.labels?.split(',').map((l: string) => l.trim()) || [];
+                                    const labelsWithoutFolder = taskLabels.filter((l: string) => !l.startsWith('folder:'));
                                     const newLabels = [...labelsWithoutFolder, `folder:${folder.name.toLowerCase()}`].join(',');
                                     onUpdateTask(currentTask.id, { labels: newLabels });
                                   }
