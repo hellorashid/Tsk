@@ -24,6 +24,7 @@ interface DynamicIslandProps {
   folders?: Folder[]; // Add folders list
   activeFolder?: string | null;
   onFolderSelect?: (folderId: string | null) => void;
+  onOpenFolderSettings?: () => void;
   accentColor?: string;
   isDarkMode?: boolean;
   mode?: 'default' | 'task' | 'event' | 'command';
@@ -51,6 +52,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   folders,
   activeFolder,
   onFolderSelect,
+  onOpenFolderSettings,
   accentColor = '#1F1B2F',
   isDarkMode = true,
   mode = 'default',
@@ -376,6 +378,20 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
       disabled: !onToggleView || false
     },
     {
+      id: 'folder-settings',
+      label: 'Folder Settings',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+        </svg>
+      ),
+      action: () => {
+        onOpenFolderSettings?.();
+        onModeChange?.('default');
+      },
+      disabled: !onOpenFolderSettings || false
+    },
+    {
       id: 'settings',
       label: 'Open Settings',
       icon: (
@@ -387,7 +403,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
         onOpenSettings?.();
         onModeChange?.('default');
       },
-      disabled: !onOpenSettings
+      disabled: !onOpenSettings || false
     }
   ];
 

@@ -60,9 +60,10 @@ interface EventItemProps {
   onTaskToggle?: (taskId: string, completed: boolean) => void;
   accentColor: string;
   isDarkMode: boolean;
+  folders?: any[];
 }
 
-const AgendaEventItem: React.FC<EventItemProps> = ({ event, onCardClick, onTaskToggle, accentColor, isDarkMode }) => {
+const AgendaEventItem: React.FC<EventItemProps> = ({ event, onCardClick, onTaskToggle, accentColor, isDarkMode, folders }) => {
   const { db } = useBasic();
   
   // Fetch linked task if this is a task event (only if taskId is not empty)
@@ -81,6 +82,23 @@ const AgendaEventItem: React.FC<EventItemProps> = ({ event, onCardClick, onTaskT
     : isDeletedTask && taskSnapshot
     ? taskSnapshot.name
     : event.title;
+  
+  // Get folder color from task labels
+  const getFolderColor = () => {
+    if (event.type !== 'task' || !linkedTask?.labels || !folders) return null;
+    
+    const taskLabels = linkedTask.labels.split(',').map((l: string) => l.trim());
+    const folderLabel = taskLabels.find((l: string) => l.startsWith('folder:'));
+    
+    if (!folderLabel) return null;
+    
+    const folderName = folderLabel.replace('folder:', '').toLowerCase();
+    const folder = folders.find((f: any) => f.name === folderName);
+    
+    return folder?.color || null;
+  };
+  
+  const folderColor = getFolderColor();
   
   const startTime = event.start.dateTime ? formatTime(event.start.dateTime) : '';
   const endTime = event.end.dateTime ? formatTime(event.end.dateTime) : '';
@@ -210,8 +228,19 @@ const AgendaEventItem: React.FC<EventItemProps> = ({ event, onCardClick, onTaskT
         {/* Color indicator with progress */}
         <div 
           className="flex-shrink-0 w-1 rounded-full self-stretch relative overflow-hidden"
-          style={{ backgroundColor: event.color }}
+          style={{ 
+            backgroundColor: event.color
+          }}
         >
+          {/* Folder color overlay with gradient */}
+          {folderColor && (
+            <div 
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: `linear-gradient(to bottom, ${folderColor}60, ${folderColor}20)`
+              }}
+            />
+          )}
           {/* Progress overlay - fills from top to bottom */}
           {progressPercentage > 0 && (
             <div 
@@ -285,6 +314,7 @@ interface AgendaViewProps {
   onViewModeChange?: (mode: 'timeline' | 'agenda') => void;
   location?: { latitude: number; longitude: number; name: string };
   onFetchWeather?: (date: Date) => Promise<void>;
+  folders?: any[];
 }
 
 const AgendaView: React.FC<AgendaViewProps> = ({
@@ -296,7 +326,8 @@ const AgendaView: React.FC<AgendaViewProps> = ({
   viewMode = 'agenda',
   onViewModeChange,
   location,
-  onFetchWeather
+  onFetchWeather,
+  folders
 }) => {
   const { db } = useBasic();
   
@@ -593,6 +624,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
                       onTaskToggle={onTaskToggle}
                       accentColor={accentColor}
                       isDarkMode={isDarkMode}
+                      folders={folders}
                     />
                   ))}
                 </div>
@@ -614,6 +646,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
                       onTaskToggle={onTaskToggle}
                       accentColor={accentColor}
                       isDarkMode={isDarkMode}
+                      folders={folders}
                     />
                   ))}
                 </div>
@@ -635,6 +668,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
                       onTaskToggle={onTaskToggle}
                       accentColor={accentColor}
                       isDarkMode={isDarkMode}
+                      folders={folders}
                     />
                   ))}
                 </div>
@@ -656,6 +690,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
                       onTaskToggle={onTaskToggle}
                       accentColor={accentColor}
                       isDarkMode={isDarkMode}
+                      folders={folders}
                     />
                   ))}
                 </div>

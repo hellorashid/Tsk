@@ -41,7 +41,15 @@ export const schema = {
 				"labels": {
 					"type": "string",
 					"indexed": true
-				}
+				}, 
+				"color": {
+					"type": "string",
+					"indexed": true
+				  },
+				  "icon": {
+					"type": "string",
+					"indexed": true
+				  }
 			}
 		},
 		"schedule": {
@@ -82,6 +90,6 @@ export const schema = {
 			}
 		}
 	},
-	"version": 5,
+	"version": 6,
 	"project_id": "701b11bc-59a8-45b5-8148-7184d7733e5b"
 }

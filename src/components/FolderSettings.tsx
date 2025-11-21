@@ -9,12 +9,25 @@ interface FolderSettingsProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   folders: Folder[];
-  onCreateFolder: (name: string, labels?: string) => Promise<void>;
-  onUpdateFolder: (folderId: string, name: string, labels: string) => Promise<void>;
+  onCreateFolder: (name: string, labels?: string, color?: string) => Promise<void>;
+  onUpdateFolder: (folderId: string, name: string, labels: string, color?: string) => Promise<void>;
   onDeleteFolder: (folderId: string) => Promise<void>;
   isDarkMode: boolean;
   accentColor: string;
 }
+
+// Predefined subtle colors for folders
+const FOLDER_COLORS = [
+  { name: 'None', value: '' },
+  { name: 'Red', value: '#ef4444' },
+  { name: 'Orange', value: '#f97316' },
+  { name: 'Yellow', value: '#eab308' },
+  { name: 'Green', value: '#22c55e' },
+  { name: 'Blue', value: '#3b82f6' },
+  { name: 'Purple', value: '#a855f7' },
+  { name: 'Pink', value: '#ec4899' },
+  { name: 'Gray', value: '#6b7280' },
+];
 
 export default function FolderSettings({ 
   isOpen, 
@@ -31,9 +44,11 @@ export default function FolderSettings({
   const inputRef = React.useRef<HTMLInputElement>(null);
   
   const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderColor, setNewFolderColor] = useState('');
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editLabels, setEditLabels] = useState('');
+  const [editColor, setEditColor] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   
   const largeViewport = useClientMediaQuery("(min-width: 800px)");
@@ -54,9 +69,11 @@ export default function FolderSettings({
 
   const handleClose = () => {
     setNewFolderName('');
+    setNewFolderColor('');
     setEditingFolderId(null);
     setEditName('');
     setEditLabels('');
+    setEditColor('');
     setIsOpen(false);
   };
 
@@ -65,8 +82,9 @@ export default function FolderSettings({
     
     setIsCreating(true);
     try {
-      await onCreateFolder(newFolderName.trim());
+      await onCreateFolder(newFolderName.trim(), undefined, newFolderColor);
       setNewFolderName('');
+      setNewFolderColor('');
     } catch (error) {
       console.error('Failed to create folder:', error);
     } finally {
@@ -79,16 +97,18 @@ export default function FolderSettings({
     setEditingFolderId(folder.id);
     setEditName(folder.name);
     setEditLabels(folder.labels);
+    setEditColor(folder.color || '');
   };
 
   const handleSaveEdit = async (folderId: string) => {
     if (!editName.trim()) return;
     
     try {
-      await onUpdateFolder(folderId, editName.trim(), editLabels.trim());
+      await onUpdateFolder(folderId, editName.trim(), editLabels.trim(), editColor);
       setEditingFolderId(null);
       setEditName('');
       setEditLabels('');
+      setEditColor('');
     } catch (error) {
       console.error('Failed to update folder:', error);
     }
@@ -98,6 +118,7 @@ export default function FolderSettings({
     setEditingFolderId(null);
     setEditName('');
     setEditLabels('');
+    setEditColor('');
   };
 
   const handleDelete = async (folderId: string) => {
@@ -212,33 +233,60 @@ export default function FolderSettings({
                 >
                   Add New Folder
                 </label>
-                <div className="flex gap-2">
-                  <input
-                    ref={inputRef}
-                    id="new-folder"
-                    type="text"
-                    value={newFolderName}
-                    onChange={(e) => setNewFolderName(e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, handleCreateNew)}
-                    placeholder="Folder name"
-                    className={`flex-1 px-4 py-2 rounded-lg border transition-colors duration-200 ${
-                      isDarkMode
-                        ? 'bg-white/5 border-white/20 text-gray-100 placeholder-gray-500 focus:border-white/40'
-                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-gray-500'
-                    } focus:outline-none focus:ring-2 focus:ring-white/20`}
-                    autoComplete="off"
-                  />
-                  <button
-                    onClick={handleCreateNew}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
-                      isDarkMode
-                        ? 'bg-white/20 hover:bg-white/30 text-white'
-                        : 'bg-gray-800 hover:bg-gray-900 text-white'
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                    disabled={!newFolderName.trim() || isCreating}
-                  >
-                    {isCreating ? 'Adding...' : 'Add'}
-                  </button>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      ref={inputRef}
+                      id="new-folder"
+                      type="text"
+                      value={newFolderName}
+                      onChange={(e) => setNewFolderName(e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(e, handleCreateNew)}
+                      placeholder="Folder name"
+                      className={`flex-1 px-4 py-2 rounded-lg border transition-colors duration-200 ${
+                        isDarkMode
+                          ? 'bg-white/5 border-white/20 text-gray-100 placeholder-gray-500 focus:border-white/40'
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-gray-500'
+                      } focus:outline-none focus:ring-2 focus:ring-white/20`}
+                      autoComplete="off"
+                    />
+                    <button
+                      onClick={handleCreateNew}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+                        isDarkMode
+                          ? 'bg-white/20 hover:bg-white/30 text-white'
+                          : 'bg-gray-800 hover:bg-gray-900 text-white'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      disabled={!newFolderName.trim() || isCreating}
+                    >
+                      {isCreating ? 'Adding...' : 'Add'}
+                    </button>
+                  </div>
+                  
+                  {/* Color Picker */}
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Color:</span>
+                    <div className="flex gap-1.5">
+                      {FOLDER_COLORS.map((color) => (
+                        <button
+                          key={color.value}
+                          type="button"
+                          onClick={() => setNewFolderColor(color.value)}
+                          className={`w-6 h-6 rounded-full transition-all ${
+                            newFolderColor === color.value 
+                              ? 'ring-2 ring-offset-2 ring-white/50' 
+                              : 'hover:scale-110'
+                          }`}
+                          style={{
+                            backgroundColor: color.value || (isDarkMode ? '#374151' : '#e5e7eb'),
+                            border: color.value === '' ? `2px solid ${isDarkMode ? '#6b7280' : '#9ca3af'}` : 'none'
+                          }}
+                          title={color.name}
+                          aria-label={`Select ${color.name} color`}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -289,6 +337,31 @@ export default function FolderSettings({
                                   : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
                               } focus:outline-none focus:ring-2 focus:ring-white/20`}
                             />
+                            
+                            {/* Color Picker */}
+                            <div className="flex items-center gap-2 pt-1">
+                              <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Color:</span>
+                              <div className="flex gap-1.5">
+                                {FOLDER_COLORS.map((color) => (
+                                  <button
+                                    key={color.value}
+                                    type="button"
+                                    onClick={() => setEditColor(color.value)}
+                                    className={`w-5 h-5 rounded-full transition-all ${
+                                      editColor === color.value 
+                                        ? 'ring-2 ring-offset-1 ring-white/50' 
+                                        : 'hover:scale-110'
+                                    }`}
+                                    style={{
+                                      backgroundColor: color.value || (isDarkMode ? '#374151' : '#e5e7eb'),
+                                      border: color.value === '' ? `2px solid ${isDarkMode ? '#6b7280' : '#9ca3af'}` : 'none'
+                                    }}
+                                    title={color.name}
+                                    aria-label={`Select ${color.name} color`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
                             <div className="flex gap-2">
                               <button
                                 onClick={() => handleSaveEdit(folder.id)}
@@ -316,7 +389,15 @@ export default function FolderSettings({
                           // View mode
                           <div className="p-3 flex items-center justify-between">
                             <div className="flex-1">
-                              <div className="font-medium capitalize">{folder.name}</div>
+                              <div className="flex items-center gap-2">
+                                {folder.color && (
+                                  <div 
+                                    className="w-3 h-3 rounded-full flex-shrink-0"
+                                    style={{ backgroundColor: folder.color }}
+                                  />
+                                )}
+                                <div className="font-medium capitalize">{folder.name}</div>
+                              </div>
                               {folder.labels && (
                                 <div className={`text-xs mt-1 ${
                                   isDarkMode ? 'text-gray-400' : 'text-gray-600'

@@ -999,21 +999,23 @@ function Home() {
     setActiveFolder(folderId);
   };
 
-  const handleCreateFolder = async (name: string, labels?: string) => {
+  const handleCreateFolder = async (name: string, labels?: string, color?: string) => {
     // Auto-generate folder label if not provided
     const folderLabel = `folder:${name.toLowerCase()}`;
     const allLabels = labels ? `${folderLabel},${labels}` : folderLabel;
     
     await db.collection("filters").add({
       name: name.toLowerCase(), // Store lowercase
-      labels: allLabels
+      labels: allLabels,
+      color: color || ''
     });
   };
 
-  const handleUpdateFolder = async (folderId: string, name: string, labels: string) => {
+  const handleUpdateFolder = async (folderId: string, name: string, labels: string, color?: string) => {
     await db.collection("filters").update(folderId, {
       name: name.toLowerCase(), // Store lowercase
-      labels: labels
+      labels: labels,
+      color: color || ''
     });
   };
 
@@ -1085,14 +1087,15 @@ function Home() {
           : 'calc(var(--vh, 1vh) * 100)',
         paddingBottom: 'env(safe-area-inset-bottom, 20px)'
       }}>
-      <div className=" h-12 rounded-b-md md:rounded-b-none backdrop-blur-sm flex justify-between items-center sticky top-0 z-100"
+      <div className=" h-12 rounded-b-md md:rounded-b-none flex justify-between items-center sticky top-0 z-100"
         style={{ backgroundColor: 'transparent' }}>
         <div className="">
           <button 
             onClick={handleOpenAbout}
-            className="px-4 py-2 rounded-lg bg-transparent hover:bg-white/10 transition-colors duration-200 text-md flex items-center cursor-pointer"
+            className="group ml-1 px-2 py-2 rounded-lg bg-transparent hover:bg-white/10 transition-colors duration-200 text-md flex items-center cursor-pointer"
           >
-            <img className="w-6 h-6 mr-2" src='tsk-logo.png' />tsk.
+            <img className="w-6 h-6 mr-2" src='tsk-logo.png' />
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">tsk.</span>
           </button>
           {/* {isNewTaskMode && 'NT'} {drawerOpen && 'DO'} */}
         </div>
@@ -1193,6 +1196,7 @@ function Home() {
                 onViewModeChange={setScheduleViewMode}
                 location={theme.location}
                 onFetchWeather={handleFetchWeather}
+                folders={folders}
               />
             ) : (
               <AgendaView
@@ -1205,6 +1209,7 @@ function Home() {
                 onViewModeChange={setScheduleViewMode}
                 location={theme.location}
                 onFetchWeather={handleFetchWeather}
+                folders={folders}
               />
             )}
           </div>
@@ -1244,6 +1249,7 @@ function Home() {
                 onViewModeChange={setScheduleViewMode}
                 location={theme.location}
                 onFetchWeather={handleFetchWeather}
+                folders={folders}
               />
             ) : (
               <AgendaView
@@ -1256,6 +1262,7 @@ function Home() {
                 onViewModeChange={setScheduleViewMode}
                 location={theme.location}
                 onFetchWeather={handleFetchWeather}
+                folders={folders}
               />
             )}
           </div>
@@ -1282,6 +1289,7 @@ function Home() {
           folders={folders}
           activeFolder={activeFolder}
           onFolderSelect={handleFolderSelect}
+          onOpenFolderSettings={handleOpenFolderSettings}
           accentColor={theme.accentColor}
           isDarkMode={theme.isDarkMode}
           mode={islandMode}

@@ -23,6 +23,7 @@ interface TimelineViewProps {
   accentColor?: string;
   isDarkMode?: boolean;
   selectedDate: Date;
+  folders?: any[];
 }
 
 // Zoom levels in pixels per hour
@@ -38,7 +39,8 @@ const TimelineView: React.FC<TimelineViewProps> = ({
   weatherData,
   accentColor = '#1F1B2F',
   isDarkMode = true,
-  selectedDate
+  selectedDate,
+  folders
 }) => {
   const [zoomIndex, setZoomIndex] = useState(DEFAULT_ZOOM_INDEX);
   const [currentTimeMinutes, setCurrentTimeMinutes] = useState(() => {
@@ -905,6 +907,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                       onTaskToggle={onTaskToggle}
                       accentColor={accentColor}
                       isDarkMode={isDarkMode}
+                      folders={folders}
                     />
                   );
                 })}
@@ -933,6 +936,7 @@ interface TimelineEventCardProps {
   onTaskToggle?: (taskId: string, completed: boolean) => void;
   accentColor?: string;
   isDarkMode: boolean;
+  folders?: any[];
 }
 
 const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
@@ -949,7 +953,8 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
   onEventMouseDown,
   onTaskToggle,
   accentColor = '#1F1B2F',
-  isDarkMode
+  isDarkMode,
+  folders
 }) => {
   const { db } = useBasic();
   
@@ -969,6 +974,23 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
     : isDeletedTask && taskSnapshot
     ? taskSnapshot.name
     : event.title;
+
+  // Get folder color from task labels
+  const getFolderColor = () => {
+    if (event.type !== 'task' || !linkedTask?.labels || !folders) return null;
+    
+    const taskLabels = linkedTask.labels.split(',').map((l: string) => l.trim());
+    const folderLabel = taskLabels.find((l: string) => l.startsWith('folder:'));
+    
+    if (!folderLabel) return null;
+    
+    const folderName = folderLabel.replace('folder:', '').toLowerCase();
+    const folder = folders.find((f: any) => f.name === folderName);
+    
+    return folder?.color || null;
+  };
+  
+  const folderColor = getFolderColor();
 
   // Check if this is a completion event
   const isCompletionEvent = event.type === 'task:completed';
@@ -1033,7 +1055,11 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
         height: `${cardHeight}px`,
         background: isSunEvent 
           ? `linear-gradient(to right, transparent, ${event.color} 20%, ${event.color} 80%, transparent)`
-          : event.color,
+          : folderColor && !isSunEvent && !isCompletionEvent
+            ? `linear-gradient(to right, ${event.color}, ${event.color}), linear-gradient(to right, ${folderColor}20, ${folderColor}00)`
+            : event.color,
+        backgroundBlendMode: folderColor && !isSunEvent && !isCompletionEvent ? 'normal, screen' : undefined,
+        borderLeft: folderColor && !isSunEvent && !isCompletionEvent ? `3px solid ${folderColor}` : undefined,
         minHeight: (isCompletionEvent || isSunEvent) ? '28px' : '40px',
         transition: isDraggingThis ? 'none' : 'top 0.2s ease-out',
       }}

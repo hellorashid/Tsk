@@ -47,6 +47,7 @@ interface ScheduleSidebarProps {
   onViewModeChange?: (mode: 'timeline' | 'agenda') => void;
   location?: { latitude: number; longitude: number; name: string };
   onFetchWeather?: (date: Date) => Promise<void>;
+  folders?: any[];
 }
 
 const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
@@ -61,7 +62,8 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   viewMode = 'timeline',
   onViewModeChange,
   location,
-  onFetchWeather
+  onFetchWeather,
+  folders
 }) => {
   // Track selected date (defaults to today)
   const [selectedDate, setSelectedDate] = useState<Date>(getStartOfDay(new Date()));
@@ -594,6 +596,7 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
             accentColor={accentColor}
             isDarkMode={isDarkMode}
             selectedDate={selectedDate}
+            folders={folders}
           />
         </div>
       </div>
