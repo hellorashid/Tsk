@@ -231,6 +231,7 @@ function Home() {
     return saved !== 'false'; // Default to true
   });
   const [suggestedTasksExpanded, setSuggestedTasksExpanded] = useState<boolean>(true);
+  const [completedTasksExpanded, setCompletedTasksExpanded] = useState<boolean>(false);
 
   useEffect(() => {
     localStorage.setItem('tsk-show-today-folder', showTodayFolder.toString());
@@ -460,7 +461,7 @@ function Home() {
   // });
 
   const filteredTasks = (() => {
-    const topLevelTasks = tasks?.filter((task: Task) => !task.parentTaskId) || [];
+    const topLevelTasks = tasks?.filter((task: Task) => !task.parentTaskId && !task.completed) || [];
     
     if (activeFolder === null || activeFolder === 'all') {
       return topLevelTasks;
@@ -483,11 +484,6 @@ function Home() {
       tomorrow.setDate(tomorrow.getDate() + 1);
       
       return topLevelTasks.filter((task: Task) => {
-        // Filter out completed tasks
-        if (task.completed) {
-          return false;
-        }
-        
         return scheduleEvents.some((event: ScheduleCardData) => {
           if (event.type !== 'task' || event.taskId !== task.id) {
             return false;
@@ -589,6 +585,78 @@ function Home() {
     });
     
     return allSuggested.slice(0, 5);
+  })();
+
+  // Get completed tasks for the active folder
+  const completedTasks = (() => {
+    const topLevelTasks = tasks?.filter((task: Task) => !task.parentTaskId && task.completed) || [];
+    
+    if (activeFolder === null || activeFolder === 'all') {
+      return topLevelTasks;
+    }
+    
+    if (activeFolder === 'other') {
+      return topLevelTasks.filter((task: Task) => {
+        if (!task.labels) return true;
+        
+        const taskLabels = task.labels.split(',').map(l => l.trim());
+        const hasFolder = taskLabels.some(label => label.startsWith('folder:'));
+        return !hasFolder;
+      });
+    }
+    
+    if (activeFolder === 'today') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      return topLevelTasks.filter((task: Task) => {
+        return scheduleEvents.some((event: ScheduleCardData) => {
+          if (event.type !== 'task' || event.taskId !== task.id) {
+            return false;
+          }
+          
+          let eventDate: Date | null = null;
+          
+          if (event.start?.dateTime) {
+            eventDate = new Date(event.start.dateTime);
+            eventDate.setHours(0, 0, 0, 0);
+          } else if (event.start?.date) {
+            eventDate = new Date(event.start.date);
+            eventDate.setHours(0, 0, 0, 0);
+          }
+          
+          if (!eventDate) {
+            return false;
+          }
+          
+          return eventDate.getTime() >= today.getTime() && eventDate.getTime() < tomorrow.getTime();
+        });
+      });
+    }
+    
+    const selectedFolder = folders?.find((f: Folder) => f.id === activeFolder);
+    if (!selectedFolder) {
+      return [];
+    }
+    
+    const folderLabels = selectedFolder.labels
+      ? selectedFolder.labels.split(',').map(l => l.trim()).filter(l => l)
+      : [];
+    
+    if (folderLabels.length === 0) {
+      return topLevelTasks;
+    }
+    
+    return topLevelTasks.filter((task: Task) => {
+      if (!task.labels) return false;
+      
+      const taskLabels = task.labels.split(',').map(l => l.trim());
+      return folderLabels.some(folderLabel => 
+        taskLabels.some(taskLabel => taskLabel === folderLabel)
+      );
+    });
   })();
 
     // Keyboard navigation for tasks and global shortcuts
@@ -1357,30 +1425,98 @@ function Home() {
                   ))}
                 </div>
 
-                {/* Suggested tasks section - shown when Today folder is active */}
-                {activeFolder === 'today' && suggestedTasks.length > 0 && (
+                {/* Suggested and Completed sections - combined header row */}
+                {((activeFolder === 'today' && suggestedTasks.length > 0) || completedTasks.length > 0) && (
                   <div className={`mt-8 ${filteredTasks.length > 0 ? 'pt-8' : ''}`}>
-                    <button
-                      onClick={() => setSuggestedTasksExpanded(!suggestedTasksExpanded)}
-                      className={`flex items-center gap-2 mb-4 w-full text-left ${theme.isDarkMode ? 'text-gray-300 hover:text-gray-100' : 'text-gray-700 hover:text-gray-900'} transition-colors`}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className={`h-4 w-4 transition-transform ${suggestedTasksExpanded ? 'rotate-90' : ''}`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                      <span className="text-sm font-medium">Suggested</span>
-                      <span className={`text-xs ${theme.isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                        ({suggestedTasks.length})
-                      </span>
-                    </button>
-                    {suggestedTasksExpanded && (
-                      <div className={`flex flex-col ${viewMode === 'compact' ? 'space-y-0' : viewMode === 'cozy' ? 'space-y-1' : 'space-y-2'}`}>
+                    {/* Combined toggle header row */}
+                    <div className="flex items-center gap-4 mb-4">
+                      {/* Suggested toggle - only show for Today folder */}
+                      {activeFolder === 'today' && suggestedTasks.length > 0 && (
+                        <button
+                          onClick={() => {
+                            setSuggestedTasksExpanded(!suggestedTasksExpanded);
+                            if (!suggestedTasksExpanded) {
+                              setCompletedTasksExpanded(false);
+                            }
+                          }}
+                          className={`flex items-center gap-1.5 ${theme.isDarkMode ? 'text-gray-300 hover:text-gray-100' : 'text-gray-700 hover:text-gray-900'} transition-colors`}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className={`h-3.5 w-3.5 transition-transform ${suggestedTasksExpanded ? 'rotate-90' : ''}`}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                          <span className="text-sm font-medium">Suggested</span>
+                          <span className={`text-xs font-medium ${theme.isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                            ({suggestedTasks.length})
+                          </span>
+                        </button>
+                      )}
+                      
+                      {/* Completed toggle */}
+                      {completedTasks.length > 0 && (
+                        <button
+                          onClick={() => {
+                            setCompletedTasksExpanded(!completedTasksExpanded);
+                            if (!completedTasksExpanded) {
+                              setSuggestedTasksExpanded(false);
+                            }
+                          }}
+                          className={`flex items-center gap-1.5 ${theme.isDarkMode ? 'text-gray-300 hover:text-gray-100' : 'text-gray-700 hover:text-gray-900'} transition-colors`}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className={`h-3.5 w-3.5 transition-transform ${completedTasksExpanded ? 'rotate-90' : ''}`}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                          <span className="text-sm font-medium">Completed</span>
+                          <span className={`text-xs font-medium ${theme.isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                            ({completedTasks.length})
+                          </span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Suggested tasks list */}
+                    {activeFolder === 'today' && suggestedTasks.length > 0 && suggestedTasksExpanded && (
+                      <div className={`flex flex-col mb-4 ${viewMode === 'compact' ? 'space-y-0' : viewMode === 'cozy' ? 'space-y-1' : 'space-y-2'}`}>
                         {suggestedTasks.map((task: Task) => (
+                          <div
+                            key={task.id}
+                            className="w-full"
+                            onClick={() => {
+                              handleTaskSelect(task);
+                            }}
+                          >
+                            <ListItem
+                              task={task}
+                              deleteTask={deleteTask}
+                              updateTask={updateTask}
+                              isSelected={selectedTask?.id === task.id}
+                              viewMode={viewMode}
+                              accentColor={theme.accentColor}
+                              isDarkMode={theme.isDarkMode}
+                              handleTaskSelect={handleTaskSelect}
+                              onEnterFocus={handleEnterFocus}
+                              onAddToSchedule={handleAddToSchedule}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Completed tasks list */}
+                    {completedTasksExpanded && (
+                      <div className={`flex flex-col ${viewMode === 'compact' ? 'space-y-0' : viewMode === 'cozy' ? 'space-y-1' : 'space-y-2'}`}>
+                        {completedTasks.map((task: Task) => (
                           <div
                             key={task.id}
                             className="w-full"
