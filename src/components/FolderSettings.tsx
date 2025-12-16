@@ -15,8 +15,10 @@ interface FolderSettingsProps {
   onDeleteFolder: (folderId: string) => Promise<void>;
   showAllFolder: boolean;
   showOtherFolder: boolean;
+  showTodayFolder: boolean;
   onToggleAllFolder: (show: boolean) => void;
   onToggleOtherFolder: (show: boolean) => void;
+  onToggleTodayFolder: (show: boolean) => void;
   isDarkMode: boolean;
   accentColor: string;
 }
@@ -43,8 +45,10 @@ export default function FolderSettings({
   onDeleteFolder,
   showAllFolder,
   showOtherFolder,
+  showTodayFolder,
   onToggleAllFolder,
   onToggleOtherFolder,
+  onToggleTodayFolder,
   isDarkMode,
   accentColor
 }: FolderSettingsProps) {
@@ -369,6 +373,42 @@ export default function FolderSettings({
                       <Switch.Thumb
                         className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
                           showOtherFolder 
+                            ? 'translate-x-5 bg-white' 
+                            : 'translate-x-0.5 bg-gray-400'
+                        }`}
+                      />
+                    </Switch.Root>
+                  </div>
+
+                  {/* Today Folder Toggle */}
+                  <div className={`p-3 rounded-lg border flex items-center justify-between ${
+                    isDarkMode
+                      ? 'bg-white/5 border-white/10'
+                      : 'bg-gray-50 border-gray-200'
+                  }`}>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="font-medium">Today</span>
+                      </div>
+                      <p className={`text-xs mt-1 ml-7 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Tasks scheduled for today
+                      </p>
+                    </div>
+                    <Switch.Root
+                      checked={showTodayFolder}
+                      onCheckedChange={onToggleTodayFolder}
+                      className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${
+                        showTodayFolder 
+                          ? 'bg-white/30' 
+                          : isDarkMode ? 'bg-white/10' : 'bg-gray-300'
+                      }`}
+                    >
+                      <Switch.Thumb
+                        className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
+                          showTodayFolder 
                             ? 'translate-x-5 bg-white' 
                             : 'translate-x-0.5 bg-gray-400'
                         }`}

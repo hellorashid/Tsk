@@ -3,10 +3,11 @@ import { Folder } from '../utils/types';
 
 interface FoldersBarProps {
   folders: Folder[];
-  activeFolder: string | null; // null or 'all' = "All", 'other' = "Other"
+  activeFolder: string | null; // null or 'all' = "All", 'other' = "Other", 'today' = "Today"
   onFolderSelect: (folderId: string | null) => void;
   showAllFolder?: boolean;
   showOtherFolder?: boolean;
+  showTodayFolder?: boolean;
   accentColor?: string;
   isDarkMode?: boolean;
   onOpenSettings?: () => void;
@@ -18,6 +19,7 @@ const FoldersBar: React.FC<FoldersBarProps> = ({
   onFolderSelect,
   showAllFolder = true,
   showOtherFolder = false,
+  showTodayFolder = true,
   accentColor = '#1F1B2F',
   isDarkMode = true,
   onOpenSettings
@@ -103,6 +105,26 @@ const FoldersBar: React.FC<FoldersBarProps> = ({
             }}
           >
             Other
+          </button>
+        )}
+
+        {/* "Today" option */}
+        {showTodayFolder && (
+          <button
+            onClick={() => onFolderSelect('today')}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-md transition-all duration-100 font-medium whitespace-nowrap text-base ${
+              activeFolder === 'today' ? 'backdrop-blur-md' : ''
+            }`}
+            style={{
+              color: activeFolder === 'today' ? getActiveColor() : getInactiveColor(),
+              backgroundColor: activeFolder === 'today'
+                ? isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                : 'transparent',
+              transform: activeFolder === 'today' ? 'scale(1.125)' : 'scale(1)',
+              transformOrigin: 'left center',
+            }}
+          >
+            Today
           </button>
         )}
 

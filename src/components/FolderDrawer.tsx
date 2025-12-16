@@ -14,6 +14,7 @@ interface FolderDrawerProps {
   onOpenSettings: () => void;
   showAllFolder?: boolean;
   showOtherFolder?: boolean;
+  showTodayFolder?: boolean;
   isDarkMode: boolean;
   accentColor: string;
 }
@@ -27,6 +28,7 @@ export default function FolderDrawer({
   onOpenSettings,
   showAllFolder = true,
   showOtherFolder = false,
+  showTodayFolder = true,
   isDarkMode,
   accentColor
 }: FolderDrawerProps) {
@@ -212,6 +214,40 @@ export default function FolderDrawer({
                         />
                       </svg>
                       <span className="font-medium">Other</span>
+                    </div>
+                  </button>
+                )}
+
+                {/* Today option */}
+                {showTodayFolder && (
+                  <button
+                    onClick={() => handleFolderClick('today')}
+                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors duration-200 ${
+                      activeFolder === 'today'
+                        ? isDarkMode
+                          ? 'bg-white/20'
+                          : 'bg-gray-200'
+                        : isDarkMode
+                          ? 'bg-white/5 hover:bg-white/10'
+                          : 'bg-gray-50 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className="h-5 w-5" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" 
+                        />
+                      </svg>
+                      <span className="font-medium">Today</span>
                     </div>
                   </button>
                 )}

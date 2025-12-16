@@ -27,6 +27,7 @@ interface DynamicIslandProps {
   onOpenFolderSettings?: () => void;
   showAllFolder?: boolean;
   showOtherFolder?: boolean;
+  showTodayFolder?: boolean;
   accentColor?: string;
   isDarkMode?: boolean;
   mode?: 'default' | 'task' | 'event' | 'command';
@@ -57,6 +58,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   onOpenFolderSettings,
   showAllFolder = true,
   showOtherFolder = false,
+  showTodayFolder = true,
   accentColor = '#1F1B2F',
   isDarkMode = true,
   mode = 'default',
@@ -313,21 +315,22 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
     disabled: false
   })) || [];
 
-  const defaultFolderCommands = [
-    ...(showAllFolder ? [{
-      id: 'folder-all',
-      label: 'Switch to All Tasks',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      ),
-      action: () => {
-        onFolderSelect?.('all');
-        onModeChange?.('default');
-      },
-      disabled: false
-    }] : []),
+  const allFolderCommand = showAllFolder ? [{
+    id: 'folder-all',
+    label: 'Switch to All Tasks',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    ),
+    action: () => {
+      onFolderSelect?.('all');
+      onModeChange?.('default');
+    },
+    disabled: false
+  }] : [];
+
+  const otherFolderCommands = [
     ...(showOtherFolder ? [{
       id: 'folder-other',
       label: 'Switch to Other',
@@ -341,12 +344,27 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
         onModeChange?.('default');
       },
       disabled: false
+    }] : []),
+    ...(showTodayFolder ? [{
+      id: 'folder-today',
+      label: 'Switch to Today',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      ),
+      action: () => {
+        onFolderSelect?.('today');
+        onModeChange?.('default');
+      },
+      disabled: false
     }] : [])
   ];
 
   const commands = [
-    ...defaultFolderCommands,
+    ...allFolderCommand,
     ...folderCommands,
+    ...otherFolderCommands,
     {
       id: 'new-task',
       label: 'Create New Task',
@@ -1529,7 +1547,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   )}
                 </div>
                 
-                {/* Add to Schedule button or Focus button */}
+                {/* Add to Today button or Focus button */}
                 <div className="flex items-center gap-2">
                   {!(scheduledEvents && scheduledEvents.length > 0) && (
                     <button
@@ -1550,7 +1568,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                       </svg>
-                      Add to Schedule
+                      Add to Today
                     </button>
                   )}
                   

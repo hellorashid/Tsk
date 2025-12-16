@@ -226,6 +226,15 @@ function Home() {
     const saved = localStorage.getItem('tsk-show-other-folder');
     return saved === 'true'; // Default to false
   });
+  const [showTodayFolder, setShowTodayFolder] = useState<boolean>(() => {
+    const saved = localStorage.getItem('tsk-show-today-folder');
+    return saved !== 'false'; // Default to true
+  });
+  const [suggestedTasksExpanded, setSuggestedTasksExpanded] = useState<boolean>(true);
+
+  useEffect(() => {
+    localStorage.setItem('tsk-show-today-folder', showTodayFolder.toString());
+  }, [showTodayFolder]);
 
   // Auto-fetch weather for today on initial load (with delay to ensure app is fully initialized)
   useEffect(() => {
@@ -450,55 +459,136 @@ function Home() {
   //   return true;
   // });
 
-  // Filter tasks based on active folder
   const filteredTasks = (() => {
-    // First filter out subtasks - only show tasks without a parentTaskId
     const topLevelTasks = tasks?.filter((task: Task) => !task.parentTaskId) || [];
     
-    // If "All" folder is selected, show all top-level tasks
     if (activeFolder === null || activeFolder === 'all') {
       return topLevelTasks;
     }
     
-    // If "Other" folder is selected, show tasks not in any folder
     if (activeFolder === 'other') {
       return topLevelTasks.filter((task: Task) => {
-        if (!task.labels) return true; // No labels = not in any folder
+        if (!task.labels) return true;
         
         const taskLabels = task.labels.split(',').map(l => l.trim());
-        // Check if task has any folder labels
         const hasFolder = taskLabels.some(label => label.startsWith('folder:'));
         return !hasFolder;
       });
     }
     
-    // Find the selected folder
+    if (activeFolder === 'today') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      return topLevelTasks.filter((task: Task) => {
+        // Filter out completed tasks
+        if (task.completed) {
+          return false;
+        }
+        
+        return scheduleEvents.some((event: ScheduleCardData) => {
+          if (event.type !== 'task' || event.taskId !== task.id) {
+            return false;
+          }
+          
+          let eventDate: Date | null = null;
+          
+          if (event.start?.dateTime) {
+            eventDate = new Date(event.start.dateTime);
+            eventDate.setHours(0, 0, 0, 0);
+          } else if (event.start?.date) {
+            eventDate = new Date(event.start.date);
+            eventDate.setHours(0, 0, 0, 0);
+          }
+          
+          if (!eventDate) {
+            return false;
+          }
+          
+          return eventDate.getTime() >= today.getTime() && eventDate.getTime() < tomorrow.getTime();
+        });
+      });
+    }
+    
     const selectedFolder = folders?.find((f: Folder) => f.id === activeFolder);
     if (!selectedFolder) {
       return topLevelTasks;
     }
     
-    // Get folder labels (comma-separated)
     const folderLabels = selectedFolder.labels
       ? selectedFolder.labels.split(',').map(l => l.trim()).filter(l => l)
       : [];
     
-    // If folder has no labels, show all tasks
     if (folderLabels.length === 0) {
       return topLevelTasks;
     }
     
-    // Filter tasks that match ANY label in the folder's labels
     return topLevelTasks.filter((task: Task) => {
       if (!task.labels) return false;
       
       const taskLabels = task.labels.split(',').map(l => l.trim());
-      
-      // Check if task has any of the folder's labels
       return folderLabels.some(folderLabel => 
         taskLabels.some(taskLabel => taskLabel === folderLabel)
       );
     });
+  })();
+
+  // Get suggested tasks (uncompleted tasks from past week + unscheduled tasks) for Today folder empty state
+  const suggestedTasks = (() => {
+    if (activeFolder !== 'today') {
+      return [];
+    }
+    
+    const topLevelTasks = tasks?.filter((task: Task) => !task.parentTaskId && !task.completed) || [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const oneWeekAgo = new Date(today);
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    
+    // Get tasks scheduled in the past week (but not today)
+    const pastWeekScheduledTasks = topLevelTasks.filter((task: Task) => {
+      return scheduleEvents.some((event: ScheduleCardData) => {
+        if (event.type !== 'task' || event.taskId !== task.id) {
+          return false;
+        }
+        
+        let eventDate: Date | null = null;
+        
+        if (event.start?.dateTime) {
+          eventDate = new Date(event.start.dateTime);
+          eventDate.setHours(0, 0, 0, 0);
+        } else if (event.start?.date) {
+          eventDate = new Date(event.start.date);
+          eventDate.setHours(0, 0, 0, 0);
+        }
+        
+        if (!eventDate) {
+          return false;
+        }
+        
+        return eventDate.getTime() >= oneWeekAgo.getTime() && eventDate.getTime() < today.getTime();
+      });
+    });
+    
+    // Get unscheduled tasks (tasks with no schedule events)
+    const unscheduledTasks = topLevelTasks.filter((task: Task) => {
+      return !scheduleEvents.some((event: ScheduleCardData) => 
+        event.type === 'task' && event.taskId === task.id
+      );
+    });
+    
+    // Combine both lists, prioritizing past week scheduled tasks, then unscheduled tasks
+    // Remove duplicates and limit to 5
+    const allSuggested = [...pastWeekScheduledTasks];
+    unscheduledTasks.forEach(task => {
+      if (!allSuggested.find(t => t.id === task.id)) {
+        allSuggested.push(task);
+      }
+    });
+    
+    return allSuggested.slice(0, 5);
   })();
 
     // Keyboard navigation for tasks and global shortcuts
@@ -555,15 +645,20 @@ function Home() {
       if (e.key === 'Tab' && !isInputFocused && islandMode === 'default' && !selectedTask && !selectedEvent) {
         e.preventDefault();
         
-        // Build array of folder IDs including special folders
         const folderIds = [
           ...(showAllFolder ? ['all'] : []),
           ...(folders?.map(f => f.id) || []),
-          ...(showOtherFolder ? ['other'] : [])
+          ...(showOtherFolder ? ['other'] : []),
+          ...(showTodayFolder ? ['today'] : [])
         ];
         
-        const currentIndex = folderIds.indexOf(activeFolder || 'all');
-        const nextIndex = (currentIndex + 1) % folderIds.length;
+        if (folderIds.length === 0) {
+          return;
+        }
+        
+        const currentFolder = activeFolder || (showAllFolder ? 'all' : folderIds[0]);
+        const currentIndex = folderIds.indexOf(currentFolder);
+        const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % folderIds.length : 0;
         
         setActiveFolder(folderIds[nextIndex]);
         return;
@@ -1001,6 +1096,19 @@ function Home() {
       labels: labels
     });
     console.log("newTask ID:", taskId);
+    
+    // If Today folder is active, automatically add task to today's schedule
+    if (activeFolder === 'today' && taskId) {
+      const task: Task = {
+        id: taskId,
+        name: taskName,
+        description: "",
+        completed: false,
+        labels: labels
+      };
+      await handleAddToSchedule(task);
+    }
+    
     return taskId || null;
   };
 
@@ -1029,17 +1137,14 @@ function Home() {
     setFontStyle(style);
   };
 
-  // Save activeFolder to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('tsk-active-folder', activeFolder === null ? 'null' : activeFolder);
   }, [activeFolder]);
 
-  // Save scheduleViewMode to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('tsk-schedule-view-mode', scheduleViewMode);
   }, [scheduleViewMode]);
 
-  // Save default folder toggles to localStorage
   useEffect(() => {
     localStorage.setItem('tsk-show-all-folder', showAllFolder.toString());
   }, [showAllFolder]);
@@ -1185,6 +1290,7 @@ function Home() {
               onFolderSelect={handleFolderSelect}
               showAllFolder={showAllFolder}
               showOtherFolder={showOtherFolder}
+              showTodayFolder={showTodayFolder}
               accentColor={theme.accentColor}
               isDarkMode={theme.isDarkMode}
               onOpenSettings={handleOpenFolderSettings}
@@ -1198,11 +1304,32 @@ function Home() {
             }}>
               <div className="mt-10 flex justify-center">
               <div className="w-full max-w-2xl relative">
-                {filteredTasks?.length == 0 && <div>
-                  <p className="text-lg font-bold text-center text-slate-100">No tasks yet.</p>
-                  <p className="no-task-blurb text-sm font-serif text-center text-slate-100">which is <em>totally</em> fine. its okay to do nothing. you deserve a rest day.</p>
-                  <p className="no-task-blurb text-sm font-serif text-center text-slate-100">but also, you can add a task below.</p>
-                </div>}
+                {filteredTasks?.length == 0 && (
+                  <div>
+                    {activeFolder === 'today' ? (
+                      <>
+                        <p className={`text-lg font-bold text-center ${theme.isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>
+                          No Tasks scheduled for Today
+                        </p>
+                        <p className={`no-task-blurb text-sm font-serif text-center mt-2 ${theme.isDarkMode ? 'text-slate-100' : 'text-gray-700'}`}>
+                          which is <em>totally</em> fine. its okay to do nothing. you deserve a rest day.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className={`text-lg font-bold text-center ${theme.isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>
+                          No tasks yet.
+                        </p>
+                        <p className={`no-task-blurb text-sm font-serif text-center ${theme.isDarkMode ? 'text-slate-100' : 'text-gray-700'}`}>
+                          which is <em>totally</em> fine. its okay to do nothing. you deserve a rest day.
+                        </p>
+                        <p className={`no-task-blurb text-sm font-serif text-center ${theme.isDarkMode ? 'text-slate-100' : 'text-gray-700'}`}>
+                          but also, you can add a task below.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 <div className={`flex flex-col ${viewMode === 'compact' ? 'space-y-0' : viewMode === 'cozy' ? 'space-y-1' : 'space-y-2'}`}>
                   {filteredTasks?.map((task: Task) => (
@@ -1229,6 +1356,56 @@ function Home() {
                     </div>
                   ))}
                 </div>
+
+                {/* Suggested tasks section - shown when Today folder is active */}
+                {activeFolder === 'today' && suggestedTasks.length > 0 && (
+                  <div className={`mt-8 ${filteredTasks.length > 0 ? 'pt-8' : ''}`}>
+                    <button
+                      onClick={() => setSuggestedTasksExpanded(!suggestedTasksExpanded)}
+                      className={`flex items-center gap-2 mb-4 w-full text-left ${theme.isDarkMode ? 'text-gray-300 hover:text-gray-100' : 'text-gray-700 hover:text-gray-900'} transition-colors`}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className={`h-4 w-4 transition-transform ${suggestedTasksExpanded ? 'rotate-90' : ''}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                      <span className="text-sm font-medium">Suggested</span>
+                      <span className={`text-xs ${theme.isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                        ({suggestedTasks.length})
+                      </span>
+                    </button>
+                    {suggestedTasksExpanded && (
+                      <div className={`flex flex-col ${viewMode === 'compact' ? 'space-y-0' : viewMode === 'cozy' ? 'space-y-1' : 'space-y-2'}`}>
+                        {suggestedTasks.map((task: Task) => (
+                          <div
+                            key={task.id}
+                            className="w-full"
+                            onClick={() => {
+                              handleTaskSelect(task);
+                            }}
+                          >
+                            <ListItem
+                              task={task}
+                              deleteTask={deleteTask}
+                              updateTask={updateTask}
+                              isSelected={selectedTask?.id === task.id}
+                              viewMode={viewMode}
+                              accentColor={theme.accentColor}
+                              isDarkMode={theme.isDarkMode}
+                              handleTaskSelect={handleTaskSelect}
+                              onEnterFocus={handleEnterFocus}
+                              onAddToSchedule={handleAddToSchedule}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
             </div>
@@ -1348,6 +1525,7 @@ function Home() {
           onOpenFolderSettings={handleOpenFolderSettings}
           showAllFolder={showAllFolder}
           showOtherFolder={showOtherFolder}
+          showTodayFolder={showTodayFolder}
           accentColor={theme.accentColor}
           isDarkMode={theme.isDarkMode}
           mode={islandMode}
@@ -1477,6 +1655,7 @@ function Home() {
           onOpenSettings={handleOpenFolderSettings}
           showAllFolder={showAllFolder}
           showOtherFolder={showOtherFolder}
+          showTodayFolder={showTodayFolder}
           isDarkMode={theme.isDarkMode}
           accentColor={theme.accentColor}
         />
@@ -1492,8 +1671,10 @@ function Home() {
         onDeleteFolder={handleDeleteFolder}
         showAllFolder={showAllFolder}
         showOtherFolder={showOtherFolder}
+        showTodayFolder={showTodayFolder}
         onToggleAllFolder={setShowAllFolder}
         onToggleOtherFolder={setShowOtherFolder}
+        onToggleTodayFolder={setShowTodayFolder}
         isDarkMode={theme.isDarkMode}
         accentColor={theme.accentColor}
       />
