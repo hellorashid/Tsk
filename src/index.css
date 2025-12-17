@@ -44,17 +44,11 @@ html, body {
 
 /* Remove switch styles as we're using Tailwind classes */
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-}
+/* 
+ * Note: System prefers-color-scheme rules were removed because 
+ * the app manages its own theme via isDarkMode in ThemeContext.
+ * Using system color scheme would override the user's app preference.
+ */
 
 /* Hide scrollbar for schedule sidebar */
 [data-timeline-container]::-webkit-scrollbar {

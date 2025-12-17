@@ -1027,11 +1027,11 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                           ? 'bg-white/20 text-white' 
                           : 'bg-gray-800 text-white'
                         : isDarkMode
-                          ? 'text-gray-400 hover:text-gray-100 hover:bg-white/10'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                          ? 'bg-transparent text-gray-400 hover:text-gray-100 hover:bg-white/10'
+                          : 'bg-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                       : isDarkMode
-                        ? 'text-gray-400/40 hover:text-gray-400/60'
-                        : 'text-gray-600/40 hover:text-gray-600/60'
+                        ? 'bg-transparent text-gray-400/40 hover:text-gray-400/60'
+                        : 'bg-transparent text-gray-600/40 hover:text-gray-600/60'
                   }`}
                   aria-label="Create task"
                 >
@@ -1048,11 +1048,11 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                           ? 'bg-white/20 text-white' 
                           : 'bg-gray-800 text-white'
                         : isDarkMode
-                          ? 'text-gray-400 hover:text-gray-100 hover:bg-white/10'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                          ? 'bg-transparent text-gray-400 hover:text-gray-100 hover:bg-white/10'
+                          : 'bg-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                       : isDarkMode
-                        ? 'text-gray-400/40 hover:text-gray-400/60'
-                        : 'text-gray-600/40 hover:text-gray-600/60'
+                        ? 'bg-transparent text-gray-400/40 hover:text-gray-400/60'
+                        : 'bg-transparent text-gray-600/40 hover:text-gray-600/60'
                   }`}
                   aria-label="Create event"
                 >
@@ -1088,8 +1088,8 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   </div>
                   <button
                     onClick={handleClose}
-                    className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${
-                      isDarkMode ? 'text-gray-400 hover:text-gray-100' : 'text-gray-600 hover:text-gray-900'
+                    className={`p-1.5 rounded-full bg-transparent hover:bg-white/10 transition-colors ${
+                      isDarkMode ? 'text-gray-400 hover:text-gray-100' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                     }`}
                     aria-label="Close"
                   >
@@ -1136,7 +1136,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 <div className="flex justify-start gap-2 pt-2 border-t border-white/10">
                   <button
                     onClick={handleEventDelete}
-                    className={`p-2 rounded-lg transition-colors ${
+                    className={`p-2 rounded-lg bg-transparent transition-colors ${
                       isDarkMode 
                         ? 'text-red-400 hover:bg-red-400/10' 
                         : 'text-red-600 hover:bg-red-100'
@@ -1258,7 +1258,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 <div className="flex justify-start gap-2 pt-2 border-t border-white/10">
                   <button
                     onClick={handleEventDelete}
-                    className={`p-2 rounded-lg transition-colors ${
+                    className={`p-2 rounded-lg bg-transparent transition-colors ${
                       isDarkMode 
                         ? 'text-red-400 hover:bg-red-400/10' 
                         : 'text-red-600 hover:bg-red-100'
@@ -1300,8 +1300,8 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   </div>
                   <button
                     onClick={handleClose}
-                    className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${
-                      isDarkMode ? 'text-gray-400 hover:text-gray-100' : 'text-gray-600 hover:text-gray-900'
+                    className={`p-1.5 rounded-full bg-transparent hover:bg-white/10 transition-colors ${
+                      isDarkMode ? 'text-gray-400 hover:text-gray-100' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                     }`}
                     aria-label="Close"
                   >
@@ -1352,7 +1352,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 <div className="flex justify-start gap-2 pt-2 border-t border-white/10">
                   <button
                     onClick={handleEventDelete}
-                    className={`p-2 rounded-lg transition-colors ${
+                    className={`p-2 rounded-lg bg-transparent transition-colors ${
                       isDarkMode 
                         ? 'text-red-400 hover:bg-red-400/10' 
                         : 'text-red-600 hover:bg-red-100'
@@ -1543,7 +1543,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                               {!isCompletion && (
                                 <button
                                   onClick={() => handleOpenActivityEdit(event)}
-                                  className={`p-1 rounded transition-colors ${
+                                  className={`p-1 rounded bg-transparent transition-colors ${
                                     isDarkMode 
                                       ? 'text-gray-400 hover:text-blue-400 hover:bg-blue-400/10' 
                                       : 'text-gray-500 hover:text-blue-600 hover:bg-blue-100'
@@ -1562,7 +1562,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                                     onDeleteEvent(event.id);
                                   }
                                 }}
-                                className={`p-1 rounded transition-colors ${
+                                className={`p-1 rounded bg-transparent transition-colors ${
                                   isDarkMode 
                                     ? 'text-gray-400 hover:text-red-400 hover:bg-red-400/10' 
                                     : 'text-gray-500 hover:text-red-600 hover:bg-red-100'
@@ -1687,7 +1687,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleDelete}
-                    className={`p-2 rounded-lg transition-colors ${
+                    className={`p-2 rounded-lg bg-transparent transition-colors ${
                       isDarkMode 
                         ? 'text-red-400 hover:bg-red-400/10' 
                         : 'text-red-600 hover:bg-red-100'
@@ -1824,7 +1824,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   {onEnterFocus && currentTask && (
                     <button
                       onClick={() => onEnterFocus(currentTask)}
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`p-2 rounded-lg bg-transparent transition-colors ${
                         isDarkMode 
                           ? 'text-purple-400 hover:bg-purple-400/10' 
                           : 'text-purple-600 hover:bg-purple-100'

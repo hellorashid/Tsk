@@ -296,6 +296,15 @@ const TimelineView: React.FC<TimelineViewProps> = ({
     // Combine: non-completion events + ungrouped completions
     const eventsToPosition = [...nonCompletionEvents, ...ungroupedCompletions];
 
+    // Calculate minimum height in minutes based on current zoom level
+    // Dynamic min heights: compact (28/22), medium (36/28), large (44/34)
+    const isCompactZoom = pixelsPerMinute <= 1;
+    const isMediumZoom = pixelsPerMinute > 1 && pixelsPerMinute <= 2;
+    const regularMinHeight = isCompactZoom ? 28 : isMediumZoom ? 36 : 44;
+    const completionMinHeight = isCompactZoom ? 22 : isMediumZoom ? 28 : 34;
+    const minHeightMinutes = regularMinHeight / pixelsPerMinute;
+    const completionMinHeightMinutes = completionMinHeight / pixelsPerMinute;
+
     // Convert events to positioned format with start/end in minutes
     const eventData = eventsToPosition.map(event => {
       const startDate = new Date(event.start.dateTime || '');
@@ -304,10 +313,16 @@ const TimelineView: React.FC<TimelineViewProps> = ({
       const endMinutes = endDate.getHours() * 60 + endDate.getMinutes();
       const duration = getEventDuration(event);
       
+      // Calculate visual end time accounting for minimum height
+      const isCompletionOrSun = event.type === 'task:completed' || event.type === 'sunrise' || event.type === 'sunset';
+      const minDuration = isCompletionOrSun ? completionMinHeightMinutes : minHeightMinutes;
+      const visualEndMinutes = startMinutes + Math.max(duration, minDuration);
+      
       return {
         event,
         startMinutes,
         endMinutes,
+        visualEndMinutes, // Used for overlap detection
         duration,
         column: 0,
         totalColumns: 1,
@@ -324,6 +339,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
       const endDate = new Date(baseEvent.end.dateTime || '');
       const startMinutes = startDate.getHours() * 60 + startDate.getMinutes();
       const endMinutes = endDate.getHours() * 60 + endDate.getMinutes();
+      const visualEndMinutes = startMinutes + completionMinHeightMinutes;
       
       eventData.push({
         event: {
@@ -332,6 +348,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
         },
         startMinutes,
         endMinutes,
+        visualEndMinutes,
         duration: 0,
         column: 0,
         totalColumns: 1,
@@ -348,7 +365,9 @@ const TimelineView: React.FC<TimelineViewProps> = ({
       return b.duration - a.duration;
     });
 
-    // Detect overlaps and assign columns
+    // Detect overlaps and assign columns using logical end times
+    // This ensures back-to-back events (ending/starting at same time) stack vertically
+    // Some visual overlap may occur for very short events, but that's acceptable
     const checkOverlap = (a: typeof eventData[0], b: typeof eventData[0]) => {
       return a.startMinutes < b.endMinutes && b.startMinutes < a.endMinutes;
     };
@@ -414,8 +433,77 @@ const TimelineView: React.FC<TimelineViewProps> = ({
       });
     });
 
+    // Detect back-to-back cards (where one ends exactly when another starts)
+    // Track which column positions have adjacent cards for precise corner rounding
+    // Sort by start time first
+    const sortedByStart = [...eventData].sort((a, b) => a.startMinutes - b.startMinutes);
+    
+    // For each event, find adjacent events and determine which corners should be flat
+    eventData.forEach(event => {
+      // Find all events that end exactly when this one starts (predecessors)
+      const predecessors = sortedByStart.filter(e => {
+        if (e.event.id === event.event.id) return false;
+        if (e.endMinutes !== event.startMinutes) return false;
+        return true;
+      });
+      
+      // Find all events that start exactly when this one ends (successors)
+      const successors = sortedByStart.filter(e => {
+        if (e.event.id === event.event.id) return false;
+        if (e.startMinutes !== event.endMinutes) return false;
+        return true;
+      });
+      
+      // Determine which corners should be flat based on column overlap
+      // For this event, check if predecessors cover the left/right portions
+      const eventLeftEdge = event.column / event.totalColumns;
+      const eventRightEdge = (event.column + 1) / event.totalColumns;
+      
+      let hasAdjacentTopLeft = false;
+      let hasAdjacentTopRight = false;
+      let hasAdjacentBottomLeft = false;
+      let hasAdjacentBottomRight = false;
+      
+      predecessors.forEach(pred => {
+        const predLeftEdge = pred.column / pred.totalColumns;
+        const predRightEdge = (pred.column + 1) / pred.totalColumns;
+        
+        // Check if predecessor overlaps with left portion of this event
+        if (predLeftEdge < eventLeftEdge + 0.5 && predRightEdge > eventLeftEdge) {
+          hasAdjacentTopLeft = true;
+        }
+        // Check if predecessor overlaps with right portion of this event
+        if (predLeftEdge < eventRightEdge && predRightEdge > eventRightEdge - 0.5) {
+          hasAdjacentTopRight = true;
+        }
+      });
+      
+      successors.forEach(succ => {
+        const succLeftEdge = succ.column / succ.totalColumns;
+        const succRightEdge = (succ.column + 1) / succ.totalColumns;
+        
+        // Check if successor overlaps with left portion of this event
+        if (succLeftEdge < eventLeftEdge + 0.5 && succRightEdge > eventLeftEdge) {
+          hasAdjacentBottomLeft = true;
+        }
+        // Check if successor overlaps with right portion of this event
+        if (succLeftEdge < eventRightEdge && succRightEdge > eventRightEdge - 0.5) {
+          hasAdjacentBottomRight = true;
+        }
+      });
+      
+      (event as any).hasAdjacentAbove = hasAdjacentTopLeft || hasAdjacentTopRight;
+      (event as any).hasAdjacentBelow = hasAdjacentBottomLeft || hasAdjacentBottomRight;
+      (event as any).adjacentCorners = {
+        topLeft: hasAdjacentTopLeft,
+        topRight: hasAdjacentTopRight,
+        bottomLeft: hasAdjacentBottomLeft,
+        bottomRight: hasAdjacentBottomRight,
+      };
+    });
+
     return eventData;
-  }, [events]);
+  }, [events, pixelsPerMinute]);
 
   // Check if viewing today
   const isToday = selectedDate.toDateString() === new Date().toDateString();
@@ -715,7 +803,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
         <button
           onClick={handleZoomOut}
           disabled={zoomIndex === 0}
-          className={`p-1.5 rounded-md transition-colors ${
+          className={`p-1.5 rounded-md bg-transparent transition-colors ${
             zoomIndex === 0
               ? 'opacity-30 cursor-not-allowed'
               : isDarkMode
@@ -732,7 +820,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
         <button
           onClick={handleZoomIn}
           disabled={zoomIndex === ZOOM_LEVELS.length - 1}
-          className={`p-1.5 rounded-md transition-colors ${
+          className={`p-1.5 rounded-md bg-transparent transition-colors ${
             zoomIndex === ZOOM_LEVELS.length - 1
               ? 'opacity-30 cursor-not-allowed'
               : isDarkMode
@@ -1003,7 +1091,11 @@ const TimelineView: React.FC<TimelineViewProps> = ({
               </div>
             ) : (
               <div className="relative" data-timeline-content style={{ minHeight: `${timelineHeight}px` }}>
-                {positionedEvents.map(({ event, startMinutes, duration, column, totalColumns, hasCompletionMerged, mergedCompletionEvents }) => {
+                {positionedEvents.map((posEvent) => {
+                  const { event, startMinutes, duration, column, totalColumns, hasCompletionMerged, mergedCompletionEvents } = posEvent;
+                  const hasAdjacentAbove = (posEvent as any).hasAdjacentAbove || false;
+                  const hasAdjacentBelow = (posEvent as any).hasAdjacentBelow || false;
+                  const adjacentCorners = (posEvent as any).adjacentCorners || { topLeft: false, topRight: false, bottomLeft: false, bottomRight: false };
                   return (
                     <TimelineEventCard
                       key={event.id}
@@ -1024,6 +1116,9 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                       folders={folders}
                       hasCompletionMerged={hasCompletionMerged}
                       mergedCompletionEvents={mergedCompletionEvents}
+                      hasAdjacentAbove={hasAdjacentAbove}
+                      hasAdjacentBelow={hasAdjacentBelow}
+                      adjacentCorners={adjacentCorners}
                     />
                   );
                 })}
@@ -1055,6 +1150,14 @@ interface TimelineEventCardProps {
   folders?: any[];
   hasCompletionMerged?: boolean;
   mergedCompletionEvents?: ScheduleCardData[] | null;
+  hasAdjacentAbove?: boolean;
+  hasAdjacentBelow?: boolean;
+  adjacentCorners?: {
+    topLeft: boolean;
+    topRight: boolean;
+    bottomLeft: boolean;
+    bottomRight: boolean;
+  };
 }
 
 const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
@@ -1074,7 +1177,10 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
   isDarkMode,
   folders,
   hasCompletionMerged = false,
-  mergedCompletionEvents = null
+  mergedCompletionEvents = null,
+  hasAdjacentAbove = false,
+  hasAdjacentBelow = false,
+  adjacentCorners = { topLeft: false, topRight: false, bottomLeft: false, bottomRight: false }
 }) => {
   const { db } = useBasic();
   
@@ -1154,22 +1260,32 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
   const hiddenCount = mergedCompletionEvents ? Math.max(0, mergedCompletionEvents.length - MAX_VISIBLE_ITEMS) : 0;
 
   // Apply drag offset if this event is being dragged
+  // Slightly overlap back-to-back cards to close the gap (1px overlap)
+  const adjacentOverlap = hasAdjacentAbove ? 1 : 0;
   const effectiveTopPosition = isDraggingThis 
     ? (startMinutes + draggedEventOffset - timeRange.startMinutes) * pixelsPerMinute
-    : (startMinutes - timeRange.startMinutes) * pixelsPerMinute;
+    : (startMinutes - timeRange.startMinutes) * pixelsPerMinute - adjacentOverlap;
   
   // Calculate card height - expand on hover/tap for merged completions
-  const baseCardHeight = (isCompletionEvent || isSunEvent) ? 28 : duration * pixelsPerMinute;
+  const baseCardHeight = (isCompletionEvent || isSunEvent) ? 22 : duration * pixelsPerMinute;
   const itemCount = Math.min(mergedCompletionEvents?.length || 0, MAX_VISIBLE_ITEMS);
   const hasMoreItems = hiddenCount > 0;
   const expandedHeight = isMergedCompletion && isExpanded && mergedCompletionEvents
-    ? 28 + (itemCount * 26) + (hasMoreItems ? 24 : 0) + 12 // Base + visible items + "more" row + padding
+    ? 22 + (itemCount * 22) + (hasMoreItems ? 18 : 0) + 6 // Base + visible items + "more" row + padding
     : baseCardHeight;
   const cardHeight = expandedHeight;
   
   // Calculate width and left offset for overlapping events
   const cardWidthPercent = totalColumns > 1 ? 100 / totalColumns : 100;
   const leftOffsetPercent = column * cardWidthPercent;
+  
+  // Determine if this card is in the rightmost column
+  const isRightmostColumn = column === totalColumns - 1;
+  // For connected cards in rightmost column, extend to full width (no right gap)
+  const isConnected = hasAdjacentAbove || hasAdjacentBelow;
+  const rightGap = (totalColumns > 1 && !(isRightmostColumn && isConnected)) ? 4 : 0;
+  // Left gap to separate columns (only for non-first columns)
+  const leftGap = (totalColumns > 1 && column > 0) ? 4 : 0;
 
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1185,6 +1301,29 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
   
   // Completion and sun events are read-only, shouldn't be dragged
   const isDraggable = !isCompletionEvent && !isSunEvent;
+  
+  // Dynamic sizing based on zoom level (pixelsPerMinute)
+  // Zoom levels: 1 (60px/hr), 1.5 (90px/hr), 2 (120px/hr), 3 (180px/hr)
+  const zoomScale = pixelsPerMinute; // 1, 1.5, 2, or 3
+  const isCompact = zoomScale <= 1;
+  const isMedium = zoomScale > 1 && zoomScale <= 2;
+  const isLarge = zoomScale > 2;
+  
+  // Dynamic padding classes
+  const paddingClass = isCompact ? 'py-1 px-2' : isMedium ? 'py-1.5 px-2.5' : 'py-2 px-3';
+  
+  // Dynamic text sizes
+  const titleTextSize = isCompact ? 'text-xs' : isMedium ? 'text-sm' : 'text-base';
+  const durationTextSize = isCompact ? 'text-[10px]' : isMedium ? 'text-xs' : 'text-sm';
+  const descriptionTextSize = isCompact ? 'text-[10px]' : isMedium ? 'text-xs' : 'text-sm';
+  
+  // Dynamic icon sizes
+  const checkboxSize = isCompact ? 'sm' : isMedium ? 'sm' : 'md';
+  const iconSize = isCompact ? 'w-3 h-3' : isMedium ? 'w-3.5 h-3.5' : 'w-4 h-4';
+  
+  // Dynamic min heights based on zoom
+  const dynamicMinHeight = isCompact ? 28 : isMedium ? 36 : 44;
+  const completionMinHeight = isCompact ? 22 : isMedium ? 28 : 34;
 
   // Handle click - for merged completions, toggle expand on tap (mobile)
   const handleCardClick = () => {
@@ -1213,12 +1352,15 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
         }
       }}
       data-event-card
-      className={`absolute rounded-md ${
+      className={`absolute ${
         isSunEvent
           ? 'cursor-default border-0'
           : (isCompletionEvent
             ? 'cursor-pointer border' 
             : 'cursor-move border')
+      } ${
+        // Remove top border if there's an adjacent card above
+        hasAdjacentAbove && !isSunEvent ? 'border-t-0' : ''
       } ${
         isDraggingThis ? 'opacity-70 shadow-lg z-50' : ''
       } ${
@@ -1230,13 +1372,18 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
             ? 'bg-opacity-90 border-gray-300/30 hover:border-gray-400/40'
             : ''
       } ${
-        (isCompletionEvent || isSunEvent) ? 'py-1 px-2' : 'p-2'
+        paddingClass
       }`}
       style={{
         top: `${effectiveTopPosition}px`,
-        left: `${leftOffsetPercent}%`,
-        width: `calc(${cardWidthPercent}% - ${totalColumns > 1 ? '4px' : '0px'})`,
+        left: `calc(${leftOffsetPercent}% + ${leftGap}px)`,
+        width: `calc(${cardWidthPercent}% - ${leftGap + rightGap}px)`,
         height: `${cardHeight}px`,
+        // Individual corner border-radius based on adjacentCorners
+        borderTopLeftRadius: adjacentCorners.topLeft ? 0 : 6,
+        borderTopRightRadius: adjacentCorners.topRight ? 0 : 6,
+        borderBottomLeftRadius: adjacentCorners.bottomLeft ? 0 : 6,
+        borderBottomRightRadius: adjacentCorners.bottomRight ? 0 : 6,
         background: isSunEvent 
           ? `linear-gradient(to right, transparent, ${event.color} 20%, ${event.color} 80%, transparent)`
           : isExpanded && isMergedCompletion
@@ -1248,7 +1395,7 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
         WebkitBackdropFilter: isExpanded && isMergedCompletion ? 'blur(12px)' : undefined,
         backgroundBlendMode: folderColor && !isSunEvent && !isCompletionEvent ? 'normal, screen' : undefined,
         borderLeft: folderColor && !isSunEvent && !isCompletionEvent ? `3px solid ${folderColor}` : undefined,
-        minHeight: (isCompletionEvent || isSunEvent) ? '28px' : '40px',
+        minHeight: `${(isCompletionEvent || isSunEvent) ? completionMinHeight : dynamicMinHeight}px`,
         transition: isDraggingThis ? 'none' : 'top 0.2s ease-out, height 0.15s ease-out, background 0.15s ease-out',
       }}
     >
@@ -1280,7 +1427,7 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
               <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <span className={`text-xs font-medium truncate ${
+              <span className={`${titleTextSize} font-medium truncate ${
                 isDarkMode ? 'text-white/80' : 'text-gray-800'
               }`}>
                 {isMergedCompletion && mergedCompletionEvents ? `${mergedCompletionEvents.length} tasks completed` : `${displayTitle} - completed`}
@@ -1324,9 +1471,9 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
             )}
           </div>
         ) : (
-          // Regular card layout
-          <div className="flex flex-col w-full h-full">
-            <div className="flex items-start gap-2">
+          // Regular card layout - use items-center for vertical centering
+          <div className="flex flex-col justify-center w-full h-full">
+            <div className="flex items-center gap-2">
               {event.type === 'task' && (
                 <div onClick={handleCheckboxClick}>
                   <Checkbox
@@ -1342,14 +1489,14 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
               <div className="flex flex-col gap-1 flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <div 
-                    className={`text-sm font-medium truncate ${
+                    className={`${titleTextSize} font-medium truncate ${
                       isCompleted ? 'line-through opacity-60' : ''
                     } ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
                   >
                     {displayTitle}
                   </div>
                   {duration > 0 && (
-                    <span className={`text-xs flex-shrink-0 ${
+                    <span className={`${durationTextSize} flex-shrink-0 ${
                       isDarkMode ? 'text-gray-500' : 'text-gray-600'
                     }`}>
                       ({Math.round(duration)}m)
@@ -1357,7 +1504,7 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
                   )}
                 </div>
                 {event.description && cardHeight > 60 && (
-                  <div className={`text-xs line-clamp-2 ${
+                  <div className={`${descriptionTextSize} line-clamp-2 ${
                     isDarkMode ? 'text-white/70' : 'text-gray-700'
                   }`}>
                     {event.description}

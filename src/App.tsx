@@ -77,7 +77,7 @@ function ExpandableInput() {
           placeholder="I want to..."
           className={`
             w-full p-3 rounded-lg
-            bg-white dark:bg-gray-800
+            bg-gray-800
             
             focus:outline-none focus:ring-2 focus:ring-blue-500
             transition-all duration-300 ease-in-out
@@ -89,7 +89,7 @@ function ExpandableInput() {
         <div
           className={`
             absolute bottom-0 left-0 right-0
-            bg-white dark:bg-gray-800 border-t
+            bg-gray-800 border-t
             transition-opacity duration-300 ease-in-out
             ${isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}
           `}

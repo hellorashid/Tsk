@@ -470,7 +470,7 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1">
             <button
               onClick={goToPreviousDay}
-              className={`p-1.5 rounded-md transition-colors ${
+              className={`p-1.5 rounded-md bg-transparent transition-colors ${
                 isDarkMode 
                   ? 'hover:bg-white/10 text-gray-300' 
                   : 'hover:bg-gray-200 text-gray-700'
@@ -483,7 +483,7 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
             </button>
             <button
               onClick={goToToday}
-              className={`p-1.5 rounded-md transition-colors ${
+              className={`p-1.5 rounded-md bg-transparent transition-colors ${
                 isDarkMode 
                   ? 'hover:bg-white/10 text-gray-300' 
                   : 'hover:bg-gray-200 text-gray-700'
@@ -496,7 +496,7 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
             </button>
             <button
               onClick={goToNextDay}
-              className={`p-1.5 rounded-md transition-colors ${
+              className={`p-1.5 rounded-md bg-transparent transition-colors ${
                 isDarkMode 
                   ? 'hover:bg-white/10 text-gray-300' 
                   : 'hover:bg-gray-200 text-gray-700'
@@ -522,8 +522,8 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
                       ? 'bg-white/20 text-white'
                       : 'bg-white text-gray-900 shadow-sm'
                     : isDarkMode
-                      ? 'text-gray-400 hover:text-gray-200'
-                      : 'text-gray-500 hover:text-gray-800'
+                      ? 'bg-transparent text-gray-400 hover:text-gray-200'
+                      : 'bg-transparent text-gray-500 hover:text-gray-800'
                 }`}
                 aria-label="Timeline view"
                 title="Timeline view"
@@ -540,8 +540,8 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
                       ? 'bg-white/20 text-white'
                       : 'bg-white text-gray-900 shadow-sm'
                     : isDarkMode
-                      ? 'text-gray-400 hover:text-gray-200'
-                      : 'text-gray-500 hover:text-gray-800'
+                      ? 'bg-transparent text-gray-400 hover:text-gray-200'
+                      : 'bg-transparent text-gray-500 hover:text-gray-800'
                 }`}
                 aria-label="Agenda view"
                 title="Agenda view"
