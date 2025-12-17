@@ -198,8 +198,106 @@ const TimelineView: React.FC<TimelineViewProps> = ({
   const positionedEvents = useMemo(() => {
     if (events.length === 0) return [];
 
+    // First, merge completion events that occur within 1 hour of a scheduled task event for the same task
+    const taskEvents = events.filter(e => e.type === 'task' && e.taskId);
+    const completionEvents = events.filter(e => e.type === 'task:completed' && e.taskId);
+    const completionEventIdsToMerge = new Set<string>();
+    
+    // Track which task events have merged completions
+    const taskEventsWithCompletion = new Map<string, boolean>();
+    
+    const ONE_HOUR_IN_MINUTES = 60;
+    
+    completionEvents.forEach(completionEvent => {
+      if (!completionEvent.start.dateTime) return;
+      
+      const completionTime = new Date(completionEvent.start.dateTime);
+      const completionMinutes = completionTime.getHours() * 60 + completionTime.getMinutes();
+      
+      // Find a task event that is within 1 hour of this completion
+      const nearbyTaskEvent = taskEvents.find(taskEvent => {
+        if (taskEvent.taskId !== completionEvent.taskId) return false;
+        if (!taskEvent.start.dateTime || !taskEvent.end.dateTime) return false;
+        
+        const taskStart = new Date(taskEvent.start.dateTime);
+        const taskEnd = new Date(taskEvent.end.dateTime);
+        const taskStartMinutes = taskStart.getHours() * 60 + taskStart.getMinutes();
+        const taskEndMinutes = taskEnd.getHours() * 60 + taskEnd.getMinutes();
+        
+        // Check if completion is within 1 hour of the task event
+        // Either during the event, or within 1 hour before/after
+        const isWithinEvent = completionMinutes >= taskStartMinutes && completionMinutes <= taskEndMinutes;
+        const isWithinHourBefore = completionMinutes >= (taskStartMinutes - ONE_HOUR_IN_MINUTES) && completionMinutes < taskStartMinutes;
+        const isWithinHourAfter = completionMinutes > taskEndMinutes && completionMinutes <= (taskEndMinutes + ONE_HOUR_IN_MINUTES);
+        
+        return isWithinEvent || isWithinHourBefore || isWithinHourAfter;
+      });
+      
+      if (nearbyTaskEvent) {
+        // Mark this completion event to be merged (not rendered separately)
+        completionEventIdsToMerge.add(completionEvent.id);
+        // Mark the task event as having a completion
+        taskEventsWithCompletion.set(nearbyTaskEvent.id, true);
+      }
+    });
+    
+    // Filter out merged completion events
+    const filteredEvents = events.filter(e => !completionEventIdsToMerge.has(e.id));
+    
+    // Group remaining completion events that are close together (within 15 minutes)
+    const COMPLETION_GROUP_THRESHOLD_MINUTES = 15;
+    const remainingCompletions = filteredEvents.filter(e => e.type === 'task:completed');
+    const nonCompletionEvents = filteredEvents.filter(e => e.type !== 'task:completed');
+    
+    // Sort completions by time
+    const sortedCompletions = [...remainingCompletions].sort((a, b) => {
+      const aTime = new Date(a.start.dateTime || '').getTime();
+      const bTime = new Date(b.start.dateTime || '').getTime();
+      return aTime - bTime;
+    });
+    
+    // Group nearby completions
+    type CompletionGroup = {
+      events: ScheduleCardData[];
+      startMinutes: number;
+    };
+    const completionGroups: CompletionGroup[] = [];
+    const groupedCompletionIds = new Set<string>();
+    
+    sortedCompletions.forEach(completion => {
+      if (groupedCompletionIds.has(completion.id)) return;
+      
+      const completionTime = new Date(completion.start.dateTime || '');
+      const completionMinutes = completionTime.getHours() * 60 + completionTime.getMinutes();
+      
+      // Find other completions within threshold
+      const nearbyCompletions = sortedCompletions.filter(other => {
+        if (other.id === completion.id || groupedCompletionIds.has(other.id)) return false;
+        const otherTime = new Date(other.start.dateTime || '');
+        const otherMinutes = otherTime.getHours() * 60 + otherTime.getMinutes();
+        return Math.abs(otherMinutes - completionMinutes) <= COMPLETION_GROUP_THRESHOLD_MINUTES;
+      });
+      
+      if (nearbyCompletions.length > 0) {
+        // Create a group
+        const allInGroup = [completion, ...nearbyCompletions];
+        allInGroup.forEach(e => groupedCompletionIds.add(e.id));
+        
+        completionGroups.push({
+          events: allInGroup,
+          startMinutes: completionMinutes,
+        });
+      }
+    });
+    
+    // Get ungrouped completions (those not in any group)
+    const ungroupedCompletions = remainingCompletions.filter(e => !groupedCompletionIds.has(e.id));
+    
+    // Combine: non-completion events + ungrouped completions
+    const eventsToPosition = [...nonCompletionEvents, ...ungroupedCompletions];
+
     // Convert events to positioned format with start/end in minutes
-    const eventData = events.map(event => {
+    const eventData = eventsToPosition.map(event => {
       const startDate = new Date(event.start.dateTime || '');
       const endDate = new Date(event.end.dateTime || '');
       const startMinutes = startDate.getHours() * 60 + startDate.getMinutes();
@@ -213,7 +311,33 @@ const TimelineView: React.FC<TimelineViewProps> = ({
         duration,
         column: 0,
         totalColumns: 1,
+        hasCompletionMerged: taskEventsWithCompletion.get(event.id) || false,
+        mergedCompletionEvents: null as ScheduleCardData[] | null,
       };
+    });
+    
+    // Add grouped completions as single cards
+    completionGroups.forEach(group => {
+      // Use the first event as the base, but mark it as a group
+      const baseEvent = group.events[0];
+      const startDate = new Date(baseEvent.start.dateTime || '');
+      const endDate = new Date(baseEvent.end.dateTime || '');
+      const startMinutes = startDate.getHours() * 60 + startDate.getMinutes();
+      const endMinutes = endDate.getHours() * 60 + endDate.getMinutes();
+      
+      eventData.push({
+        event: {
+          ...baseEvent,
+          title: `${group.events.length} tasks completed`,
+        },
+        startMinutes,
+        endMinutes,
+        duration: 0,
+        column: 0,
+        totalColumns: 1,
+        hasCompletionMerged: false,
+        mergedCompletionEvents: group.events,
+      });
     });
 
     // Sort by start time, then by duration (longer events first)
@@ -879,7 +1003,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
               </div>
             ) : (
               <div className="relative" data-timeline-content style={{ minHeight: `${timelineHeight}px` }}>
-                {positionedEvents.map(({ event, startMinutes, duration, column, totalColumns }) => {
+                {positionedEvents.map(({ event, startMinutes, duration, column, totalColumns, hasCompletionMerged, mergedCompletionEvents }) => {
                   return (
                     <TimelineEventCard
                       key={event.id}
@@ -898,6 +1022,8 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                       accentColor={accentColor}
                       isDarkMode={isDarkMode}
                       folders={folders}
+                      hasCompletionMerged={hasCompletionMerged}
+                      mergedCompletionEvents={mergedCompletionEvents}
                     />
                   );
                 })}
@@ -927,6 +1053,8 @@ interface TimelineEventCardProps {
   accentColor?: string;
   isDarkMode: boolean;
   folders?: any[];
+  hasCompletionMerged?: boolean;
+  mergedCompletionEvents?: ScheduleCardData[] | null;
 }
 
 const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
@@ -944,7 +1072,9 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
   onTaskToggle,
   accentColor = '#1F1B2F',
   isDarkMode,
-  folders
+  folders,
+  hasCompletionMerged = false,
+  mergedCompletionEvents = null
 }) => {
   const { db } = useBasic();
   
@@ -987,14 +1117,55 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
   
   // Check if this is a sunrise/sunset event
   const isSunEvent = event.type === 'sunrise' || event.type === 'sunset';
+  
+  // Check if this is a merged completion group
+  const isMergedCompletion = isCompletionEvent && mergedCompletionEvents && mergedCompletionEvents.length > 1;
+  
+  // Hover/expanded state for merged completions (supports both hover and tap)
+  const [isHovered, setIsHovered] = useState(false);
+  const [isTapExpanded, setIsTapExpanded] = useState(false);
+  const isExpanded = isHovered || isTapExpanded;
+  const cardRef = useRef<HTMLDivElement>(null);
+  
+  // Click-away handler to collapse tap-expanded cards
+  useEffect(() => {
+    if (!isTapExpanded) return;
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
+        setIsTapExpanded(false);
+      }
+    };
+    
+    // Use setTimeout to avoid immediate trigger from the expanding click
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+    }, 0);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isTapExpanded]);
+  
+  // Max items to show in expanded view before truncating
+  const MAX_VISIBLE_ITEMS = 5;
+  const visibleCompletionEvents = mergedCompletionEvents?.slice(0, MAX_VISIBLE_ITEMS) || [];
+  const hiddenCount = mergedCompletionEvents ? Math.max(0, mergedCompletionEvents.length - MAX_VISIBLE_ITEMS) : 0;
 
   // Apply drag offset if this event is being dragged
   const effectiveTopPosition = isDraggingThis 
     ? (startMinutes + draggedEventOffset - timeRange.startMinutes) * pixelsPerMinute
     : (startMinutes - timeRange.startMinutes) * pixelsPerMinute;
   
-  // Completion and sun event cards have fixed small height, regular cards use calculated height
-  const cardHeight = (isCompletionEvent || isSunEvent) ? 28 : duration * pixelsPerMinute;
+  // Calculate card height - expand on hover/tap for merged completions
+  const baseCardHeight = (isCompletionEvent || isSunEvent) ? 28 : duration * pixelsPerMinute;
+  const itemCount = Math.min(mergedCompletionEvents?.length || 0, MAX_VISIBLE_ITEMS);
+  const hasMoreItems = hiddenCount > 0;
+  const expandedHeight = isMergedCompletion && isExpanded && mergedCompletionEvents
+    ? 28 + (itemCount * 26) + (hasMoreItems ? 24 : 0) + 12 // Base + visible items + "more" row + padding
+    : baseCardHeight;
+  const cardHeight = expandedHeight;
   
   // Calculate width and left offset for overlapping events
   const cardWidthPercent = totalColumns > 1 ? 100 / totalColumns : 100;
@@ -1015,20 +1186,43 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
   // Completion and sun events are read-only, shouldn't be dragged
   const isDraggable = !isCompletionEvent && !isSunEvent;
 
+  // Handle click - for merged completions, toggle expand on tap (mobile)
+  const handleCardClick = () => {
+    if (isDraggingThis || isSunEvent) return;
+    
+    if (isMergedCompletion) {
+      // Toggle expand for merged completions (mobile tap support)
+      setIsTapExpanded(!isTapExpanded);
+    } else {
+      // Regular click behavior - open dynamic island
+      onCardClick?.(event);
+    }
+  };
+
   return (
     <div
+      ref={cardRef}
       key={event.id}
-      onClick={() => !isDraggingThis && !isSunEvent && onCardClick?.(event)}
+      onClick={handleCardClick}
       onMouseDown={(e) => isDraggable ? onEventMouseDown(e, event, startMinutes, duration) : undefined}
+      onMouseEnter={() => isMergedCompletion && setIsHovered(true)}
+      onMouseLeave={() => {
+        if (isMergedCompletion) {
+          setIsHovered(false);
+          // Don't reset tap expanded on mouse leave - only reset when clicking elsewhere
+        }
+      }}
       data-event-card
-      className={`absolute rounded-md transition-opacity ${
+      className={`absolute rounded-md ${
         isSunEvent
           ? 'cursor-default border-0'
           : (isCompletionEvent
-            ? 'cursor-default border' 
+            ? 'cursor-pointer border' 
             : 'cursor-move border')
       } ${
         isDraggingThis ? 'opacity-70 shadow-lg z-50' : ''
+      } ${
+        isExpanded && isMergedCompletion ? 'z-40 shadow-lg' : ''
       } ${
         isDarkMode && !isSunEvent
           ? 'bg-opacity-90 border-white/10 hover:border-white/20' 
@@ -1045,13 +1239,17 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
         height: `${cardHeight}px`,
         background: isSunEvent 
           ? `linear-gradient(to right, transparent, ${event.color} 20%, ${event.color} 80%, transparent)`
-          : folderColor && !isSunEvent && !isCompletionEvent
-            ? `linear-gradient(to right, ${event.color}, ${event.color}), linear-gradient(to right, ${folderColor}20, ${folderColor}00)`
-            : event.color,
+          : isExpanded && isMergedCompletion
+            ? isDarkMode ? 'rgba(30, 30, 40, 0.95)' : 'rgba(255, 255, 255, 0.95)'
+            : folderColor && !isSunEvent && !isCompletionEvent
+              ? `linear-gradient(to right, ${event.color}, ${event.color}), linear-gradient(to right, ${folderColor}20, ${folderColor}00)`
+              : event.color,
+        backdropFilter: isExpanded && isMergedCompletion ? 'blur(12px)' : undefined,
+        WebkitBackdropFilter: isExpanded && isMergedCompletion ? 'blur(12px)' : undefined,
         backgroundBlendMode: folderColor && !isSunEvent && !isCompletionEvent ? 'normal, screen' : undefined,
         borderLeft: folderColor && !isSunEvent && !isCompletionEvent ? `3px solid ${folderColor}` : undefined,
         minHeight: (isCompletionEvent || isSunEvent) ? '28px' : '40px',
-        transition: isDraggingThis ? 'none' : 'top 0.2s ease-out',
+        transition: isDraggingThis ? 'none' : 'top 0.2s ease-out, height 0.15s ease-out, background 0.15s ease-out',
       }}
     >
       <div className="h-full flex items-center overflow-hidden">
@@ -1075,16 +1273,55 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
             </span>
           </div>
         ) : isCompletionEvent ? (
-          // Compact completion card layout
-          <div className="flex items-center gap-2 w-full">
-            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            <span className={`text-xs font-medium truncate ${
-              isDarkMode ? 'text-white/80' : 'text-gray-800'
-            }`}>
-              {displayTitle} - completed
-            </span>
+          // Compact completion card layout - expands on hover for merged completions
+          <div className="flex flex-col w-full h-full overflow-hidden">
+            {/* Header row */}
+            <div className="flex items-center gap-2 w-full flex-shrink-0">
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span className={`text-xs font-medium truncate ${
+                isDarkMode ? 'text-white/80' : 'text-gray-800'
+              }`}>
+                {isMergedCompletion && mergedCompletionEvents ? `${mergedCompletionEvents.length} tasks completed` : `${displayTitle} - completed`}
+              </span>
+            </div>
+            
+            {/* Expanded list of completed tasks - clickable */}
+            {isMergedCompletion && isExpanded && mergedCompletionEvents && (
+              <div className="mt-2 space-y-1 overflow-hidden">
+                {visibleCompletionEvents.map((completionEvent) => (
+                  <button 
+                    key={completionEvent.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onCardClick?.(completionEvent);
+                    }}
+                    className={`flex items-center gap-2 text-xs w-full text-left px-2 py-1 rounded transition-colors ${
+                      isDarkMode 
+                        ? 'text-white/80 hover:bg-white/10 active:bg-white/20' 
+                        : 'text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                    }`}
+                  >
+                    <svg className="w-3 h-3 flex-shrink-0 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    <span className="truncate flex-1">{completionEvent.title}</span>
+                    <svg className={`w-3 h-3 flex-shrink-0 opacity-40`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                ))}
+                {/* Show "and X more" if there are hidden items */}
+                {hiddenCount > 0 && (
+                  <div className={`text-xs px-2 py-1 ${
+                    isDarkMode ? 'text-white/50' : 'text-gray-500'
+                  }`}>
+                    and {hiddenCount} more...
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           // Regular card layout

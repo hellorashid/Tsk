@@ -267,26 +267,67 @@ function Home() {
     setSelectedEvent(null);
     setDrawerOpen(false);
     
-    // Create a focus session event
     const now = new Date();
-    const sessionEvent = {
-      title: `${task.name} (focus session)`,
-      start: {
-        dateTime: now.toISOString(),
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-      },
-      end: {
-        dateTime: now.toISOString(), // Will be updated when session ends
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-      },
-      color: 'rgba(148, 163, 184, 0.08)',
-      type: 'task' as const,
-      taskId: task.id,
-      description: 'Focus session'
-    };
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(now);
+    todayEnd.setHours(23, 59, 59, 999);
     
-    const eventId = await db.collection("schedule").add(sessionEvent);
-    setFocusSessionEventId(eventId);
+    // Check if there's an existing schedule item for this task today that hasn't ended yet
+    const existingTodayEvent = scheduleEvents?.find((event: ScheduleCardData) => {
+      if (event.type !== 'task' || event.taskId !== task.id) return false;
+      if (!event.start.dateTime) return false;
+      
+      const eventStart = new Date(event.start.dateTime);
+      const eventEnd = event.end.dateTime ? new Date(event.end.dateTime) : eventStart;
+      
+      // Check if event is scheduled for today
+      const isScheduledForToday = eventStart >= todayStart && eventStart <= todayEnd;
+      if (!isScheduledForToday) return false;
+      
+      // Check if event hasn't ended yet (upcoming, current, or in the middle of it)
+      // This covers: not started yet, currently happening, or any time before the scheduled end
+      const hasNotEndedYet = eventEnd >= now;
+      
+      return hasNotEndedYet;
+    });
+    
+    if (existingTodayEvent) {
+      // Update existing schedule item to start now
+      await db.collection("schedule").update(existingTodayEvent.id, {
+        title: `${task.name} (focus session)`,
+        start: {
+          dateTime: now.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        end: {
+          dateTime: now.toISOString(), // Will be updated when session ends
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        description: 'Focus session'
+      });
+      setFocusSessionEventId(existingTodayEvent.id);
+    } else {
+      // Create a new focus session event
+      const sessionEvent = {
+        title: `${task.name} (focus session)`,
+        start: {
+          dateTime: now.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        end: {
+          dateTime: now.toISOString(), // Will be updated when session ends
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        color: 'rgba(148, 163, 184, 0.08)',
+        type: 'task' as const,
+        taskId: task.id,
+        description: 'Focus session'
+      };
+      
+      const eventId = await db.collection("schedule").add(sessionEvent);
+      setFocusSessionEventId(eventId);
+    }
   };
 
   const handleExitFocus = async () => {

@@ -401,9 +401,47 @@ export const TaskModal = ({
         </div>
 
         {/* Schedule Section - moved below title */}
-        {!isNew && scheduledEvents && scheduledEvents.length > 0 && (
+        {!isNew && scheduledEvents && scheduledEvents.length > 0 && (() => {
+          // Calculate total duration across all activities
+          const totalDurationMinutes = scheduledEvents.reduce((total: number, event: ScheduleCardData) => {
+            if (!event.start.dateTime || !event.end.dateTime) return total;
+            const start = new Date(event.start.dateTime);
+            const end = new Date(event.end.dateTime);
+            const durationMs = end.getTime() - start.getTime();
+            return total + Math.max(0, durationMs / (1000 * 60));
+          }, 0);
+          
+          // Format duration helper
+          const formatDuration = (minutes: number): string => {
+            if (minutes < 60) return `${Math.round(minutes)}m`;
+            const hours = Math.floor(minutes / 60);
+            const mins = Math.round(minutes % 60);
+            return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+          };
+          
+          return (
           <div className={`flex flex-col gap-2 ${inDrawer ? 'mb-4' : 'mt-4'}`}>
-            {scheduledEvents.map((event) => (
+            {/* Activity header with total duration */}
+            <div className="flex items-center justify-between px-1">
+              <span className={`text-xs font-semibold uppercase tracking-wider ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                Activity
+              </span>
+              {totalDurationMinutes > 0 && (
+                <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Total: {formatDuration(totalDurationMinutes)}
+                </span>
+              )}
+            </div>
+            {scheduledEvents.map((event) => {
+              // Calculate duration for this event
+              let eventDurationMinutes = 0;
+              if (event.start.dateTime && event.end.dateTime) {
+                const start = new Date(event.start.dateTime);
+                const end = new Date(event.end.dateTime);
+                eventDurationMinutes = Math.max(0, (end.getTime() - start.getTime()) / (1000 * 60));
+              }
+              
+              return (
                 <div 
                   key={event.id} 
                   onClick={(e) => e.stopPropagation()}
@@ -542,6 +580,13 @@ export const TaskModal = ({
                       </div>
                     )}
                     
+                    {/* Duration */}
+                    {eventDurationMinutes > 0 && (
+                      <span className={`text-xs flex-shrink-0 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                        ({formatDuration(eventDurationMinutes)})
+                      </span>
+                    )}
+                    
                     {/* Delete Button */}
                     <button
                       onClick={(e) => {
@@ -560,9 +605,11 @@ export const TaskModal = ({
                       </svg>
                     </button>
                   </div>
-            ))}
+              );
+            })}
           </div>
-        )}
+          );
+        })()}
 
         {/* Add to Today button - full width, same height as schedule cards */}
         {!isNew && (!scheduledEvents || scheduledEvents.length === 0) && (

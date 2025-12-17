@@ -76,6 +76,12 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   const [eventEndTime, setEventEndTime] = useState('');
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
+  
+  // Activity editing state
+  const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
+  const [editActivityDate, setEditActivityDate] = useState('');
+  const [editActivityStartTime, setEditActivityStartTime] = useState('');
+  const [editActivityEndTime, setEditActivityEndTime] = useState('');
   // Internal creationMode is replaced by the controlled 'mode' prop
   // const [creationMode, setCreationMode] = useState<'task' | 'event'>('task');
   
@@ -820,6 +826,69 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
     }
   };
 
+  // Activity editing handlers
+  const handleOpenActivityEdit = (event: ScheduleCardData) => {
+    const startDate = event.start.dateTime ? new Date(event.start.dateTime) : new Date();
+    const endDate = event.end.dateTime ? new Date(event.end.dateTime) : startDate;
+    
+    // Format date as YYYY-MM-DD
+    const dateStr = startDate.toISOString().split('T')[0];
+    
+    // Format times as HH:MM
+    const startTimeStr = startDate.toTimeString().slice(0, 5);
+    const endTimeStr = endDate.toTimeString().slice(0, 5);
+    
+    setEditingActivityId(event.id);
+    setEditActivityDate(dateStr);
+    setEditActivityStartTime(startTimeStr);
+    setEditActivityEndTime(endTimeStr);
+  };
+
+  // Error state for activity editing validation
+  const [activityEditError, setActivityEditError] = useState<string | null>(null);
+
+  const handleSaveActivityEdit = (eventId: string) => {
+    if (!onUpdateEvent || !editActivityDate || !editActivityStartTime || !editActivityEndTime) return;
+    
+    // Clear any previous error
+    setActivityEditError(null);
+    
+    // Parse date and times
+    const [year, month, day] = editActivityDate.split('-').map(Number);
+    const [startHours, startMinutes] = editActivityStartTime.split(':').map(Number);
+    const [endHours, endMinutes] = editActivityEndTime.split(':').map(Number);
+    
+    const startDate = new Date(year, month - 1, day, startHours, startMinutes, 0, 0);
+    const endDate = new Date(year, month - 1, day, endHours, endMinutes, 0, 0);
+    
+    // Validate: end time must be after start time
+    if (endDate <= startDate) {
+      setActivityEditError('End time must be after start time');
+      return;
+    }
+    
+    onUpdateEvent(eventId, {
+      start: {
+        dateTime: startDate.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      },
+      end: {
+        dateTime: endDate.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      }
+    });
+    
+    setEditingActivityId(null);
+  };
+
+  const handleCancelActivityEdit = () => {
+    setEditingActivityId(null);
+    setEditActivityDate('');
+    setEditActivityStartTime('');
+    setEditActivityEndTime('');
+    setActivityEditError(null);
+  };
+
   const getBackgroundColor = () => {
     return `${accentColor}E6`; // 90% opacity
   };
@@ -1061,6 +1130,24 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                       </p>
                     </div>
                   </div>
+                </div>
+
+                {/* Actions Footer */}
+                <div className="flex justify-start gap-2 pt-2 border-t border-white/10">
+                  <button
+                    onClick={handleEventDelete}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isDarkMode 
+                        ? 'text-red-400 hover:bg-red-400/10' 
+                        : 'text-red-600 hover:bg-red-100'
+                    }`}
+                    aria-label="Delete activity record"
+                    title="Delete this activity record"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </button>
                 </div>
               </motion.div>
             ) : currentEvent?.type === 'task' && (!currentEvent?.taskId || currentEvent?.taskId === '') && currentEvent?.metadata?.taskSnapshot ? (
@@ -1355,17 +1442,51 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
               />
 
               {/* Activity Section - show scheduled events if any exist */}
-              {scheduledEvents && scheduledEvents.length > 0 && (
+              {scheduledEvents && scheduledEvents.length > 0 && (() => {
+                // Calculate total duration across all activities
+                const totalDurationMinutes = scheduledEvents.reduce((total: number, event: ScheduleCardData) => {
+                  if (!event.start.dateTime || !event.end.dateTime) return total;
+                  const start = new Date(event.start.dateTime);
+                  const end = new Date(event.end.dateTime);
+                  const durationMs = end.getTime() - start.getTime();
+                  return total + Math.max(0, durationMs / (1000 * 60));
+                }, 0);
+                
+                // Format total duration
+                const formatDuration = (minutes: number): string => {
+                  if (minutes < 60) return `${Math.round(minutes)}m`;
+                  const hours = Math.floor(minutes / 60);
+                  const mins = Math.round(minutes % 60);
+                  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+                };
+                
+                return (
                 <div className="space-y-2">
-                  <h4 className={`text-xs font-semibold uppercase tracking-wider ${
-                    isDarkMode ? 'text-gray-500' : 'text-gray-500'
-                  }`}>
-                    Activity
-                  </h4>
+                  <div className="flex items-center justify-between">
+                    <h4 className={`text-xs font-semibold uppercase tracking-wider ${
+                      isDarkMode ? 'text-gray-500' : 'text-gray-500'
+                    }`}>
+                      Activity
+                    </h4>
+                    {totalDurationMinutes > 0 && (
+                      <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        Total: {formatDuration(totalDurationMinutes)}
+                      </span>
+                    )}
+                  </div>
                   <div className="space-y-1">
                     {scheduledEvents.map((event: ScheduleCardData) => {
                       const isCompletion = event.type === 'task:completed';
                       const isTask = event.type === 'task';
+                      const isEditing = editingActivityId === event.id;
+                      
+                      // Calculate duration for this event
+                      let eventDurationMinutes = 0;
+                      if (event.start.dateTime && event.end.dateTime) {
+                        const start = new Date(event.start.dateTime);
+                        const end = new Date(event.end.dateTime);
+                        eventDurationMinutes = Math.max(0, (end.getTime() - start.getTime()) / (1000 * 60));
+                      }
                       
                       // Format text for completion events
                       let displayText = '';
@@ -1388,51 +1509,178 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                       return (
                         <div
                           key={event.id}
-                          className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg ${
+                          className={`relative rounded-lg ${
                             isDarkMode ? 'bg-white/5' : 'bg-gray-100'
                           }`}
                         >
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            {isCompletion ? (
-                              <svg className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                              </svg>
-                            ) : isTask ? (
-                              <svg className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                              </svg>
-                            ) : (
-                              <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                              </svg>
-                            )}
-                            <span className={`text-sm truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                              {displayText}
-                            </span>
+                          {/* Main activity row */}
+                          <div className="flex items-center justify-between gap-2 px-3 py-2">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              {isCompletion ? (
+                                <svg className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                              ) : isTask ? (
+                                <svg className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                                </svg>
+                              ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                              <span className={`text-sm truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {displayText}
+                              </span>
+                              {eventDurationMinutes > 0 && (
+                                <span className={`text-xs flex-shrink-0 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                  ({formatDuration(eventDurationMinutes)})
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {/* Edit button - only show for non-completion events */}
+                              {!isCompletion && (
+                                <button
+                                  onClick={() => handleOpenActivityEdit(event)}
+                                  className={`p-1 rounded transition-colors ${
+                                    isDarkMode 
+                                      ? 'text-gray-400 hover:text-blue-400 hover:bg-blue-400/10' 
+                                      : 'text-gray-500 hover:text-blue-600 hover:bg-blue-100'
+                                  }`}
+                                  aria-label="Edit schedule"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                  </svg>
+                                </button>
+                              )}
+                              {/* Delete button */}
+                              <button
+                                onClick={() => {
+                                  if (onDeleteEvent) {
+                                    onDeleteEvent(event.id);
+                                  }
+                                }}
+                                className={`p-1 rounded transition-colors ${
+                                  isDarkMode 
+                                    ? 'text-gray-400 hover:text-red-400 hover:bg-red-400/10' 
+                                    : 'text-gray-500 hover:text-red-600 hover:bg-red-100'
+                                }`}
+                                aria-label="Remove from schedule"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </div>
                           </div>
-                          <button
-                            onClick={() => {
-                              if (onDeleteEvent) {
-                                onDeleteEvent(event.id);
-                              }
-                            }}
-                            className={`p-1 rounded transition-colors flex-shrink-0 ${
-                              isDarkMode 
-                                ? 'text-gray-400 hover:text-red-400 hover:bg-red-400/10' 
-                                : 'text-gray-500 hover:text-red-600 hover:bg-red-100'
-                            }`}
-                            aria-label="Remove from schedule"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                          </button>
+                          
+                          {/* Edit popover - inline expansion */}
+                          <AnimatePresence>
+                            {isEditing && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.15 }}
+                                className="overflow-hidden"
+                              >
+                                <div className={`px-3 pb-3 pt-1 border-t ${
+                                  isDarkMode ? 'border-white/10' : 'border-gray-200'
+                                }`}>
+                                  <div className="space-y-2">
+                                    {/* Date input */}
+                                    <div>
+                                      <label className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Date</label>
+                                      <input
+                                        type="date"
+                                        value={editActivityDate}
+                                        onChange={(e) => setEditActivityDate(e.target.value)}
+                                        className={`w-full mt-1 px-2 py-1.5 text-sm rounded border focus:outline-none focus:ring-2 ${
+                                          isDarkMode 
+                                            ? 'bg-white/5 border-white/10 text-gray-100 focus:ring-white/30' 
+                                            : 'bg-white border-gray-200 text-gray-900 focus:ring-gray-300'
+                                        }`}
+                                      />
+                                    </div>
+                                    
+                                    {/* Time inputs */}
+                                    <div className="flex gap-2">
+                                      <div className="flex-1">
+                                        <label className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Start</label>
+                                        <input
+                                          type="time"
+                                          value={editActivityStartTime}
+                                          onChange={(e) => { setEditActivityStartTime(e.target.value); setActivityEditError(null); }}
+                                          className={`w-full mt-1 px-2 py-1.5 text-sm rounded border focus:outline-none focus:ring-2 ${
+                                            isDarkMode 
+                                              ? 'bg-white/5 border-white/10 text-gray-100 focus:ring-white/30' 
+                                              : 'bg-white border-gray-200 text-gray-900 focus:ring-gray-300'
+                                          }`}
+                                        />
+                                      </div>
+                                      <div className="flex-1">
+                                        <label className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>End</label>
+                                        <input
+                                          type="time"
+                                          value={editActivityEndTime}
+                                          onChange={(e) => { setEditActivityEndTime(e.target.value); setActivityEditError(null); }}
+                                          className={`w-full mt-1 px-2 py-1.5 text-sm rounded border focus:outline-none focus:ring-2 ${
+                                            isDarkMode 
+                                              ? 'bg-white/5 border-white/10 text-gray-100 focus:ring-white/30' 
+                                              : 'bg-white border-gray-200 text-gray-900 focus:ring-gray-300'
+                                          }`}
+                                        />
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Validation error message */}
+                                    {activityEditError && (
+                                      <div className={`text-xs px-2 py-1.5 rounded ${
+                                        isDarkMode 
+                                          ? 'bg-red-500/20 text-red-300' 
+                                          : 'bg-red-100 text-red-600'
+                                      }`}>
+                                        {activityEditError}
+                                      </div>
+                                    )}
+                                    
+                                    {/* Action buttons */}
+                                    <div className="flex justify-end gap-2 pt-1">
+                                      <button
+                                        onClick={handleCancelActivityEdit}
+                                        className={`px-3 py-1 text-xs rounded transition-colors ${
+                                          isDarkMode 
+                                            ? 'text-gray-400 hover:bg-white/10' 
+                                            : 'text-gray-600 hover:bg-gray-100'
+                                        }`}
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        onClick={() => handleSaveActivityEdit(event.id)}
+                                        className={`px-3 py-1 text-xs rounded transition-colors ${
+                                          isDarkMode 
+                                            ? 'bg-white/20 text-white hover:bg-white/30' 
+                                            : 'bg-gray-800 text-white hover:bg-gray-700'
+                                        }`}
+                                      >
+                                        Save
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       );
                     })}
                   </div>
                 </div>
-              )}
+                );
+              })()}
 
               {/* Actions Footer */}
               <div className="flex justify-between items-center gap-2 pt-2 border-t border-white/10">
