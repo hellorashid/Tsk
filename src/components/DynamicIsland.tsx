@@ -134,6 +134,32 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   );
   console.log("scheduledEvents:", scheduledEvents);
 
+  // Check if task has any scheduled events for today
+  const hasScheduledEventToday = (() => {
+    if (!scheduledEvents || scheduledEvents.length === 0) return false;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    return scheduledEvents.some((event: ScheduleCardData) => {
+      let eventDate: Date | null = null;
+      
+      if (event.start?.dateTime) {
+        eventDate = new Date(event.start.dateTime);
+        eventDate.setHours(0, 0, 0, 0);
+      } else if (event.start?.date) {
+        eventDate = new Date(event.start.date);
+        eventDate.setHours(0, 0, 0, 0);
+      }
+      
+      if (!eventDate) return false;
+      
+      return eventDate.getTime() >= today.getTime() && eventDate.getTime() < tomorrow.getTime();
+    });
+  })();
+
   // Query subtasks for deleted task (if viewing a deleted task schedule item)
   const deletedTaskSubtasks = useQuery(
     () => selectedEvent?.type === 'task' && 
@@ -1797,7 +1823,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 
                 {/* Add to Today button or Focus button */}
                 <div className="flex items-center gap-2">
-                  {!(scheduledEvents && scheduledEvents.length > 0) && (
+                  {!currentTask?.completed && !hasScheduledEventToday && (
                     <button
                       onClick={() => {
                         if (selectedTask && onAddToSchedule) {

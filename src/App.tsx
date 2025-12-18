@@ -581,11 +581,47 @@ function Home() {
     const topLevelTasks = tasks?.filter((task: Task) => !task.parentTaskId && !task.completed) || [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
     const oneWeekAgo = new Date(today);
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     
+    // Get task IDs that are already scheduled for today (these are already shown in the main list)
+    const todayScheduledTaskIds = new Set(
+      topLevelTasks
+        .filter((task: Task) => {
+          return scheduleEvents.some((event: ScheduleCardData) => {
+            if (event.type !== 'task' || event.taskId !== task.id) {
+              return false;
+            }
+            
+            let eventDate: Date | null = null;
+            
+            if (event.start?.dateTime) {
+              eventDate = new Date(event.start.dateTime);
+              eventDate.setHours(0, 0, 0, 0);
+            } else if (event.start?.date) {
+              eventDate = new Date(event.start.date);
+              eventDate.setHours(0, 0, 0, 0);
+            }
+            
+            if (!eventDate) {
+              return false;
+            }
+            
+            return eventDate.getTime() >= today.getTime() && eventDate.getTime() < tomorrow.getTime();
+          });
+        })
+        .map((task: Task) => task.id)
+    );
+    
     // Get tasks scheduled in the past week (but not today)
     const pastWeekScheduledTasks = topLevelTasks.filter((task: Task) => {
+      // Exclude tasks already scheduled for today
+      if (todayScheduledTaskIds.has(task.id)) {
+        return false;
+      }
+      
       return scheduleEvents.some((event: ScheduleCardData) => {
         if (event.type !== 'task' || event.taskId !== task.id) {
           return false;
@@ -611,6 +647,11 @@ function Home() {
     
     // Get unscheduled tasks (tasks with no schedule events)
     const unscheduledTasks = topLevelTasks.filter((task: Task) => {
+      // Exclude tasks already scheduled for today
+      if (todayScheduledTaskIds.has(task.id)) {
+        return false;
+      }
+      
       return !scheduleEvents.some((event: ScheduleCardData) => 
         event.type === 'task' && event.taskId === task.id
       );
@@ -1548,6 +1589,7 @@ function Home() {
                               handleTaskSelect={handleTaskSelect}
                               onEnterFocus={handleEnterFocus}
                               onAddToSchedule={handleAddToSchedule}
+                              isSuggested={true}
                             />
                           </div>
                         ))}

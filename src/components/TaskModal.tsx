@@ -49,6 +49,33 @@ export const TaskModal = ({
       : null,
     [task?.id, task?.parentTaskId]
   ) || [];
+
+  // Check if task has any scheduled events for today
+  const hasScheduledEventToday = (() => {
+    if (!scheduledEvents || scheduledEvents.length === 0) return false;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    return scheduledEvents.some((event: ScheduleCardData) => {
+      let eventDate: Date | null = null;
+      
+      if (event.start?.dateTime) {
+        eventDate = new Date(event.start.dateTime);
+        eventDate.setHours(0, 0, 0, 0);
+      } else if (event.start?.date) {
+        eventDate = new Date(event.start.date);
+        eventDate.setHours(0, 0, 0, 0);
+      }
+      
+      if (!eventDate) return false;
+      
+      return eventDate.getTime() >= today.getTime() && eventDate.getTime() < tomorrow.getTime();
+    });
+  })();
+
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [editingSection, setEditingSection] = useState<'date' | 'start' | 'end' | null>(null);
   const [eventStartTime, setEventStartTime] = useState('');
@@ -612,7 +639,7 @@ export const TaskModal = ({
         })()}
 
         {/* Add to Today button - full width, same height as schedule cards */}
-        {!isNew && (!scheduledEvents || scheduledEvents.length === 0) && (
+        {!isNew && !task?.completed && !hasScheduledEventToday && (
           <button
             onClick={(e) => {
               e.stopPropagation();
