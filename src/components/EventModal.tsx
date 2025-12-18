@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { ScheduleCardData, getEventDuration, getTimeFromDateTime, minutesToDateTime } from './ScheduleCard';
 import Checkbox from './Checkbox';
 
@@ -232,7 +233,7 @@ export const EventModal = ({
 
   return (
     <>
-      <div className="flex flex-col h-full overflow-y-auto pb-20">
+      <div className="flex flex-col h-full overflow-y-auto relative">
         <div className="flex items-start w-full mb-4 gap-3">
           {/* Invisible checkbox to catch auto-focus from Sheet component */}
           <div className="sr-only">
@@ -405,24 +406,33 @@ export const EventModal = ({
           style={{ height: 'auto' }}
           placeholder="Description..."
         />
+        
+        {/* Spacer to push delete button to bottom */}
+        <div className="flex-1 min-h-8" />
+        
+        {/* Bottom Action Buttons - positioned at bottom of sheet content */}
+        {deleteEvent && (
+          <div className="flex items-center justify-start px-2 pb-6 pt-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
+            <motion.button
+              initial={{ opacity: 0, y: 20, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.35 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={handleDelete}
+              className={`p-4 rounded-full transition-colors shadow-lg ${
+                isDarkMode 
+                  ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300' 
+                  : 'bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700'
+              }`}
+              aria-label="Delete event"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </motion.button>
+          </div>
+        )}
       </div>
-
-      {/* Sticky Delete Button */}
-      {deleteEvent && (
-        <button
-          onClick={handleDelete}
-          className={`fixed bottom-4 left-4 p-4 rounded-full transition-colors shadow-lg z-50 ${
-            isDarkMode 
-              ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300' 
-              : 'bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700'
-          }`}
-          aria-label="Delete event"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-        </button>
-      )}
     </>
   );
 };

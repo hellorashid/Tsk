@@ -30,12 +30,6 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
   const editInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (inputRef.current && subtasks.length === 0) {
-      inputRef.current.focus();
-    }
-  }, [subtasks.length]);
-
-  useEffect(() => {
     if (editingId && editInputRef.current) {
       editInputRef.current.focus();
       editInputRef.current.select();

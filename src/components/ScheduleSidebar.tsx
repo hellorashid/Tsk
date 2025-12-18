@@ -2,36 +2,16 @@ import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import ScheduleCard, { ScheduleCardData, getEventDuration, getTimeFromDateTime, minutesToDateTime } from './ScheduleCard';
 import TimelineView from './TimelineView';
 import { getWeatherEmoji } from '../utils/weather';
-
-// Format date
-const formatDate = (date: Date): string => {
-  const options: Intl.DateTimeFormatOptions = { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  };
-  return date.toLocaleDateString('en-US', options);
-};
-
-// Check if date is today
-const isToday = (date: Date): boolean => {
-  const today = new Date();
-  return date.toDateString() === today.toDateString();
-};
-
-// Get date at start of day (midnight)
-const getStartOfDay = (date: Date): Date => {
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  return start;
-};
-
-// Get current time in minutes from midnight
-const getCurrentTimeInMinutes = (): number => {
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes();
-};
+import { Folder } from '../utils/types';
+import { 
+  formatDate, 
+  isToday, 
+  getStartOfDay, 
+  getCurrentTimeInMinutes,
+  getPreviousDay,
+  getNextDay,
+  isEventOnDate
+} from '../utils/dateHelpers';
 
 interface ScheduleSidebarProps {
   onClose?: () => void;
@@ -47,7 +27,7 @@ interface ScheduleSidebarProps {
   onViewModeChange?: (mode: 'timeline' | 'agenda') => void;
   location?: { latitude: number; longitude: number; name: string };
   onFetchWeather?: (date: Date) => Promise<void>;
-  folders?: any[];
+  folders?: Folder[];
 }
 
 const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
@@ -157,26 +137,8 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   const events = useMemo(() => {
     if (!externalEvents || externalEvents.length === 0) return [];
     
-    // Helper function to check if a date falls on the selected date (ignoring time)
-    const isEventOnDate = (event: ScheduleCardData, targetDate: Date): boolean => {
-      if (!event.start.dateTime) return false;
-      
-      const eventDate = new Date(event.start.dateTime);
-      
-      // Compare date components (year, month, day) to avoid timezone issues
-      const eventYear = eventDate.getFullYear();
-      const eventMonth = eventDate.getMonth();
-      const eventDay = eventDate.getDate();
-      
-      const targetYear = targetDate.getFullYear();
-      const targetMonth = targetDate.getMonth();
-      const targetDay = targetDate.getDate();
-      
-      return eventYear === targetYear && eventMonth === targetMonth && eventDay === targetDay;
-    };
-    
     return externalEvents.filter(event => 
-      event.type !== 'weather' && isEventOnDate(event, selectedDate)
+      event.type !== 'weather' && isEventOnDate(event.start.dateTime, selectedDate)
     );
   }, [externalEvents, selectedDate]);
 
@@ -406,33 +368,9 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   };
 
   // Date navigation functions
-  const goToToday = () => {
-    setSelectedDate(getStartOfDay(new Date()));
-  };
-
-  const goToYesterday = () => {
-    const yesterday = new Date(selectedDate);
-    yesterday.setDate(yesterday.getDate() - 1);
-    setSelectedDate(getStartOfDay(yesterday));
-  };
-
-  const goToTomorrow = () => {
-    const tomorrow = new Date(selectedDate);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    setSelectedDate(getStartOfDay(tomorrow));
-  };
-
-  const goToPreviousDay = () => {
-    const prevDay = new Date(selectedDate);
-    prevDay.setDate(prevDay.getDate() - 1);
-    setSelectedDate(getStartOfDay(prevDay));
-  };
-
-  const goToNextDay = () => {
-    const nextDay = new Date(selectedDate);
-    nextDay.setDate(nextDay.getDate() + 1);
-    setSelectedDate(getStartOfDay(nextDay));
-  };
+  const goToToday = () => setSelectedDate(getStartOfDay(new Date()));
+  const goToPreviousDay = () => setSelectedDate(getPreviousDay(selectedDate));
+  const goToNextDay = () => setSelectedDate(getNextDay(selectedDate));
 
   const getBackgroundColor = () => {
     return `${accentColor}E6`; // 90% opacity (E6 hex = 230/255 ≈ 90%)
@@ -443,38 +381,46 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
 
   // Find weather event for the selected date
   const weatherEvent = useMemo(() => {
-    return externalEvents?.find(event => {
-      if (event.type !== 'weather' || !event.start.dateTime) return false;
-      const eventDate = new Date(event.start.dateTime);
-      return eventDate.toDateString() === selectedDate.toDateString();
-    });
+    return externalEvents?.find(event => 
+      event.type === 'weather' && isEventOnDate(event.start.dateTime, selectedDate)
+    );
   }, [externalEvents, selectedDate]);
 
   // Render header component (shared between timeline and old schedule views)
   const renderHeader = (isTimeline: boolean = false) => (
     <div
-      className={`${isTimeline ? 'px-6' : 'sticky top-0 z-50 -mx-6 px-6 mb-4'} py-4 border-b backdrop-blur-md`}
-      style={{ 
+      className={`${isTimeline ? 'px-5 pt-5 pb-4' : 'sticky top-0 z-50 -mx-6 px-6 py-4 mb-4 border-b backdrop-blur-md'}`}
+      style={!isTimeline ? { 
         backgroundColor: getBackgroundColor(),
-          borderColor: isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)'
-        }}
-      >
-        <div className="relative flex items-center justify-between mb-3">
-          <h3 className={`text-lg font-semibold ${
-            isDarkMode ? 'text-gray-100' : 'text-gray-900'
-          }`}>
-            {isSelectedDateToday ? 'Today' : displayDate.split(',')[0]}
-          </h3>
-          
-          {/* Center: Date navigation buttons */}
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1">
+        borderColor: isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)'
+      } : undefined}
+    >
+      <div className="flex items-start justify-between">
+        {/* Left side - Date */}
+        <div>
+          <p className={`text-xs uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            {selectedDate.toLocaleDateString('en-US', { weekday: 'long' })}
+          </p>
+          <div className="flex items-center gap-3">
+            <h1 
+              className={`text-4xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+            >
+              {selectedDate.toLocaleDateString('en-US', { month: 'short' })} {selectedDate.getDate().toString().padStart(2, '0')}
+            </h1>
+            {isSelectedDateToday && (
+              <span className="w-2 h-2 rounded-full bg-red-500 mt-1" />
+            )}
+          </div>
+        </div>
+        
+        {/* Right side - Navigation & Toggle */}
+        <div className="flex items-center gap-2">
+          {/* Date navigation */}
+          <div className="flex items-center gap-0.5">
             <button
               onClick={goToPreviousDay}
-              className={`p-1.5 rounded-md bg-transparent transition-colors ${
-                isDarkMode 
-                  ? 'hover:bg-white/10 text-gray-300' 
-                  : 'hover:bg-gray-200 text-gray-700'
-              }`}
+              className={`p-2 rounded-xl transition-colors ${isDarkMode ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-200 text-gray-700'}`}
               aria-label="Previous day"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -483,24 +429,14 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
             </button>
             <button
               onClick={goToToday}
-              className={`p-1.5 rounded-md bg-transparent transition-colors ${
-                isDarkMode 
-                  ? 'hover:bg-white/10 text-gray-300' 
-                  : 'hover:bg-gray-200 text-gray-700'
-              }`}
+              className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${isDarkMode ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-200 text-gray-700'}`}
               aria-label="Go to today"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-              </svg>
+              Today
             </button>
             <button
               onClick={goToNextDay}
-              className={`p-1.5 rounded-md bg-transparent transition-colors ${
-                isDarkMode 
-                  ? 'hover:bg-white/10 text-gray-300' 
-                  : 'hover:bg-gray-200 text-gray-700'
-              }`}
+              className={`p-2 rounded-xl transition-colors ${isDarkMode ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-200 text-gray-700'}`}
               aria-label="Next day"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -509,21 +445,15 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
             </button>
           </div>
 
-          {/* Right: View mode toggle switch with icons */}
+          {/* View mode toggle */}
           {onViewModeChange && (
-            <div className={`flex items-center rounded-lg p-0.5 ${
-              isDarkMode ? 'bg-white/10' : 'bg-gray-200'
-            }`}>
+            <div className={`flex items-center rounded-xl p-0.5 ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}>
               <button
                 onClick={() => onViewModeChange('timeline')}
-                className={`p-1.5 rounded-md transition-all ${
+                className={`p-2 rounded-lg transition-all ${
                   viewMode === 'timeline'
-                    ? isDarkMode
-                      ? 'bg-white/20 text-white'
-                      : 'bg-white text-gray-900 shadow-sm'
-                    : isDarkMode
-                      ? 'bg-transparent text-gray-400 hover:text-gray-200'
-                      : 'bg-transparent text-gray-500 hover:text-gray-800'
+                    ? isDarkMode ? 'bg-white/20 text-white' : 'bg-white text-gray-900 shadow-sm'
+                    : isDarkMode ? 'bg-transparent text-gray-400 hover:text-gray-200' : 'bg-transparent text-gray-500 hover:text-gray-800'
                 }`}
                 aria-label="Timeline view"
                 title="Timeline view"
@@ -534,48 +464,30 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
               </button>
               <button
                 onClick={() => onViewModeChange('agenda')}
-                className={`p-1.5 rounded-md transition-all ${
+                className={`p-2 rounded-lg transition-all ${
                   viewMode === 'agenda'
-                    ? isDarkMode
-                      ? 'bg-white/20 text-white'
-                      : 'bg-white text-gray-900 shadow-sm'
-                    : isDarkMode
-                      ? 'bg-transparent text-gray-400 hover:text-gray-200'
-                      : 'bg-transparent text-gray-500 hover:text-gray-800'
+                    ? isDarkMode ? 'bg-white/20 text-white' : 'bg-white text-gray-900 shadow-sm'
+                    : isDarkMode ? 'bg-transparent text-gray-400 hover:text-gray-200' : 'bg-transparent text-gray-500 hover:text-gray-800'
                 }`}
-                aria-label="Agenda view"
-                title="Agenda view"
+                aria-label="Widget view"
+                title="Widget view"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                 </svg>
               </button>
             </div>
           )}
         </div>
-        <div className="flex items-center justify-between">
-          <p className={`text-sm ${
-            isDarkMode ? 'text-gray-400' : 'text-gray-600'
-          }`}>
-            {displayDate}
-          </p>
-          {weatherEvent && weatherEvent.metadata?.weather && (
-            <div className={`flex items-center gap-1.5 text-sm ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              <span>{getWeatherEmoji(weatherEvent.metadata.weather.condition)}</span>
-              <span>{weatherEvent.metadata.weather.temperature}°F</span>
-            </div>
-          )}
-        </div>
       </div>
+    </div>
   );
 
   // If timeline mode, render the new TimelineView
   if (viewMode === 'timeline') {
     return (
       <div
-        className={`w-full h-full backdrop-blur-3xl flex flex-col rounded-md overflow-hidden ${
+        className={`w-full h-full backdrop-blur-3xl flex flex-col rounded-2xl overflow-hidden ${
           isDarkMode ? 'text-gray-100' : 'text-gray-900'
         }`}
         style={{ 
@@ -607,7 +519,7 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   return (
     <div
       ref={outerScrollableRef}
-      className={`w-full h-full px-6 pb-6 overflow-y-auto backdrop-blur-3xl flex flex-col rounded-md ${
+      className={`w-full h-full px-6 pb-6 overflow-y-auto backdrop-blur-3xl flex flex-col rounded-2xl ${
         isDarkMode ? 'text-gray-100' : 'text-gray-900'
       }`}
       style={{ 

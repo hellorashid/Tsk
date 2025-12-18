@@ -708,6 +708,25 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   };
 
   const handleClose = () => {
+    // Save pending task changes before closing
+    if (selectedTask) {
+      if (title.trim() !== selectedTask.name) {
+        onUpdateTask(selectedTask.id, { name: title.trim() });
+      }
+      if (description !== selectedTask.description) {
+        onUpdateTask(selectedTask.id, { description });
+      }
+    }
+    // Save pending event changes before closing
+    if (currentEvent && onUpdateEvent) {
+      if (eventTitle.trim() !== currentEvent.title) {
+        onUpdateEvent(currentEvent.id, { title: eventTitle.trim() });
+      }
+      if (eventDescription !== currentEvent.description) {
+        onUpdateEvent(currentEvent.id, { description: eventDescription });
+      }
+    }
+    
     onTaskSelect(null);
     onEventSelect(null);
     setInputValue('');
@@ -1443,6 +1462,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
               {/* Subtasks Section - Only show if task is not a subtask itself */}
               {selectedTask && !selectedTask.parentTaskId && onAddSubtask && (
                 <SubtasksList
+                  key={selectedTask.id}
                   parentTaskId={selectedTask.id}
                   subtasks={subtasks}
                   onAddSubtask={onAddSubtask}

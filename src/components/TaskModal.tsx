@@ -2,6 +2,7 @@
 
 import { Task, Folder } from "../utils/types";
 import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import Checkbox from './Checkbox';
 import { ScheduleCardData, getTimeFromDateTime, getEventDuration } from './ScheduleCard';
 import { useBasic, useQuery } from '@basictech/react';
@@ -30,6 +31,13 @@ export const TaskModal = ({
   onFolderSelect?: (folderId: string | null) => void;
 }) => {
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
+  
+  // Local state for folder label to ensure immediate UI updates
+  const [localFolderLabel, setLocalFolderLabel] = useState<string | null>(() => {
+    const taskLabels = task?.labels?.split(',').map(l => l.trim()) || [];
+    const folderLabel = taskLabels.find(l => l.startsWith('folder:'));
+    return folderLabel ? folderLabel.replace('folder:', '') : null;
+  });
   
   // Log task for debugging
   useEffect(() => {
@@ -137,6 +145,11 @@ export const TaskModal = ({
     setTaskCompleted(task?.completed || false);
     setTaskName(task?.name || '');
     setTaskDescription(task?.description || '');
+    
+    // Update folder label
+    const taskLabels = task?.labels?.split(',').map(l => l.trim()) || [];
+    const folderLabel = taskLabels.find(l => l.startsWith('folder:'));
+    setLocalFolderLabel(folderLabel ? folderLabel.replace('folder:', '') : null);
   }, [task]);
 
   // Auto-resize textareas on initial render and when content changes
@@ -387,7 +400,7 @@ export const TaskModal = ({
   return (
     <>
       <div
-        className={`${inDrawer ? "flex flex-col h-full overflow-y-auto pb-20" : "bg-black rounded-lg shadow-xl max-w-2xl w-full mx-4 p-4"}`}
+        className={`${inDrawer ? "flex flex-col h-full overflow-y-auto relative" : "bg-black rounded-lg shadow-xl max-w-2xl w-full mx-4 p-4"}`}
         style={inDrawer ? { backgroundColor: getBackgroundColor() } : {}}
       >
         <div className={`flex items-start w-full ${inDrawer ? 'mb-4' : 'my-4'} gap-3`}>
@@ -686,144 +699,182 @@ export const TaskModal = ({
           placeholder="Some description..."
           style={{ height: 'auto' }}
         />
-
-      </div>
-      
-      {/* Sticky Delete Button - bottom left */}
-      {!isNew && deleteTask && inDrawer && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDelete(e);
-          }}
-          className={`fixed bottom-4 left-4 p-4 rounded-full transition-colors shadow-lg z-50 ${
-            isDarkMode 
-              ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300' 
-              : 'bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700'
-          }`}
-          aria-label="Delete task"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-        </button>
-      )}
-      
-      {/* Folder Selector - bottom center */}
-      {!isNew && inDrawer && folders && folders.length > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowFolderDropdown(!showFolderDropdown);
-            }}
-            className={`flex items-center gap-2 px-4 py-4 rounded-full transition-colors shadow-lg ${
-              isDarkMode 
-                ? 'bg-white/10 hover:bg-white/20 text-gray-100 backdrop-blur-xl' 
-                : 'bg-gray-800 hover:bg-gray-900 text-white'
-            }`}
-            aria-label="Select folder"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-            </svg>
-            <span className="text-sm font-medium">
-              {(() => {
-                const taskLabels = task?.labels?.split(',').map(l => l.trim()) || [];
-                const folderLabel = taskLabels.find(l => l.startsWith('folder:'));
-                if (folderLabel) {
-                  const folderName = folderLabel.replace('folder:', '');
-                  return folderName.charAt(0).toUpperCase() + folderName.slice(1).toLowerCase();
-                }
-                return 'Folder';
-              })()}
-            </span>
-          </button>
-
-          {showFolderDropdown && (
-            <>
-              {/* Backdrop to close dropdown */}
-              <div 
-                className="fixed inset-0 z-40" 
-                onClick={() => setShowFolderDropdown(false)}
-              />
-              
-              {/* Dropdown menu */}
-              <div 
-                className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 min-w-[180px] rounded-lg shadow-lg border z-50 max-h-[300px] overflow-y-auto ${
-                  isDarkMode 
-                    ? 'bg-gray-800 border-white/10' 
-                    : 'bg-white border-gray-200'
-                }`}
-                style={{
-                  backdropFilter: 'blur(12px)',
+        
+        {/* Spacer to push action buttons to bottom */}
+        {inDrawer && <div className="flex-1 min-h-8" />}
+        
+        {/* Bottom Action Buttons - positioned at bottom of sheet content */}
+        {inDrawer && !isNew && (
+          <div className="flex items-center justify-between px-2 pb-6 pt-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
+            {/* Delete Button - left */}
+            {deleteTask && (
+              <motion.button
+                initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.35 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(e);
                 }}
+                className={`p-4 rounded-full transition-colors shadow-lg ${
+                  isDarkMode 
+                    ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300' 
+                    : 'bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700'
+                }`}
+                aria-label="Delete task"
               >
-                {/* None option */}
-                <button
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </motion.button>
+            )}
+            {!deleteTask && <div />}
+            
+            {/* Folder Selector - center */}
+            {folders && folders.length > 0 && (
+              <motion.div 
+                className="relative"
+                initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.4 }}
+              >
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    const taskLabels = task.labels?.split(',').map(l => l.trim()) || [];
-                    const newLabels = taskLabels.filter(l => !l.startsWith('folder:')).join(',');
-                    updateFunction(task.id, { labels: newLabels });
-                    setShowFolderDropdown(false);
+                    e.preventDefault();
+                    setShowFolderDropdown(!showFolderDropdown);
                   }}
-                  className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                  className={`flex items-center gap-2 px-4 py-4 rounded-full transition-colors shadow-lg ${
                     isDarkMode 
-                      ? 'hover:bg-white/10 text-gray-300' 
-                      : 'hover:bg-gray-100 text-gray-700'
+                      ? 'bg-white/10 hover:bg-white/20 text-gray-100 backdrop-blur-xl' 
+                      : 'bg-gray-800 hover:bg-gray-900 text-white'
                   }`}
+                  aria-label="Select folder"
                 >
-                  None
-                </button>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                  <span className="text-sm font-medium">
+                    {localFolderLabel 
+                      ? localFolderLabel.charAt(0).toUpperCase() + localFolderLabel.slice(1).toLowerCase()
+                      : 'Folder'}
+                  </span>
+                </motion.button>
 
-                {/* Folder options */}
-                {folders.map((folder) => (
-                  <button
-                    key={folder.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const taskLabels = task.labels?.split(',').map(l => l.trim()) || [];
-                      const labelsWithoutFolder = taskLabels.filter(l => !l.startsWith('folder:'));
-                      const newLabels = [...labelsWithoutFolder, `folder:${folder.name.toLowerCase()}`].join(',');
-                      updateFunction(task.id, { labels: newLabels });
-                      setShowFolderDropdown(false);
-                    }}
-                    className={`w-full text-left px-4 py-3 text-sm transition-colors capitalize ${
-                      isDarkMode 
-                        ? 'hover:bg-white/10 text-gray-300' 
-                        : 'hover:bg-gray-100 text-gray-700'
-                    }`}
-                  >
-                    {folder.name.charAt(0).toUpperCase() + folder.name.slice(1).toLowerCase()}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      )}
+                {showFolderDropdown && (
+                  <>
+                    {/* Backdrop to close dropdown */}
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setShowFolderDropdown(false);
+                      }}
+                      onTouchEnd={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setShowFolderDropdown(false);
+                      }}
+                    />
+                    
+                    {/* Dropdown menu */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 min-w-[180px] rounded-lg shadow-lg border z-50 max-h-[300px] overflow-y-auto ${
+                        isDarkMode 
+                          ? 'bg-gray-800 border-white/10' 
+                          : 'bg-white border-gray-200'
+                      }`}
+                      style={{
+                        backdropFilter: 'blur(12px)',
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* None option */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          const taskLabels = task.labels?.split(',').map(l => l.trim()) || [];
+                          const newLabels = taskLabels.filter(l => !l.startsWith('folder:')).join(',');
+                          setLocalFolderLabel(null);
+                          updateFunction(task.id, { labels: newLabels });
+                          setShowFolderDropdown(false);
+                        }}
+                        className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                          isDarkMode 
+                            ? 'hover:bg-white/10 text-gray-300' 
+                            : 'hover:bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        None
+                      </button>
 
-      {/* Sticky Focus Button - bottom right */}
-      {!isNew && onEnterFocus && inDrawer && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onEnterFocus(task);
-          }}
-          className={`fixed bottom-4 right-4 p-4 rounded-full transition-colors shadow-lg z-50 ${
-            isDarkMode 
-              ? 'bg-green-500/20 hover:bg-green-500/30 text-green-400 hover:text-green-300' 
-              : 'bg-green-100 hover:bg-green-200 text-green-600 hover:text-green-700'
-          }`}
-          aria-label="Enter focus mode"
-          title="Focus mode"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-          </svg>
-        </button>
-      )}
+                      {/* Folder options */}
+                      {folders.map((folder) => (
+                        <button
+                          key={folder.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            const taskLabels = task.labels?.split(',').map(l => l.trim()) || [];
+                            const labelsWithoutFolder = taskLabels.filter(l => !l.startsWith('folder:'));
+                            const newLabels = [...labelsWithoutFolder, `folder:${folder.name.toLowerCase()}`].join(',');
+                            setLocalFolderLabel(folder.name.toLowerCase());
+                            updateFunction(task.id, { labels: newLabels });
+                            setShowFolderDropdown(false);
+                          }}
+                          className={`w-full text-left px-4 py-3 text-sm transition-colors capitalize ${
+                            isDarkMode 
+                              ? 'hover:bg-white/10 text-gray-300' 
+                              : 'hover:bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          {folder.name.charAt(0).toUpperCase() + folder.name.slice(1).toLowerCase()}
+                        </button>
+                      ))}
+                    </motion.div>
+                  </>
+                )}
+              </motion.div>
+            )}
+            {!(folders && folders.length > 0) && <div />}
+
+            {/* Focus Button - right */}
+            {onEnterFocus && (
+              <motion.button
+                initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.45 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEnterFocus(task);
+                }}
+                className={`p-4 rounded-full transition-colors shadow-lg ${
+                  isDarkMode 
+                    ? 'bg-green-500/20 hover:bg-green-500/30 text-green-400 hover:text-green-300' 
+                    : 'bg-green-100 hover:bg-green-200 text-green-600 hover:text-green-700'
+                }`}
+                aria-label="Enter focus mode"
+                title="Focus mode"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                </svg>
+              </motion.button>
+            )}
+            {!onEnterFocus && <div />}
+          </div>
+        )}
+
+      </div>
       
       {/* Delete Button for non-drawer mode */}
       {!isNew && deleteTask && !inDrawer && (

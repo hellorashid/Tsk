@@ -232,6 +232,7 @@ function Home() {
   });
   const [suggestedTasksExpanded, setSuggestedTasksExpanded] = useState<boolean>(true);
   const [completedTasksExpanded, setCompletedTasksExpanded] = useState<boolean>(false);
+  const hasSuggestedInitialized = useRef(false);
 
   useEffect(() => {
     localStorage.setItem('tsk-show-today-folder', showTodayFolder.toString());
@@ -741,6 +742,18 @@ function Home() {
     });
   })();
 
+  // Set initial state of suggestedTasksExpanded based on whether there are already tasks scheduled for today
+  useEffect(() => {
+    // Wait until both tasks and scheduleEvents are loaded (they will be null/undefined while loading)
+    if (!hasSuggestedInitialized.current && activeFolder === 'today' && tasks !== null && tasks !== undefined && scheduleEvents !== null && scheduleEvents !== undefined) {
+      hasSuggestedInitialized.current = true;
+      // If there are already tasks scheduled for today, collapse the suggested section
+      if (filteredTasks.length > 0) {
+        setSuggestedTasksExpanded(false);
+      }
+    }
+  }, [activeFolder, tasks, scheduleEvents, filteredTasks]);
+
     // Keyboard navigation for tasks and global shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -863,8 +876,8 @@ function Home() {
          }
       }
 
-      // Task List Navigation
-      if (filteredTasks && filteredTasks.length > 0 && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+      // Task List Navigation (only when no input is focused)
+      if (filteredTasks && filteredTasks.length > 0 && (e.key === 'ArrowRight' || e.key === 'ArrowLeft') && !isInputFocused) {
         e.preventDefault();
 
         const currentIndex = selectedTask
