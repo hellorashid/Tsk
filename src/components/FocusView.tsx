@@ -36,12 +36,12 @@ const FocusView: React.FC<FocusViewProps> = ({
   const currentTask = liveTask || task;
   
   // Fetch subtasks
-  const subtasks = useQuery(
+  const subtasks = (useQuery(
     () => currentTask?.id && !currentTask?.parentTaskId
-      ? db.collection('tasks').filter((t: Task) => t.parentTaskId === currentTask.id)
+      ? db.collection('tasks').filter((t) => (t as Task).parentTaskId === currentTask.id)
       : null,
     [currentTask?.id, currentTask?.parentTaskId]
-  ) || [];
+  ) || []) as Task[];
 
   // Handle escape key
   useEffect(() => {
@@ -161,10 +161,10 @@ const FocusView: React.FC<FocusViewProps> = ({
               <h3 className={`text-xs font-semibold uppercase tracking-wider ${
                 isDarkMode ? 'text-gray-500' : 'text-gray-500'
               }`}>
-                Subtasks ({subtasks.filter((s: Task) => s.completed).length}/{subtasks.length})
+                Subtasks ({subtasks.filter((s) => s.completed).length}/{subtasks.length})
               </h3>
               <div className="space-y-3">
-                {subtasks.map((subtask: Task) => (
+                {subtasks.map((subtask) => (
                   <div key={subtask.id} className="flex items-center gap-3">
                     <Checkbox
                       id={`focus-subtask-${subtask.id}`}

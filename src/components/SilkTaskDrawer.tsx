@@ -111,7 +111,7 @@ export default function SilkTaskDrawer({
   const allScheduleEvents = useQuery(() => db.collection('schedule').getAll());
   const scheduledEvents = useMemo(() => {
     if (!task?.id || !allScheduleEvents) return [];
-    return allScheduleEvents.filter((event: ScheduleCardData) => event.taskId === task.id);
+    return allScheduleEvents.filter((event) => (event as ScheduleCardData).taskId === task.id) as ScheduleCardData[];
   }, [task?.id, allScheduleEvents]);
 
   // Query subtasks for deleted task (if viewing a deleted task schedule item)

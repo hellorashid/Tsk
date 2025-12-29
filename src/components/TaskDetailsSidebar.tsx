@@ -20,7 +20,7 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
   isDarkMode = true
 }) => {
   const { db } = useBasic()
-  const taskDetails = useQuery(() => db.collection('tasks').get(task?.id))
+  const taskDetails = useQuery(() => task?.id ? db.collection('tasks').get(task.id) : null) as Task | null
 
 
   const [title, setTitle] = useState(task?.name || '');
@@ -119,7 +119,7 @@ const TaskDetailsSidebar: React.FC<TaskDetailsSidebarProps> = ({
       <div className="flex items-start mb-2">
         <div className="mt-2">
           <Checkbox
-            id={taskDetails?.id}
+            id={taskDetails?.id || ''}
             checked={taskDetails?.completed}
             onChange={handleCompletedChange}
             size="md"

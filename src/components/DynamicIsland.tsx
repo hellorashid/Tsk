@@ -127,11 +127,11 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   const scheduledEvents = useQuery(
     () => selectedTask?.id 
       ? db.collection('schedule')
-          .filter((event: ScheduleCardData) => event.taskId === selectedTask.id)
+          .filter((event) => (event as ScheduleCardData).taskId === selectedTask.id)
        
       : null,
     [selectedTask?.id]
-  );
+  ) as ScheduleCardData[] | null;
   console.log("scheduledEvents:", scheduledEvents);
 
   // Check if task has any scheduled events for today
@@ -143,7 +143,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     
-    return scheduledEvents.some((event: ScheduleCardData) => {
+    return scheduledEvents.some((event) => {
       let eventDate: Date | null = null;
       
       if (event.start?.dateTime) {
@@ -172,12 +172,12 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   );
 
   // Query subtasks for the selected task
-  const subtasks = useQuery(
+  const subtasks = (useQuery(
     () => selectedTask?.id && !selectedTask?.parentTaskId
-      ? db.collection('tasks').filter((t: Task) => t.parentTaskId === selectedTask.id)
+      ? db.collection('tasks').filter((t) => (t as Task).parentTaskId === selectedTask.id)
       : null,
     [selectedTask?.id, selectedTask?.parentTaskId]
-  ) || [];
+  ) || []) as Task[];
 
   // Watch for newly created task to appear in tasks list
   useEffect(() => {
@@ -824,7 +824,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
         });
       } else {
         // Just update start time, keep duration the same
-        const currentDuration = getEventDuration(currentEvent);
+        const currentDuration = getEventDuration(currentEvent as ScheduleCardData);
         const endDate = new Date(baseDate.getTime() + currentDuration * 60000);
         
         onUpdateEvent(currentEvent.id, {
@@ -1490,7 +1490,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
               {/* Activity Section - show scheduled events if any exist */}
               {scheduledEvents && scheduledEvents.length > 0 && (() => {
                 // Calculate total duration across all activities
-                const totalDurationMinutes = scheduledEvents.reduce((total: number, event: ScheduleCardData) => {
+                const totalDurationMinutes = scheduledEvents.reduce((total, event) => {
                   if (!event.start.dateTime || !event.end.dateTime) return total;
                   const start = new Date(event.start.dateTime);
                   const end = new Date(event.end.dateTime);
@@ -1521,7 +1521,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                     )}
                   </div>
                   <div className="space-y-1">
-                    {scheduledEvents.map((event: ScheduleCardData) => {
+                    {scheduledEvents.map((event) => {
                       const isCompletion = event.type === 'task:completed';
                       const isTask = event.type === 'task';
                       const isEditing = editingActivityId === event.id;
@@ -1869,7 +1869,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   {/* Focus button - positioned on the right */}
                   {onEnterFocus && currentTask && (
                     <button
-                      onClick={() => onEnterFocus(currentTask)}
+                      onClick={() => onEnterFocus(currentTask as Task)}
                       className={`p-2 rounded-lg bg-transparent transition-colors ${
                         isDarkMode 
                           ? 'text-purple-400 hover:bg-purple-400/10' 
