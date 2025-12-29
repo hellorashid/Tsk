@@ -30,7 +30,7 @@ if (typeof CSS === 'undefined' || !CSS.supports('height', '100dvh')) {
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <BasicProvider project_id={schema.project_id} schema={schema} debug>
+    <BasicProvider schema={schema} debug>
       <App />
     </BasicProvider>
   </React.StrictMode>
