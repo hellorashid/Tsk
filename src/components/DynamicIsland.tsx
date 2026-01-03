@@ -1470,6 +1470,8 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   onDeleteSubtask={onDeleteTask}
                   accentColor={accentColor}
                   isDarkMode={isDarkMode}
+                  showHeader={true}
+                  maxHeight="180px"
                 />
               )}
 
