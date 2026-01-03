@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Task } from '../utils/types';
 import { useBasic, useQuery } from '@basictech/react';
 import Checkbox from './Checkbox';
 import PomodoroTimer from './PomodoroTimer';
+import SubtasksList from './SubtasksList';
 
 interface FocusViewProps {
   task: Task;
@@ -11,6 +12,7 @@ interface FocusViewProps {
   onUpdateTask: (id: string, changes: any) => void;
   onTaskToggle: (taskId: string, completed: boolean) => void;
   onAddSubtask?: (parentTaskId: string, name: string) => Promise<string | null>;
+  onDeleteSubtask?: (id: string) => void;
   accentColor?: string;
   isDarkMode?: boolean;
 }
@@ -19,14 +21,14 @@ const FocusView: React.FC<FocusViewProps> = ({
   task,
   onExit,
   onUpdateTask,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onTaskToggle,
   onAddSubtask,
+  onDeleteSubtask,
   accentColor = '#1F1B2F',
   isDarkMode = true
 }) => {
   const { db } = useBasic();
-  const [newSubtaskName, setNewSubtaskName] = useState('');
-  const subtaskInputRef = useRef<HTMLInputElement>(null);
   
   // Fetch live task data
   const liveTask = useQuery(
@@ -78,22 +80,9 @@ const FocusView: React.FC<FocusViewProps> = ({
     onUpdateTask(currentTask.id, { description: e.target.value });
   };
 
-  const handleAddSubtask = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (newSubtaskName.trim() && onAddSubtask) {
-      await onAddSubtask(currentTask.id, newSubtaskName.trim());
-      setNewSubtaskName('');
-    }
-  };
-
-  const handleSubtaskKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddSubtask();
-    } else if (e.key === 'Escape') {
-      setNewSubtaskName('');
-      subtaskInputRef.current?.blur();
-    }
+  // Wrapper for subtask update to match SubtasksList interface
+  const handleUpdateSubtask = (id: string, changes: Partial<Task>) => {
+    onUpdateTask(id, changes);
   };
 
   return (
@@ -174,72 +163,21 @@ const FocusView: React.FC<FocusViewProps> = ({
           />
 
           {/* Subtasks - show section if task is not a subtask itself */}
-          {!currentTask.parentTaskId && (
-            <div className="space-y-4 pt-6 border-t" style={{
+          {!currentTask.parentTaskId && onAddSubtask && onDeleteSubtask && (
+            <div className="pt-6 border-t" style={{
               borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
             }}>
-              <h3 className={`text-xs font-semibold uppercase tracking-wider ${
-                isDarkMode ? 'text-gray-500' : 'text-gray-500'
-              }`}>
-                Subtasks {subtasks.length > 0 && `(${subtasks.filter((s) => s.completed).length}/${subtasks.length})`}
-              </h3>
-              <div className="space-y-3">
-                {subtasks.map((subtask) => (
-                  <div key={subtask.id} className="flex items-center gap-3">
-                    <Checkbox
-                      id={`focus-subtask-${subtask.id}`}
-                      size="sm"
-                      checked={subtask.completed}
-                      onChange={() => onTaskToggle(subtask.id, !subtask.completed)}
-                      accentColor={accentColor}
-                    />
-                    <input
-                      type="text"
-                      value={subtask.name}
-                      onChange={(e) => onUpdateTask(subtask.id, { name: e.target.value })}
-                      className={`text-sm flex-1 bg-transparent border-none outline-none ${
-                        subtask.completed ? 'line-through opacity-60' : ''
-                      } ${isDarkMode ? 'text-gray-300 placeholder-gray-600' : 'text-gray-700 placeholder-gray-400'}`}
-                    />
-                  </div>
-                ))}
-                {/* Add subtask input */}
-                {onAddSubtask && (
-                  <form onSubmit={handleAddSubtask} className="flex items-center gap-3">
-                    <div className="flex-shrink-0 opacity-40">
-                      <div className="relative">
-                        <Checkbox
-                          id={`focus-add-subtask-${currentTask.id}`}
-                          size="sm"
-                          checked={false}
-                          onChange={() => undefined}
-                          disabled
-                        />
-                        <svg 
-                          xmlns="http://www.w3.org/2000/svg" 
-                          className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-3 w-3 pointer-events-none ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
-                          viewBox="0 0 20 20" 
-                          fill="currentColor"
-                        >
-                          <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    </div>
-                    <input
-                      ref={subtaskInputRef}
-                      type="text"
-                      value={newSubtaskName}
-                      onChange={(e) => setNewSubtaskName(e.target.value)}
-                      onKeyDown={handleSubtaskKeyDown}
-                      placeholder={subtasks.length === 0 ? "Add a subtask..." : "Add another subtask..."}
-                      className={`text-sm flex-1 bg-transparent border-none outline-none ${
-                        isDarkMode ? 'text-gray-300 placeholder-gray-500' : 'text-gray-700 placeholder-gray-400'
-                      }`}
-                      autoComplete="off"
-                    />
-                  </form>
-                )}
-              </div>
+              <SubtasksList
+                parentTaskId={currentTask.id}
+                subtasks={subtasks}
+                onAddSubtask={onAddSubtask}
+                onUpdateSubtask={handleUpdateSubtask}
+                onDeleteSubtask={onDeleteSubtask}
+                accentColor={accentColor}
+                isDarkMode={isDarkMode}
+                showHeader={true}
+                maxHeight="200px"
+              />
             </div>
           )}
         </div>
