@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { Task } from '../utils/types';
 import { useBasic, useQuery } from '@basictech/react';
 import Checkbox from './Checkbox';
@@ -25,6 +25,8 @@ const FocusView: React.FC<FocusViewProps> = ({
   isDarkMode = true
 }) => {
   const { db } = useBasic();
+  const [newSubtaskName, setNewSubtaskName] = useState('');
+  const subtaskInputRef = useRef<HTMLInputElement>(null);
   
   // Fetch live task data
   const liveTask = useQuery(
@@ -74,6 +76,24 @@ const FocusView: React.FC<FocusViewProps> = ({
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onUpdateTask(currentTask.id, { description: e.target.value });
+  };
+
+  const handleAddSubtask = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (newSubtaskName.trim() && onAddSubtask) {
+      await onAddSubtask(currentTask.id, newSubtaskName.trim());
+      setNewSubtaskName('');
+    }
+  };
+
+  const handleSubtaskKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddSubtask();
+    } else if (e.key === 'Escape') {
+      setNewSubtaskName('');
+      subtaskInputRef.current?.blur();
+    }
   };
 
   return (
@@ -153,15 +173,15 @@ const FocusView: React.FC<FocusViewProps> = ({
             }`}
           />
 
-          {/* Subtasks */}
-          {subtasks.length > 0 && (
+          {/* Subtasks - show section if task is not a subtask itself */}
+          {!currentTask.parentTaskId && (
             <div className="space-y-4 pt-6 border-t" style={{
               borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
             }}>
               <h3 className={`text-xs font-semibold uppercase tracking-wider ${
                 isDarkMode ? 'text-gray-500' : 'text-gray-500'
               }`}>
-                Subtasks ({subtasks.filter((s) => s.completed).length}/{subtasks.length})
+                Subtasks {subtasks.length > 0 && `(${subtasks.filter((s) => s.completed).length}/${subtasks.length})`}
               </h3>
               <div className="space-y-3">
                 {subtasks.map((subtask) => (
@@ -183,6 +203,42 @@ const FocusView: React.FC<FocusViewProps> = ({
                     />
                   </div>
                 ))}
+                {/* Add subtask input */}
+                {onAddSubtask && (
+                  <form onSubmit={handleAddSubtask} className="flex items-center gap-3">
+                    <div className="flex-shrink-0 opacity-40">
+                      <div className="relative">
+                        <Checkbox
+                          id={`focus-add-subtask-${currentTask.id}`}
+                          size="sm"
+                          checked={false}
+                          onChange={() => undefined}
+                          disabled
+                        />
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-3 w-3 pointer-events-none ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                          viewBox="0 0 20 20" 
+                          fill="currentColor"
+                        >
+                          <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                    <input
+                      ref={subtaskInputRef}
+                      type="text"
+                      value={newSubtaskName}
+                      onChange={(e) => setNewSubtaskName(e.target.value)}
+                      onKeyDown={handleSubtaskKeyDown}
+                      placeholder={subtasks.length === 0 ? "Add a subtask..." : "Add another subtask..."}
+                      className={`text-sm flex-1 bg-transparent border-none outline-none ${
+                        isDarkMode ? 'text-gray-300 placeholder-gray-500' : 'text-gray-700 placeholder-gray-400'
+                      }`}
+                      autoComplete="off"
+                    />
+                  </form>
+                )}
               </div>
             </div>
           )}
