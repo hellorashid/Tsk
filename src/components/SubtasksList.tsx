@@ -147,6 +147,7 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
                     size="sm"
                     checked={subtask.completed || false}
                     onChange={(e) => handleCheckboxChange(subtask.id, e.target.checked)}
+                    accentColor={accentColor}
                   />
                   <div className="flex-1 min-w-0 ml-2">
                     {editingId === subtask.id ? (
@@ -217,6 +218,7 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
                 size="sm"
                 checked={false}
                 onChange={() => undefined}
+                accentColor={accentColor}
                 disabled
               />
               <svg 
