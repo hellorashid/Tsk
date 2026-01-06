@@ -12,6 +12,8 @@ interface SubtasksListProps {
   onDeleteSubtask: (id: string) => void;
   accentColor?: string;
   isDarkMode?: boolean;
+  showHeader?: boolean;
+  maxHeight?: string;
 }
 
 const SubtasksList: React.FC<SubtasksListProps> = ({
@@ -22,6 +24,8 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
   onDeleteSubtask,
   accentColor = '#1F1B2F',
   isDarkMode = true,
+  showHeader = false,
+  maxHeight = '200px',
 }) => {
   const [newSubtaskName, setNewSubtaskName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -98,19 +102,42 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
+  const completedCount = subtasks.filter(s => s.completed).length;
+
   return (
     <div className="mt-4">
-      <div className="rounded-lg" 
-      style={{ backgroundColor: hexToRgba(accentColor, 0.3) }}
+      <div 
+        className="rounded-lg flex flex-col" 
+        style={{ 
+          backgroundColor: hexToRgba(accentColor, 0.3),
+          maxHeight: maxHeight,
+        }}
       >
+        {/* Sticky Header */}
+        {showHeader && (
+          <div 
+            className={`sticky top-0 z-10 px-4 py-2 rounded-t-lg ${
+              isDarkMode ? 'text-gray-500' : 'text-gray-500'
+            }`}
+            style={{ 
+              backgroundColor: hexToRgba(accentColor, 0.3),
+            }}
+          >
+            <h3 className="text-xs font-semibold uppercase tracking-wider">
+              Subtasks {subtasks.length > 0 && `(${completedCount}/${subtasks.length})`}
+            </h3>
+          </div>
+        )}
+
+        {/* Scrollable Content */}
         {subtasks.length > 0 && (
-          <div>
+          <div className="flex-1 overflow-y-auto min-h-0">
             {subtasks.map((subtask, index) => (
             <div
               key={subtask.id}
               className={`group pl-4 pr-2 py-1.5 transition-all duration-200 ${
                 isDarkMode ? 'text-gray-100' : 'text-gray-900'
-              } ${index === 0 ? 'rounded-t-lg' : ''}`}
+              } ${!showHeader && index === 0 ? 'rounded-t-lg' : ''}`}
               onDoubleClick={() => handleEditStart(subtask)}
             >
               <div className="flex items-center justify-between">
@@ -120,6 +147,7 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
                     size="sm"
                     checked={subtask.completed || false}
                     onChange={(e) => handleCheckboxChange(subtask.id, e.target.checked)}
+                    accentColor={accentColor}
                   />
                   <div className="flex-1 min-w-0 ml-2">
                     {editingId === subtask.id ? (
@@ -167,16 +195,20 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
           </div>
         )}
 
-        <form onSubmit={handleAddSubtask}>
+        {/* Sticky Footer - Add subtask input */}
+        <form onSubmit={handleAddSubtask} className="sticky bottom-0 z-10">
           <div
             className={`pl-4 pr-2 py-2.5 md:py-1.5 transition-all duration-200 group ${
               isDarkMode ? 'text-gray-100' : 'text-gray-900'
-            } ${subtasks.length === 0 ? 'rounded-lg' : 'rounded-b-lg'}`}
+            } ${subtasks.length === 0 && !showHeader ? 'rounded-lg' : 'rounded-b-lg'}`}
+            style={{ 
+              backgroundColor: hexToRgba(accentColor, 0.3),
+            }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = hexToRgba(accentColor, 0.8);
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.backgroundColor = hexToRgba(accentColor, 0.3);
             }}
           >
           <div className="flex items-center">
@@ -185,7 +217,8 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
                 id={`subtask-add-${parentTaskId}`}
                 size="sm"
                 checked={false}
-                onChange={() => {}}
+                onChange={() => undefined}
+                accentColor={accentColor}
                 disabled
               />
               <svg 

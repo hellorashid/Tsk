@@ -1386,6 +1386,7 @@ function Home() {
           onUpdateTask={updateTask}
           onTaskToggle={handleTaskToggle}
           onAddSubtask={handleAddSubtask}
+          onDeleteSubtask={deleteTask}
           accentColor={theme.accentColor}
           isDarkMode={theme.isDarkMode}
         />

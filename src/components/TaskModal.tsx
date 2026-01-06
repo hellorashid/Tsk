@@ -686,6 +686,8 @@ export const TaskModal = ({
             onDeleteSubtask={onDeleteSubtask}
             accentColor={accentColor}
             isDarkMode={isDarkMode}
+            showHeader={true}
+            maxHeight="200px"
           />
         )}
 
