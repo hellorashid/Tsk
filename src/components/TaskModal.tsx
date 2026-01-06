@@ -47,7 +47,9 @@ export const TaskModal = ({
   const [taskCompleted, setTaskCompleted] = useState(task?.completed || false);
   const [taskName, setTaskName] = useState(task?.name || '');
   const [taskDescription, setTaskDescription] = useState(task?.description || '');
+  const [isActivityExpanded, setIsActivityExpanded] = useState(false);
   const nameInputRef = useRef(null);
+  const descTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   
   // Query subtasks for this task
   const { db } = useBasic();
@@ -159,13 +161,15 @@ export const TaskModal = ({
       titleTextarea.style.height = 'auto';
       titleTextarea.style.height = `${titleTextarea.scrollHeight}px`;
     }
+  }, [taskName]);
 
-    const descTextarea = document.querySelector('textarea.task-description') as HTMLTextAreaElement;
-    if (descTextarea) {
-      descTextarea.style.height = 'auto';
-      descTextarea.style.height = `${descTextarea.scrollHeight}px`;
+  // Auto-resize description textarea (same pattern as DynamicIsland)
+  useEffect(() => {
+    if (descTextareaRef.current) {
+      descTextareaRef.current.style.height = 'auto';
+      descTextareaRef.current.style.height = `${descTextareaRef.current.scrollHeight}px`;
     }
-  }, [taskName, taskDescription]);
+  }, [taskDescription]);
 
   const handleDelete = (e) => {
     e.stopPropagation();
@@ -185,11 +189,8 @@ export const TaskModal = ({
     e.target.style.height = `${e.target.scrollHeight}px`;
   };
 
-  const handleDescriptionChange = (e) => {
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setTaskDescription(e.target.value);
-    // Auto-resize the textarea
-    e.target.style.height = 'auto';
-    e.target.style.height = `${e.target.scrollHeight}px`;
   };
 
   const handleTitleBlur = () => {
@@ -400,10 +401,11 @@ export const TaskModal = ({
   return (
     <>
       <div
-        className={`${inDrawer ? "flex flex-col h-full overflow-y-auto relative" : "bg-black rounded-lg shadow-xl max-w-2xl w-full mx-4 p-4"}`}
+        className={`${inDrawer ? "flex flex-col h-full relative" : "bg-black rounded-lg shadow-xl max-w-2xl w-full mx-4 p-4"}`}
         style={inDrawer ? { backgroundColor: getBackgroundColor() } : {}}
       >
-        <div className={`flex items-start w-full ${inDrawer ? 'mb-4' : 'my-4'} gap-3`}>
+        {/* Header - Title with checkbox (sticky, outside scroll) */}
+        <div className={`flex items-start w-full ${inDrawer ? 'mb-4 flex-shrink-0' : 'my-4'} gap-3`}>
           <div className="mt-2">
             <Checkbox
               id={task?.id}
@@ -440,6 +442,14 @@ export const TaskModal = ({
           )}
         </div>
 
+        {/* Scrollable content area */}
+        <div 
+          className={inDrawer ? "flex-1 overflow-y-auto min-h-0" : ""}
+          style={inDrawer ? {
+            scrollbarWidth: 'thin',
+            scrollbarColor: isDarkMode ? 'rgba(255,255,255,0.2) transparent' : 'rgba(0,0,0,0.2) transparent',
+          } : {}}
+        >
         {/* Schedule Section - moved below title */}
         {!isNew && scheduledEvents && scheduledEvents.length > 0 && (() => {
           // Calculate total duration across all activities
@@ -459,6 +469,16 @@ export const TaskModal = ({
             return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
           };
           
+          // Sort events chronologically (oldest to newest, top to bottom)
+          const sortedEvents = [...scheduledEvents].sort((a, b) => {
+            const dateA = a.start.dateTime ? new Date(a.start.dateTime).getTime() : 0;
+            const dateB = b.start.dateTime ? new Date(b.start.dateTime).getTime() : 0;
+            return dateA - dateB; // Oldest first (chronological)
+          });
+          // When collapsed, show only the latest (last) activity
+          const displayedEvents = isActivityExpanded ? sortedEvents : sortedEvents.slice(-1);
+          const hiddenCount = scheduledEvents.length - 1;
+          
           return (
           <div className={`flex flex-col gap-2 ${inDrawer ? 'mb-4' : 'mt-4'}`}>
             {/* Activity header with total duration */}
@@ -472,7 +492,22 @@ export const TaskModal = ({
                 </span>
               )}
             </div>
-            {scheduledEvents.map((event) => {
+            
+            {/* Show "Show more" button above when collapsed */}
+            {!isActivityExpanded && hiddenCount > 0 && (
+              <button
+                onClick={() => setIsActivityExpanded(true)}
+                className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
+                  isDarkMode 
+                    ? 'text-gray-400 hover:text-gray-300 hover:bg-white/5' 
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                Show {hiddenCount} earlier {hiddenCount === 1 ? 'activity' : 'activities'}...
+              </button>
+            )}
+            
+            {displayedEvents.map((event) => {
               // Calculate duration for this event
               let eventDurationMinutes = 0;
               if (event.start.dateTime && event.end.dateTime) {
@@ -647,6 +682,20 @@ export const TaskModal = ({
                   </div>
               );
             })}
+            
+            {/* Show "Show less" button at bottom when expanded */}
+            {isActivityExpanded && hiddenCount > 0 && (
+              <button
+                onClick={() => setIsActivityExpanded(false)}
+                className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
+                  isDarkMode 
+                    ? 'text-gray-400 hover:text-gray-300 hover:bg-white/5' 
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                Show less
+              </button>
+            )}
           </div>
           );
         })()}
@@ -687,27 +736,25 @@ export const TaskModal = ({
             accentColor={accentColor}
             isDarkMode={isDarkMode}
             showHeader={true}
-            maxHeight="200px"
           />
         )}
 
-        {/* Description Section - at bottom */}
+        {/* Description Section - auto-expands to fit content */}
         <textarea
+          ref={descTextareaRef}
           value={taskDescription || ""}
           onChange={handleDescriptionChange}
           onBlur={handleDescriptionBlur}
           onKeyDown={(e) => handleKeyDown(e, 'description')}
-          className={`task-description opacity-70 text-left py-1 px-2 text-white bg-transparent resize-none min-h-[100px] focus:outline-none ${inDrawer ? 'mt-6 mb-4' : 'mt-4'}`}
+          className={`task-description opacity-70 text-left py-1 px-2 text-white bg-transparent resize-none overflow-hidden min-h-[100px] focus:outline-none ${inDrawer ? 'mt-6 mb-4' : 'mt-4'}`}
           placeholder="Some description..."
           style={{ height: 'auto' }}
         />
+        </div>{/* End scrollable content area */}
         
-        {/* Spacer to push action buttons to bottom */}
-        {inDrawer && <div className="flex-1 min-h-8" />}
-        
-        {/* Bottom Action Buttons - positioned at bottom of sheet content */}
+        {/* Bottom Action Buttons - positioned at bottom, outside scroll */}
         {inDrawer && !isNew && (
-          <div className="flex items-center justify-between px-2 pb-6 pt-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
+          <div className="flex items-center justify-between px-2 pb-6 pt-4 flex-shrink-0" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
             {/* Delete Button - left */}
             {deleteTask && (
               <motion.button

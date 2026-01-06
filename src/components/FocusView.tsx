@@ -1,9 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Task } from '../utils/types';
 import { useBasic, useQuery } from '@basictech/react';
 import Checkbox from './Checkbox';
-import PomodoroTimer from './PomodoroTimer';
 import SubtasksList from './SubtasksList';
 
 interface FocusViewProps {
@@ -30,6 +29,14 @@ const FocusView: React.FC<FocusViewProps> = ({
 }) => {
   const { db } = useBasic();
   
+  // Clock state
+  const [isClockExpanded, setIsClockExpanded] = useState(true);
+  const [sessionStartTime] = useState(() => Date.now());
+  const [elapsedTime, setElapsedTime] = useState(0);
+  
+  // Local state for description to prevent cursor jumping
+  const [localDescription, setLocalDescription] = useState(task?.description || '');
+  
   // Fetch live task data
   const liveTask = useQuery(
     () => task?.id ? db.collection('tasks').get(task.id) : null,
@@ -46,6 +53,26 @@ const FocusView: React.FC<FocusViewProps> = ({
       : null,
     [currentTask?.id, currentTask?.parentTaskId]
   ) || []) as Task[];
+
+  // Update elapsed time every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsedTime(Math.floor((Date.now() - sessionStartTime) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [sessionStartTime]);
+
+  // Format elapsed time as M:SS or H:MM:SS
+  const formatElapsedTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // Handle escape key
   useEffect(() => {
@@ -76,9 +103,38 @@ const FocusView: React.FC<FocusViewProps> = ({
     onUpdateTask(currentTask.id, { name: e.target.value });
   };
 
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onUpdateTask(currentTask.id, { description: e.target.value });
+    setLocalDescription(e.target.value);
   };
+
+  const handleDescriptionBlur = () => {
+    if (localDescription !== currentTask.description) {
+      onUpdateTask(currentTask.id, { description: localDescription });
+    }
+  };
+
+  // Sync local description when task changes (e.g., switching tasks)
+  useEffect(() => {
+    setLocalDescription(currentTask.description || '');
+  }, [currentTask.id]);
+
+  // Auto-resize description on mount and when content changes
+  useEffect(() => {
+    if (descriptionRef.current && scrollContainerRef.current) {
+      // Save scroll position
+      const scrollTop = scrollContainerRef.current.scrollTop;
+      
+      // Resize textarea
+      descriptionRef.current.style.height = 'auto';
+      descriptionRef.current.style.height = `${descriptionRef.current.scrollHeight}px`;
+      
+      // Restore scroll position
+      scrollContainerRef.current.scrollTop = scrollTop;
+    }
+  }, [localDescription]);
 
   // Wrapper for subtask update to match SubtasksList interface
   const handleUpdateSubtask = (id: string, changes: Partial<Task>) => {
@@ -96,42 +152,91 @@ const FocusView: React.FC<FocusViewProps> = ({
         backgroundColor: isDarkMode ? '#0a0a0a' : '#f5f5f5',
       }}
     >
-      {/* Close button */}
+      {/* Clock Pill - Top Left */}
       <motion.button
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.1 }}
-        onClick={onExit}
-        className={`absolute top-6 right-6 p-3 rounded-full transition-colors ${
+        onClick={() => setIsClockExpanded(!isClockExpanded)}
+        className={`absolute top-6 left-6 flex items-center gap-2 transition-all duration-200 ${
+          isClockExpanded ? 'px-4 py-3 rounded-full' : 'p-3 rounded-full'
+        } ${
           isDarkMode
             ? 'bg-white/10 hover:bg-white/20 text-gray-300'
             : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
         }`}
-        aria-label="Exit focus mode"
-        title="Press ESC to exit"
+        aria-label={isClockExpanded ? 'Collapse timer' : 'Expand timer'}
       >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
+        {isClockExpanded && (
+          <motion.span
+            initial={{ opacity: 0, width: 0 }}
+            animate={{ opacity: 1, width: 'auto' }}
+            exit={{ opacity: 0, width: 0 }}
+            className="text-sm font-medium tabular-nums"
+          >
+            {formatElapsedTime(elapsedTime)}
+          </motion.span>
+        )}
       </motion.button>
+
+      {/* Top Right Buttons */}
+      <div className="absolute top-6 right-6 flex flex-col gap-3">
+        {/* Close button */}
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
+          onClick={onExit}
+          className={`p-3 rounded-full transition-colors ${
+            isDarkMode
+              ? 'bg-white/10 hover:bg-white/20 text-gray-300'
+              : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+          }`}
+          aria-label="Exit focus mode"
+          title="Press ESC to exit"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </motion.button>
+
+        {/* Done button */}
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.15 }}
+          onClick={handleTaskComplete}
+          className={`p-3 rounded-full transition-colors ${
+            isDarkMode
+              ? 'bg-green-500/20 hover:bg-green-500/30 text-green-400'
+              : 'bg-green-100 hover:bg-green-200 text-green-600'
+          }`}
+          aria-label="Mark as done"
+          title="Mark task as done"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </motion.button>
+      </div>
 
       {/* Main content */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.3 }}
-        className="w-full max-w-2xl px-8 py-8 flex flex-col"
-        style={{ minHeight: 'calc(100vh - 120px)' }}
+        className="w-full max-w-2xl mx-auto px-8 pt-24 pb-8 flex flex-col"
+        style={{ height: '100vh' }}
       >
-        {/* Spacer to move task info down */}
-        <div style={{ flex: '0.4' }} />
-
-        {/* Task info */}
-        <div className={`space-y-8 p-6 rounded-xl transition-colors duration-300 ${
+        {/* Task info - extends to fill available space */}
+        <div className={`p-6 rounded-xl transition-colors duration-300 flex flex-col flex-1 overflow-hidden ${
           isDarkMode ? 'bg-white/3 hover:bg-white/4' : 'bg-white shadow-lg'
         }`}>
-          {/* Task title with checkbox */}
-          <div className="flex items-center gap-3">
+          {/* Task title with checkbox - sticky header */}
+          <div className="flex items-center gap-3 pb-6 flex-shrink-0">
             <div onClick={(e) => e.stopPropagation()}>
               <Checkbox
                 id={`focus-task-${currentTask.id}`}
@@ -152,21 +257,17 @@ const FocusView: React.FC<FocusViewProps> = ({
             />
           </div>
 
-          {/* Description */}
-          <textarea
-            value={currentTask.description || ''}
-            onChange={handleDescriptionChange}
-            placeholder="Add description..."
-            className={`w-full min-h-[100px] text-base leading-relaxed resize-none bg-transparent border-none outline-none ${
-              isDarkMode ? 'text-gray-300 placeholder-gray-600' : 'text-gray-700 placeholder-gray-400'
-            }`}
-          />
-
-          {/* Subtasks - show section if task is not a subtask itself */}
-          {!currentTask.parentTaskId && onAddSubtask && onDeleteSubtask && (
-            <div className="pt-6 border-t" style={{
-              borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
-            }}>
+          {/* Scrollable content area - subtasks first, then description */}
+          <div 
+            ref={scrollContainerRef} 
+            className="flex-1 overflow-y-auto min-h-0 space-y-6 pr-6"
+            style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: isDarkMode ? 'rgba(255,255,255,0.2) transparent' : 'rgba(0,0,0,0.2) transparent',
+            }}
+          >
+            {/* Subtasks - show section if task is not a subtask itself */}
+            {!currentTask.parentTaskId && onAddSubtask && onDeleteSubtask && (
               <SubtasksList
                 parentTaskId={currentTask.id}
                 subtasks={subtasks}
@@ -176,22 +277,22 @@ const FocusView: React.FC<FocusViewProps> = ({
                 accentColor={accentColor}
                 isDarkMode={isDarkMode}
                 showHeader={true}
-                maxHeight="200px"
               />
-            </div>
-          )}
-        </div>
+            )}
 
-        {/* Spacer to push timer to bottom */}
-        <div style={{ flex: '0.6' }} />
-
-        {/* Stopwatch Timer - at the bottom */}
-        <div className="flex justify-center pt-8">
-          <PomodoroTimer 
-            accentColor={accentColor} 
-            isDarkMode={isDarkMode}
-            onMarkDone={() => handleTaskComplete()}
-          />
+            {/* Description - expands naturally with content */}
+            <textarea
+              ref={descriptionRef}
+              value={localDescription}
+              onChange={handleDescriptionChange}
+              onBlur={handleDescriptionBlur}
+              placeholder="Add description..."
+              className={`w-full min-h-[100px] text-base leading-relaxed resize-none overflow-hidden bg-transparent border-none outline-none ${
+                isDarkMode ? 'text-gray-300 placeholder-gray-600' : 'text-gray-700 placeholder-gray-400'
+              }`}
+              style={{ height: 'auto' }}
+            />
+          </div>
         </div>
       </motion.div>
     </motion.div>

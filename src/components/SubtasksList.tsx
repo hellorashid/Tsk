@@ -110,7 +110,6 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
         className="rounded-lg flex flex-col" 
         style={{ 
           backgroundColor: hexToRgba(accentColor, 0.3),
-          maxHeight: maxHeight,
         }}
       >
         {/* Sticky Header */}
@@ -120,7 +119,7 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
               isDarkMode ? 'text-gray-500' : 'text-gray-500'
             }`}
             style={{ 
-              backgroundColor: hexToRgba(accentColor, 0.3),
+              backgroundColor: accentColor,
             }}
           >
             <h3 className="text-xs font-semibold uppercase tracking-wider">
@@ -129,9 +128,9 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
           </div>
         )}
 
-        {/* Scrollable Content */}
+        {/* Content */}
         {subtasks.length > 0 && (
-          <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex-1 min-h-0">
             {subtasks.map((subtask, index) => (
             <div
               key={subtask.id}
@@ -195,20 +194,20 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
           </div>
         )}
 
-        {/* Sticky Footer - Add subtask input */}
-        <form onSubmit={handleAddSubtask} className="sticky bottom-0 z-10">
+        {/* Footer - Add subtask input */}
+        <form onSubmit={handleAddSubtask}>
           <div
             className={`pl-4 pr-2 py-2.5 md:py-1.5 transition-all duration-200 group ${
               isDarkMode ? 'text-gray-100' : 'text-gray-900'
             } ${subtasks.length === 0 && !showHeader ? 'rounded-lg' : 'rounded-b-lg'}`}
             style={{ 
-              backgroundColor: hexToRgba(accentColor, 0.3),
+              backgroundColor: hexToRgba(accentColor, 0.6),
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = hexToRgba(accentColor, 0.8);
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = hexToRgba(accentColor, 0.3);
+              e.currentTarget.style.backgroundColor = hexToRgba(accentColor, 0.6);
             }}
           >
           <div className="flex items-center">

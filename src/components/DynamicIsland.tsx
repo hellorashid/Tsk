@@ -76,6 +76,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   const [eventEndTime, setEventEndTime] = useState('');
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
+  const [isActivityExpanded, setIsActivityExpanded] = useState(false);
   
   // Activity editing state
   const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
@@ -1418,10 +1419,10 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 5 }}
               transition={{ duration: 0.15, ease: [0.32, 0.72, 0, 1] }}
-              className="p-4 space-y-4"
+              className="p-4 flex flex-col max-h-[70vh]"
             >
-              {/* Header with checkbox and close button */}
-              <div className="flex items-center gap-3">
+              {/* Header with checkbox and close button - sticky */}
+              <div className="flex items-center gap-3 pb-4 flex-shrink-0">
                 <Checkbox
                   id={`dynamic-island-${currentTask?.id}`}
                   size="sm"
@@ -1459,35 +1460,42 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 </button>
               </div>
 
-              {/* Subtasks Section - Only show if task is not a subtask itself */}
-              {selectedTask && !selectedTask.parentTaskId && onAddSubtask && (
-                <SubtasksList
-                  key={selectedTask.id}
-                  parentTaskId={selectedTask.id}
-                  subtasks={subtasks}
-                  onAddSubtask={onAddSubtask}
-                  onUpdateSubtask={onUpdateTask}
-                  onDeleteSubtask={onDeleteTask}
-                  accentColor={accentColor}
-                  isDarkMode={isDarkMode}
-                  showHeader={true}
-                  maxHeight="180px"
-                />
-              )}
+              {/* Scrollable content area - subtasks, description, and activity */}
+              <div 
+                className="flex-1 overflow-y-auto min-h-0 space-y-4 -mr-4 pr-4"
+                style={{
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: isDarkMode ? 'rgba(255,255,255,0.2) transparent' : 'rgba(0,0,0,0.2) transparent',
+                }}
+              >
+                {/* Subtasks Section - Only show if task is not a subtask itself */}
+                {selectedTask && !selectedTask.parentTaskId && onAddSubtask && (
+                  <SubtasksList
+                    key={selectedTask.id}
+                    parentTaskId={selectedTask.id}
+                    subtasks={subtasks}
+                    onAddSubtask={onAddSubtask}
+                    onUpdateSubtask={onUpdateTask}
+                    onDeleteSubtask={onDeleteTask}
+                    accentColor={accentColor}
+                    isDarkMode={isDarkMode}
+                    showHeader={true}
+                  />
+                )}
 
-              {/* Description Section - in the middle */}
-              <textarea
-                ref={descTextareaRef}
-                value={description}
-                onChange={handleDescriptionChange}
-                onBlur={handleDescriptionBlur}
-                onKeyDown={(e) => handleTextareaKeyDown(e, 'description')}
-                className={`w-full bg-transparent focus:outline-none min-h-[100px] resize-none border border-transparent rounded ${
-                  isDarkMode ? 'text-gray-300 placeholder-gray-500' : 'text-gray-700 placeholder-gray-400'
-                }`}
-                placeholder="Add a description..."
-                style={{ height: 'auto' }}
-              />
+                {/* Description Section */}
+                <textarea
+                  ref={descTextareaRef}
+                  value={description}
+                  onChange={handleDescriptionChange}
+                  onBlur={handleDescriptionBlur}
+                  onKeyDown={(e) => handleTextareaKeyDown(e, 'description')}
+                  className={`w-full bg-transparent focus:outline-none min-h-[100px] resize-none overflow-hidden border border-transparent rounded ${
+                    isDarkMode ? 'text-gray-300 placeholder-gray-500' : 'text-gray-700 placeholder-gray-400'
+                  }`}
+                  placeholder="Add a description..."
+                  style={{ height: 'auto' }}
+                />
 
               {/* Activity Section - show scheduled events if any exist */}
               {scheduledEvents && scheduledEvents.length > 0 && (() => {
@@ -1507,6 +1515,16 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   const mins = Math.round(minutes % 60);
                   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
                 };
+
+                // Sort events chronologically (oldest to newest, top to bottom)
+                const sortedEvents = [...scheduledEvents].sort((a, b) => {
+                  const dateA = a.start.dateTime ? new Date(a.start.dateTime).getTime() : 0;
+                  const dateB = b.start.dateTime ? new Date(b.start.dateTime).getTime() : 0;
+                  return dateA - dateB; // Oldest first (chronological)
+                });
+                // When collapsed, show only the latest (last) activity
+                const displayedEvents = isActivityExpanded ? sortedEvents : sortedEvents.slice(-1);
+                const hiddenCount = scheduledEvents.length - 1;
                 
                 return (
                 <div className="space-y-2">
@@ -1523,7 +1541,21 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                     )}
                   </div>
                   <div className="space-y-1">
-                    {scheduledEvents.map((event) => {
+                    {/* Show "Show more" button above when collapsed */}
+                    {!isActivityExpanded && hiddenCount > 0 && (
+                      <button
+                        onClick={() => setIsActivityExpanded(true)}
+                        className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
+                          isDarkMode 
+                            ? 'text-gray-400 hover:text-gray-300 hover:bg-white/5' 
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        Show {hiddenCount} earlier {hiddenCount === 1 ? 'activity' : 'activities'}...
+                      </button>
+                    )}
+                    
+                    {displayedEvents.map((event) => {
                       const isCompletion = event.type === 'task:completed';
                       const isTask = event.type === 'task';
                       const isEditing = editingActivityId === event.id;
@@ -1725,13 +1757,28 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                         </div>
                       );
                     })}
+                    
+                    {/* Show "Show less" button at bottom when expanded */}
+                    {isActivityExpanded && hiddenCount > 0 && (
+                      <button
+                        onClick={() => setIsActivityExpanded(false)}
+                        className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
+                          isDarkMode 
+                            ? 'text-gray-400 hover:text-gray-300 hover:bg-white/5' 
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        Show less
+                      </button>
+                    )}
                   </div>
                 </div>
                 );
               })()}
+              </div>
 
-              {/* Actions Footer */}
-              <div className="flex justify-between items-center gap-2 pt-2 border-t border-white/10">
+              {/* Actions Footer - sticky */}
+              <div className="flex justify-between items-center gap-2 pt-4 border-t border-white/10 flex-shrink-0 mt-4">
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleDelete}
