@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Task } from '../utils/types';
 import { useBasic, useQuery } from '@basictech/react';
+import { useTheme } from '../contexts/ThemeContext';
 import Checkbox from './Checkbox';
 import SubtasksList from './SubtasksList';
 
@@ -12,8 +13,6 @@ interface FocusViewProps {
   onTaskToggle: (taskId: string, completed: boolean) => void;
   onAddSubtask?: (parentTaskId: string, name: string) => Promise<string | null>;
   onDeleteSubtask?: (id: string) => void;
-  accentColor?: string;
-  isDarkMode?: boolean;
 }
 
 const FocusView: React.FC<FocusViewProps> = ({
@@ -23,11 +22,11 @@ const FocusView: React.FC<FocusViewProps> = ({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onTaskToggle,
   onAddSubtask,
-  onDeleteSubtask,
-  accentColor = '#1F1B2F',
-  isDarkMode = true
+  onDeleteSubtask
 }) => {
   const { db } = useBasic();
+  const { theme } = useTheme();
+  const { accentColor, isDarkMode } = theme;
   
   // Clock state
   const [isClockExpanded, setIsClockExpanded] = useState(true);
@@ -243,7 +242,6 @@ const FocusView: React.FC<FocusViewProps> = ({
                 size="md"
                 checked={currentTask.completed}
                 onChange={() => handleTaskComplete()}
-                accentColor={accentColor}
               />
             </div>
             <input
@@ -274,8 +272,6 @@ const FocusView: React.FC<FocusViewProps> = ({
                 onAddSubtask={onAddSubtask}
                 onUpdateSubtask={handleUpdateSubtask}
                 onDeleteSubtask={onDeleteSubtask}
-                accentColor={accentColor}
-                isDarkMode={isDarkMode}
                 showHeader={true}
               />
             )}

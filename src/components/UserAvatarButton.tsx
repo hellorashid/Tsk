@@ -1,6 +1,5 @@
 import { useState } from "react";
-//@ts-ignore
-import { useBasic } from "@basictech/react"
+import { useBasic } from "@basictech/react";
 import * as Popover from '@radix-ui/react-popover';
 import packageJson from '../../package.json';
 

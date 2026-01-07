@@ -1,6 +1,4 @@
-// @ts-nocheck
-import { useState, useEffect, useRef } from "react";
-import * as db from "./utils/db";
+import { useState, useEffect, useRef, useCallback } from "react";
 import "./App.css";
 
 import { TaskModal } from "./components/TaskModal";
@@ -12,7 +10,7 @@ import bgImage from '/bg2.jpg';
 
 import SilkTaskDrawer from "./components/SilkTaskDrawer";
 // import Sidebar from "./components/Sidebar"; // Removed - sidebar is empty
-import TaskDetailsSidebar from "./components/TaskDetailsSidebar";
+// TaskDetailsSidebar removed - replaced by DynamicIsland
 import SettingsSidebar from "./components/SettingsSidebar";
 import SettingsDrawer from "./components/SettingsDrawer";
 import AboutModal from "./components/AboutModal";
@@ -28,97 +26,6 @@ import FoldersBar from "./components/FoldersBar";
 import FolderDrawer from "./components/FolderDrawer";
 import FolderSettings from "./components/FolderSettings";
 import { Folder } from "./utils/types";
-
-
-function ExpandableInput() {
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [inputValue, setInputValue] = useState('')
-  const inputRef = useRef<HTMLTextAreaElement>(null)
-  const formRef = useRef<HTMLFormElement>(null)
-
-  useEffect(() => {
-    if (isExpanded && inputRef.current) {
-      inputRef.current.focus()
-    }
-  }, [isExpanded])
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log('Submitted:', inputValue)
-    setInputValue('')
-    setIsExpanded(false)
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      setIsExpanded(false)
-    }
-  }
-
-  const handleBlur = (e: React.FocusEvent) => {
-    if (formRef.current && !formRef.current.contains(e.relatedTarget as Node)) {
-      setIsExpanded(false)
-    }
-  }
-
-  return (
-    <div className="relative">
-      <form
-        ref={formRef}
-        onSubmit={handleSubmit}
-        className="relative"
-      >
-        <textarea
-          ref={inputRef}
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={handleBlur}
-          placeholder="I want to..."
-          className={`
-            w-full p-3 rounded-lg
-            bg-gray-800
-            
-            focus:outline-none focus:ring-2 focus:ring-blue-500
-            transition-all duration-300 ease-in-out
-            ${isExpanded ? 'h-32' : 'h-12'}
-          `}
-          onClick={() => setIsExpanded(true)}
-        />
-
-        <div
-          className={`
-            absolute bottom-0 left-0 right-0
-            bg-gray-800 border-t
-            transition-opacity duration-300 ease-in-out
-            ${isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}
-          `}
-        >
-          <div className="flex justify-between items-center p-2">
-            <div className="flex space-x-2">
-              <button variant="ghost" size="icon" type="button">
-                {/* <Bold className="h-4 w-4" /> */}
-                <span className="sr-only">Bold</span>
-              </button>
-              <button variant="ghost" size="icon" type="button">
-                {/* <Italic className="h-4 w-4" /> */}
-                <span className="sr-only">Italic</span>
-              </button>
-              <button variant="ghost" size="icon" type="button">
-                {/* <Link className="h-4 w-4" /> */}
-                <span className="sr-only">Link</span>
-              </button>
-            </div>
-            <button type="submit" size="sm">
-              {/* <Send className="h-4 w-4 mr-2" /> */}
-              Submit
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
-  )
-}
 
 
 function StatusIcon({ status }: { status: string }) {
@@ -161,21 +68,22 @@ function Home() {
   const { db, dbStatus } = useBasic();
   const { theme, setAccentColor, setIsDarkMode, setFontStyle } = useTheme();
 
-  const tasks = useQuery(() => db.collection("tasks").getAll())
-  const scheduleEventsData = useQuery(() => db.collection("schedule").getAll())
-  const folders = useQuery(() => db.collection("filters").getAll())
+  const tasksData = useQuery(() => db.collection("tasks").getAll());
+  const tasks = (tasksData || []) as Task[];
+  const scheduleEventsData = useQuery(() => db.collection("schedule").getAll());
+  const scheduleEvents = (scheduleEventsData || []) as ScheduleCardData[];
+  const foldersData = useQuery(() => db.collection("filters").getAll());
+  const folders = (foldersData || []) as Folder[];
 
   console.log("tasks from DB:", tasks);
   console.log("schedule from DB:", scheduleEventsData);
   console.log("folders from DB:", folders);
-  const [selectedTask, setSelectedTask] = useState(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleCardData | null>(null);
   const [focusedTask, setFocusedTask] = useState<Task | null>(null);
   const [focusSessionEventId, setFocusSessionEventId] = useState<string | null>(null);
   const fetchingWeatherDatesRef = useRef<Set<string>>(new Set());
 
-  // Use schedule events from database, fallback to empty array
-  const scheduleEvents = scheduleEventsData || [];
   
   // Update a schedule event in the database
   const updateScheduleEvent = async (id: string, changes: Partial<ScheduleCardData>) => {
@@ -192,7 +100,7 @@ function Home() {
   // const [activeFilter, setActiveFilter] = useState('all');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [showSchedule, setShowSchedule] = useState(true);
-  const [viewMode, setViewMode] = useState('cozy');
+  const [viewMode, setViewMode] = useState<'compact' | 'cozy' | 'chonky'>('cozy');
   // const [customFilters, setCustomFilters] = useState([]);
   const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
@@ -238,17 +146,6 @@ function Home() {
     localStorage.setItem('tsk-show-today-folder', showTodayFolder.toString());
   }, [showTodayFolder]);
 
-  // Auto-fetch weather for today on initial load (with delay to ensure app is fully initialized)
-  useEffect(() => {
-    if (scheduleEvents) {
-      const timer = setTimeout(() => {
-        handleFetchWeather(new Date());
-      }, 3000); // Wait 3 seconds after schedule loads
-      
-      return () => clearTimeout(timer);
-    }
-  }, [scheduleEvents]);
-
   // Handle mobile view change - close drawer when switching views
   const handleMobileViewChange = (view: 'tasks' | 'calendar') => {
     setMobileView(view);
@@ -260,8 +157,8 @@ function Home() {
     }
   };
 
-  // Focus mode handlers
-  const handleEnterFocus = async (task: Task) => {
+  // Focus mode handlers - wrapped in useCallback for stable reference
+  const handleEnterFocus = useCallback(async (task: Task) => {
     setFocusedTask(task);
     // Close any open modals/drawers
     setSelectedTask(null);
@@ -326,10 +223,10 @@ function Home() {
         description: 'Focus session'
       };
       
-      const eventId = await db.collection("schedule").add(sessionEvent);
+      const eventId = await db.collection("schedule").add(sessionEvent) as unknown as string;
       setFocusSessionEventId(eventId);
     }
-  };
+  }, [scheduleEvents, db]);
 
   const handleExitFocus = async () => {
     // Update the focus session event's end time
@@ -347,8 +244,8 @@ function Home() {
     setFocusedTask(null);
   };
 
-  // Fetch weather and create weather events
-  const handleFetchWeather = async (date: Date) => {
+  // Fetch weather and create weather events - wrapped in useCallback for stable reference
+  const handleFetchWeather = useCallback(async (date: Date) => {
     const dateStr = date.toDateString();
     
     // Check if already fetching for this date (race condition prevention)
@@ -457,7 +354,18 @@ function Home() {
       // Remove from fetching set on error too
       fetchingWeatherDatesRef.current.delete(dateStr);
     }
-  };
+  }, [scheduleEvents, theme.location.latitude, theme.location.longitude, db]);
+
+  // Auto-fetch weather for today on initial load (with delay to ensure app is fully initialized)
+  useEffect(() => {
+    if (scheduleEvents) {
+      const timer = setTimeout(() => {
+        handleFetchWeather(new Date());
+      }, 3000); // Wait 3 seconds after schedule loads
+      
+      return () => clearTimeout(timer);
+    }
+  }, [scheduleEvents, handleFetchWeather]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -754,9 +662,15 @@ function Home() {
     }
   }, [activeFolder, tasks, scheduleEvents, filteredTasks]);
 
+  // Wrapper to ensure mutual exclusivity when selecting events - wrapped in useCallback for stable reference
+  const handleEventSelectWrapper = useCallback((event: ScheduleCardData | null) => {
+    setSelectedEvent(event);
+    setSelectedTask(null); // Clear task when selecting event
+  }, []);
+
     // Keyboard navigation for tasks and global shortcuts
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       // Global shortcuts - only when no input is focused
       const activeElement = document.activeElement;
       const isInputFocused = activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement;
@@ -901,10 +815,24 @@ function Home() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [filteredTasks, selectedTask, isMobile]);
+  }, [
+    filteredTasks, 
+    selectedTask, 
+    isMobile, 
+    scheduleEvents, 
+    selectedEvent, 
+    islandMode, 
+    handleEnterFocus, 
+    handleEventSelectWrapper,
+    folders,
+    showAllFolder,
+    showOtherFolder,
+    showTodayFolder,
+    activeFolder
+  ]);
 
   // When opening a task in the drawer
-  const handleTaskSelect = (task) => {
+  const handleTaskSelect = (task: Task) => {
     console.log("Selected task:", task);
     console.log("isMobile state:", isMobile);
 
@@ -933,12 +861,6 @@ function Home() {
   const handleTaskSelectWrapper = (task: Task | null) => {
     setSelectedTask(task);
     setSelectedEvent(null); // Clear event when selecting task
-  };
-
-  // Wrapper to ensure mutual exclusivity when selecting events
-  const handleEventSelectWrapper = (event: ScheduleCardData | null) => {
-    setSelectedEvent(event);
-    setSelectedTask(null); // Clear task when selecting event
   };
 
   const handleCloseTaskDetails = () => {
@@ -1074,7 +996,7 @@ function Home() {
 
   // Handle adding new event
   const handleAddEvent = async (eventData: Omit<ScheduleCardData, 'id'>): Promise<ScheduleCardData> => {
-    const eventId = await db.collection("schedule").add(eventData);
+    const eventId = await db.collection("schedule").add(eventData) as unknown as string;
     return { ...eventData, id: eventId }; // Return with DB-assigned ID
   };
 
@@ -1095,15 +1017,15 @@ function Home() {
   };
 
 
-  const handleViewModeChange = (mode) => {
+  const handleViewModeChange = (mode: 'compact' | 'cozy' | 'chonky') => {
     setViewMode(mode);
   };
 
-  const handleAccentColorChange = (color) => {
+  const handleAccentColorChange = (color: string) => {
     setAccentColor(color);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newInput.trim() === "") {
       alert('Please fill out this field');
@@ -1117,8 +1039,6 @@ function Home() {
     });
     console.log("newTask:", newTask);
 
-
-
     setNewInput("");
   };
 
@@ -1127,7 +1047,7 @@ function Home() {
     
     // Check if task is being marked as complete
     if (changes.completed === true) {
-      const task = await db.collection("tasks").get(taskId);
+      const task = await db.collection("tasks").get(taskId) as Task | null;
       
       // Only create completion event if task wasn't already completed
       if (task && !task.completed) {
@@ -1149,13 +1069,14 @@ function Home() {
     todayEnd.setHours(23, 59, 59, 999);
     
     const existingCompletionEvents = await db.collection("schedule")
-      .filter((event: ScheduleCardData) => 
-        event.type === 'task:completed' && 
-        event.taskId === task.id &&
-        event.start.dateTime &&
-        new Date(event.start.dateTime) >= todayStart &&
-        new Date(event.start.dateTime) <= todayEnd
-      );
+      .filter((event): boolean => {
+        const e = event as unknown as ScheduleCardData;
+        return !!(e.type === 'task:completed' && 
+          e.taskId === task.id &&
+          e.start.dateTime &&
+          new Date(e.start.dateTime) >= todayStart &&
+          new Date(e.start.dateTime) <= todayEnd);
+      }) as unknown as ScheduleCardData[];
     
     const completionEventData = {
       title: task.name || 'Untitled Task',
@@ -1242,7 +1163,7 @@ function Home() {
   //   setActiveFilter(newFilterId); // Switch to the new filter
   // };
 
-  const handleAddTask = async (taskName): Promise<string | null> => {
+  const handleAddTask = async (taskName: string): Promise<string | null> => {
     // Auto-add current folder label if a folder is selected
     let labels = '';
     if (activeFolder) {
@@ -1257,7 +1178,7 @@ function Home() {
       description: "",
       completed: false,
       labels: labels
-    });
+    }) as unknown as string;
     console.log("newTask ID:", taskId);
     
     // If Today folder is active, automatically add task to today's schedule
@@ -1282,7 +1203,7 @@ function Home() {
       description: "",
       completed: false,
       parentTaskId: parentTaskId
-    });
+    }) as unknown as string;
     console.log("newSubtask ID:", subtaskId);
     return subtaskId || null;
   };
@@ -1387,8 +1308,6 @@ function Home() {
           onTaskToggle={handleTaskToggle}
           onAddSubtask={handleAddSubtask}
           onDeleteSubtask={deleteTask}
-          accentColor={theme.accentColor}
-          isDarkMode={theme.isDarkMode}
         />
       )}
 
@@ -1433,7 +1352,7 @@ function Home() {
               <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
             </svg>
           </button>
-          <UserAvatarButton accentColor={theme.accentColor} />
+          <UserAvatarButton />
         </div>
       </div>
 
@@ -1455,8 +1374,6 @@ function Home() {
               showAllFolder={showAllFolder}
               showOtherFolder={showOtherFolder}
               showTodayFolder={showTodayFolder}
-              accentColor={theme.accentColor}
-              isDarkMode={theme.isDarkMode}
               onOpenSettings={handleOpenFolderSettings}
             />
             
@@ -1511,8 +1428,6 @@ function Home() {
                         updateTask={updateTask}
                         isSelected={selectedTask?.id === task.id}
                         viewMode={viewMode}
-                        accentColor={theme.accentColor}
-                        isDarkMode={theme.isDarkMode}
                         handleTaskSelect={handleTaskSelect}
                         onEnterFocus={handleEnterFocus}
                         onAddToSchedule={handleAddToSchedule}
@@ -1598,8 +1513,6 @@ function Home() {
                               updateTask={updateTask}
                               isSelected={selectedTask?.id === task.id}
                               viewMode={viewMode}
-                              accentColor={theme.accentColor}
-                              isDarkMode={theme.isDarkMode}
                               handleTaskSelect={handleTaskSelect}
                               onEnterFocus={handleEnterFocus}
                               onAddToSchedule={handleAddToSchedule}
@@ -1627,8 +1540,6 @@ function Home() {
                               updateTask={updateTask}
                               isSelected={selectedTask?.id === task.id}
                               viewMode={viewMode}
-                              accentColor={theme.accentColor}
-                              isDarkMode={theme.isDarkMode}
                               handleTaskSelect={handleTaskSelect}
                               onEnterFocus={handleEnterFocus}
                               onAddToSchedule={handleAddToSchedule}
@@ -1656,8 +1567,6 @@ function Home() {
                 onDeleteEvent={deleteScheduleEvent}
                 onTaskToggle={handleTaskToggle}
                 onAddEvent={handleAddEvent}
-                accentColor={theme.accentColor}
-                isDarkMode={theme.isDarkMode}
                 viewMode={scheduleViewMode}
                 onViewModeChange={setScheduleViewMode}
                 location={theme.location}
@@ -1669,8 +1578,6 @@ function Home() {
                 onCardClick={handleScheduleCardClick}
                 events={scheduleEvents}
                 onTaskToggle={handleTaskToggle}
-                accentColor={theme.accentColor}
-                isDarkMode={theme.isDarkMode}
                 viewMode={scheduleViewMode}
                 onViewModeChange={setScheduleViewMode}
                 location={theme.location}
@@ -1682,21 +1589,6 @@ function Home() {
         )}
 
         {/* Desktop task details sidebar - disabled in favor of dynamic island */}
-        {false && !isMobile && selectedTask && !settingsDrawerOpen && (
-          <div className="hidden md:block md:pl-4 w-1/3 p-2">
-
-            <TaskDetailsSidebar
-              key={selectedTask.id}
-              task={selectedTask}
-              taskId={selectedTask.id}
-              onClose={handleCloseTaskDetails}
-              onUpdate={updateTask}
-              onDelete={deleteTask}
-              accentColor={theme.accentColor}
-              isDarkMode={theme.isDarkMode}
-            />
-          </div>
-        )}
 
         {/* Schedule sidebar - always show on desktop */}
         {!isMobile && (
@@ -1709,8 +1601,6 @@ function Home() {
                 onDeleteEvent={deleteScheduleEvent}
                 onTaskToggle={handleTaskToggle}
                 onAddEvent={handleAddEvent}
-                accentColor={theme.accentColor}
-                isDarkMode={theme.isDarkMode}
                 viewMode={scheduleViewMode}
                 onViewModeChange={setScheduleViewMode}
                 location={theme.location}
@@ -1722,8 +1612,6 @@ function Home() {
                 onCardClick={handleScheduleCardClick}
                 events={scheduleEvents}
                 onTaskToggle={handleTaskToggle}
-                accentColor={theme.accentColor}
-                isDarkMode={theme.isDarkMode}
                 viewMode={scheduleViewMode}
                 onViewModeChange={setScheduleViewMode}
                 location={theme.location}
@@ -1759,8 +1647,6 @@ function Home() {
           showAllFolder={showAllFolder}
           showOtherFolder={showOtherFolder}
           showTodayFolder={showTodayFolder}
-          accentColor={theme.accentColor}
-          isDarkMode={theme.isDarkMode}
           mode={islandMode}
           onModeChange={setIslandMode}
           onOpenSettings={handleOpenSettings}
@@ -1778,12 +1664,10 @@ function Home() {
           event={selectedEvent}
           updateFunction={updateTask}
           deleteTask={deleteTask}
-          accentColor={theme.accentColor}
           isNewTaskMode={isNewTaskMode}
           currentView={mobileView}
           onAddTask={handleAddTask}
           onAddToSchedule={handleAddToSchedule}
-          isDarkMode={theme.isDarkMode}
           onUpdateEvent={updateScheduleEvent}
           onDeleteEvent={deleteScheduleEvent}
           onAddEvent={handleAddEvent}
@@ -1814,8 +1698,8 @@ function Home() {
       <AboutModal
         isOpen={aboutModalOpen}
         setIsOpen={setAboutModalOpen}
-        isDarkMode={theme.isDarkMode}
         currentAccentColor={theme.accentColor}
+        isDarkMode={theme.isDarkMode}
       />
 
       {/* Mobile Navigation Bar */}
@@ -1825,8 +1709,6 @@ function Home() {
             currentView={mobileView}
             onViewChange={handleMobileViewChange}
             onCreateNew={openNewTaskDrawer}
-            accentColor={theme.accentColor}
-            isDarkMode={theme.isDarkMode}
           />
           
           {/* Mobile Folder Button - Bottom Left - Only show on tasks view */}

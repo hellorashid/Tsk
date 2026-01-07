@@ -4,7 +4,9 @@ import { Task, Folder } from '../utils/types';
 import { ScheduleCardData, getEventDuration, getTimeFromDateTime, minutesToDateTime } from './ScheduleCard';
 import Checkbox from './Checkbox';
 import { useBasic, useQuery } from '@basictech/react';
+import { useTheme } from '../contexts/ThemeContext';
 import SubtasksList from './SubtasksList';
+import { useAutoResizeTextarea } from '../hooks/useAutoResizeTextarea';
 
 interface DynamicIslandProps {
   selectedTask: Task | null;
@@ -28,8 +30,6 @@ interface DynamicIslandProps {
   showAllFolder?: boolean;
   showOtherFolder?: boolean;
   showTodayFolder?: boolean;
-  accentColor?: string;
-  isDarkMode?: boolean;
   mode?: 'default' | 'task' | 'event' | 'command';
   onModeChange?: (mode: 'default' | 'task' | 'event' | 'command') => void;
   onOpenSettings?: () => void;
@@ -59,14 +59,15 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   showAllFolder = true,
   showOtherFolder = false,
   showTodayFolder = true,
-  accentColor = '#1F1B2F',
-  isDarkMode = true,
   mode = 'default',
   onModeChange,
   onOpenSettings,
   onToggleView,
   currentView
 }) => {
+  const { theme } = useTheme();
+  const { accentColor, isDarkMode } = theme;
+  
   const [inputValue, setInputValue] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -279,34 +280,11 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
     }
   }, [currentEvent]);
 
-  // Auto-resize textareas
-  useEffect(() => {
-    if (titleTextareaRef.current) {
-      titleTextareaRef.current.style.height = 'auto';
-      titleTextareaRef.current.style.height = `${titleTextareaRef.current.scrollHeight}px`;
-    }
-  }, [title]);
-
-  useEffect(() => {
-    if (descTextareaRef.current) {
-      descTextareaRef.current.style.height = 'auto';
-      descTextareaRef.current.style.height = `${descTextareaRef.current.scrollHeight}px`;
-    }
-  }, [description]);
-
-  useEffect(() => {
-    if (eventTitleTextareaRef.current) {
-      eventTitleTextareaRef.current.style.height = 'auto';
-      eventTitleTextareaRef.current.style.height = `${eventTitleTextareaRef.current.scrollHeight}px`;
-    }
-  }, [eventTitle]);
-
-  useEffect(() => {
-    if (eventDescTextareaRef.current) {
-      eventDescTextareaRef.current.style.height = 'auto';
-      eventDescTextareaRef.current.style.height = `${eventDescTextareaRef.current.scrollHeight}px`;
-    }
-  }, [eventDescription]);
+  // Auto-resize textareas using custom hook
+  useAutoResizeTextarea(titleTextareaRef, title);
+  useAutoResizeTextarea(descTextareaRef, description);
+  useAutoResizeTextarea(eventTitleTextareaRef, eventTitle);
+  useAutoResizeTextarea(eventDescTextareaRef, eventDescription);
 
   // Focus input when collapsed or when mode changes to task/event/command
   useEffect(() => {
@@ -1213,7 +1191,6 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                         size="sm"
                         checked={currentEvent.metadata.taskSnapshot.completed}
                         onChange={() => {}} // No-op for deleted tasks
-                        accentColor={accentColor}
                         disabled={true}
                       />
                       <div className="flex-1">
@@ -1253,7 +1230,6 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                                 size="sm"
                                 checked={subtask.completed}
                                 onChange={() => {}} // No-op
-                                accentColor={accentColor}
                                 disabled={true}
                               />
                               <span className={`text-sm ${
@@ -1428,7 +1404,6 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   size="sm"
                   checked={currentTask?.completed || false}
                   onChange={handleCheckboxChange}
-                  accentColor={accentColor}
                 />
                 <div className="flex-1 flex items-center">
                   <textarea
@@ -1477,8 +1452,6 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                     onAddSubtask={onAddSubtask}
                     onUpdateSubtask={onUpdateTask}
                     onDeleteSubtask={onDeleteTask}
-                    accentColor={accentColor}
-                    isDarkMode={isDarkMode}
                     showHeader={true}
                   />
                 )}

@@ -1,26 +1,24 @@
-// @ts-nocheck
-
 import { Task, Folder } from "../utils/types";
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Checkbox from './Checkbox';
 import { ScheduleCardData, getTimeFromDateTime, getEventDuration } from './ScheduleCard';
 import { useBasic, useQuery } from '@basictech/react';
+import { useTheme } from '../contexts/ThemeContext';
 import SubtasksList from './SubtasksList';
+import { useAutoResizeTextarea } from '../hooks/useAutoResizeTextarea';
 
 export const TaskModal = ({
-  task, updateFunction, inDrawer = false, deleteTask, new: isNew = false, accentColor = '#1F1B2F', onDelete, onAddToSchedule, scheduledEvents, isDarkMode = true, onUpdateEvent, onDeleteEvent, onAddSubtask, onUpdateSubtask, onDeleteSubtask, onEnterFocus, folders, onFolderSelect
+  task, updateFunction, inDrawer = false, deleteTask, new: isNew = false, onDelete, onAddToSchedule, scheduledEvents, onUpdateEvent, onDeleteEvent, onAddSubtask, onUpdateSubtask, onDeleteSubtask, onEnterFocus, folders, onFolderSelect
 }: {
   task: Task;
   updateFunction: any;
   inDrawer?: boolean;
   deleteTask?: any;
   new?: boolean;
-  accentColor?: string;
   onDelete?: () => void;
   onAddToSchedule?: (task: Task) => void;
   scheduledEvents?: ScheduleCardData[];
-  isDarkMode?: boolean;
   onUpdateEvent?: (id: string, changes: Partial<ScheduleCardData>) => void;
   onDeleteEvent?: (id: string) => void;
   onAddSubtask?: (parentTaskId: string, name: string) => void;
@@ -30,6 +28,8 @@ export const TaskModal = ({
   folders?: Folder[];
   onFolderSelect?: (folderId: string | null) => void;
 }) => {
+  const { theme } = useTheme();
+  const { accentColor, isDarkMode } = theme;
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
   
   // Local state for folder label to ensure immediate UI updates
@@ -48,17 +48,18 @@ export const TaskModal = ({
   const [taskName, setTaskName] = useState(task?.name || '');
   const [taskDescription, setTaskDescription] = useState(task?.description || '');
   const [isActivityExpanded, setIsActivityExpanded] = useState(false);
-  const nameInputRef = useRef(null);
+  const nameInputRef = useRef<HTMLTextAreaElement | null>(null);
   const descTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   
   // Query subtasks for this task
   const { db } = useBasic();
-  const subtasks = useQuery(
+  const subtasksData = useQuery(
     () => task?.id && !task?.parentTaskId 
-      ? db.collection('tasks').filter((t: Task) => t.parentTaskId === task.id)
+      ? db.collection('tasks').filter((t: Record<string, unknown> & { id: string }) => (t as Task).parentTaskId === task.id)
       : null,
     [task?.id, task?.parentTaskId]
-  ) || [];
+  );
+  const subtasks: Task[] = (subtasksData || []) as Task[];
 
   // Check if task has any scheduled events for today
   const hasScheduledEventToday = (() => {
@@ -163,15 +164,10 @@ export const TaskModal = ({
     }
   }, [taskName]);
 
-  // Auto-resize description textarea (same pattern as DynamicIsland)
-  useEffect(() => {
-    if (descTextareaRef.current) {
-      descTextareaRef.current.style.height = 'auto';
-      descTextareaRef.current.style.height = `${descTextareaRef.current.scrollHeight}px`;
-    }
-  }, [taskDescription]);
+  // Auto-resize description textarea using custom hook
+  useAutoResizeTextarea(descTextareaRef, taskDescription);
 
-  const handleDelete = (e) => {
+  const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     console.log("delete button clicked");
     if (task?.id && deleteTask) {
@@ -182,7 +178,7 @@ export const TaskModal = ({
     }
   };
 
-  const handleTitleChange = (e) => {
+  const handleTitleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setTaskName(e.target.value);
     // Auto-resize the textarea
     e.target.style.height = 'auto';
@@ -205,7 +201,7 @@ export const TaskModal = ({
     }
   };
 
-  const handleKeyDown = (e, type) => {
+  const handleKeyDown = (e: React.KeyboardEvent, type: 'title' | 'description') => {
     if (e.key === 'Enter' && type === 'title') {
       handleTitleBlur();
       e.preventDefault();
@@ -733,8 +729,6 @@ export const TaskModal = ({
             onAddSubtask={onAddSubtask}
             onUpdateSubtask={onUpdateSubtask}
             onDeleteSubtask={onDeleteSubtask}
-            accentColor={accentColor}
-            isDarkMode={isDarkMode}
             showHeader={true}
           />
         )}

@@ -9,6 +9,7 @@ import ListItem from './ListItem';
 import Checkbox from './Checkbox';
 import { ScheduleCardData } from './ScheduleCard';
 import { useBasic, useQuery } from '@basictech/react';
+import { useTheme } from '../contexts/ThemeContext';
 import { useModalHistory } from '../hooks/useModalHistory';
 import './SilkTaskDrawer.css';
 import './SheetWithKeyboard.css';
@@ -41,12 +42,10 @@ interface TaskDrawerProps {
   event?: ScheduleCardData | null;
   updateFunction: (id: string, changes: any) => void;
   deleteTask?: (id: string) => void;
-  accentColor?: string;
   isNewTaskMode?: boolean;
   currentView?: 'tasks' | 'calendar';
   onAddTask?: (taskName: string) => Promise<string | null>;
   onAddToSchedule?: (task: any) => void;
-  isDarkMode?: boolean;
   onUpdateEvent?: (id: string, changes: Partial<ScheduleCardData>) => void;
   onDeleteEvent?: (id: string) => void;
   onAddEvent?: (eventData: Omit<ScheduleCardData, 'id'>) => Promise<ScheduleCardData>;
@@ -65,12 +64,10 @@ export default function SilkTaskDrawer({
   event,
   updateFunction, 
   deleteTask,
-  accentColor = '#1F1B2F',
   isNewTaskMode = false,
   currentView = 'tasks',
   onAddTask,
   onAddToSchedule,
-  isDarkMode = true,
   onUpdateEvent,
   onDeleteEvent,
   onAddEvent,
@@ -97,6 +94,8 @@ export default function SilkTaskDrawer({
   
   // Query all tasks to find created tasks by ID
   const { db } = useBasic();
+  const { theme } = useTheme();
+  const { accentColor, isDarkMode } = theme;
   const allTasks = useQuery(() => db.collection("tasks").getAll()) || [];
   
   // Event creation state
@@ -457,8 +456,6 @@ export default function SilkTaskDrawer({
                                 deleteTask={() => { /* Optionally allow removal from this list */ }}
                                 isSelected={false} // Temporary items are not "selected" in the main app sense
                                 viewMode={"cozy"} // Or a viewMode prop from parent if available
-                                accentColor={accentColor}
-                                isDarkMode={isDarkMode}
                                 // Pass any other necessary props that ListItem expects
                                 // Ensure ListItem can handle a task object that might not have all DB fields
                               />
@@ -596,7 +593,6 @@ export default function SilkTaskDrawer({
                                   checked={event.metadata.taskSnapshot.completed}
                                   onChange={() => {}} // No-op for deleted tasks
                                   disabled={true}
-                                  accentColor={accentColor}
                                 />
                               </div>
 
@@ -632,7 +628,6 @@ export default function SilkTaskDrawer({
                                         size="sm"
                                         checked={subtask.completed}
                                         onChange={() => {}} // No-op
-                                        accentColor={accentColor}
                                         disabled={true}
                                       />
                                       <span className={`text-sm ${
@@ -700,8 +695,6 @@ export default function SilkTaskDrawer({
                       updateFunction={onUpdateEvent || (() => {})}
                       deleteEvent={onDeleteEvent}
                       inDrawer={true}
-                      accentColor={accentColor}
-                      isDarkMode={isDarkMode}
                       onDelete={() => setIsOpen(false)}
                     />
                   )
@@ -713,11 +706,9 @@ export default function SilkTaskDrawer({
                     updateFunction={updateFunction}
                     deleteTask={deleteTask}
                     inDrawer={true}
-                    accentColor={accentColor}
                     onDelete={() => setIsOpen(false)}
                     onAddToSchedule={onAddToSchedule}
                     scheduledEvents={scheduledEvents}
-                    isDarkMode={isDarkMode}
                     onUpdateEvent={onUpdateEvent}
                     onDeleteEvent={onDeleteEvent}
                     onAddSubtask={onAddSubtask}

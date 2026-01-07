@@ -1,17 +1,15 @@
-// @ts-nocheck
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useOptimistic } from "react";
 import { Task } from "../utils/types";
 import { useBasic } from "@basictech/react";
+import { useTheme } from "../contexts/ThemeContext";
 import Checkbox from "./Checkbox";
+
 interface ListItemProps {
   task: Task;
   deleteTask: (id: string) => void;
   updateTask: (id: string, changes: any) => void;
   isSelected?: boolean;
   viewMode?: 'compact' | 'cozy' | 'chonky';
-  accentColor?: string;
-  isDarkMode?: boolean;
   handleTaskSelect: (task: Task) => void;
   onEnterFocus?: (task: Task) => void;
   onAddToSchedule?: (task: Task) => void;
@@ -24,17 +22,23 @@ const ListItem: React.FC<ListItemProps> = ({
   updateTask,
   isSelected = false,
   viewMode = 'cozy',
-  accentColor = '#1F1B2F',
-  isDarkMode = true,
   handleTaskSelect,
   onEnterFocus,
   onAddToSchedule,
   isSuggested = false
 }) => {
   const { dbStatus } = useBasic();
+  const { theme } = useTheme();
+  const { accentColor, isDarkMode } = theme;
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(task.name);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  
+  // Optimistic UI for checkbox - provides instant feedback while update is in progress
+  const [optimisticCompleted, setOptimisticCompleted] = useOptimistic(
+    task.completed,
+    (_currentState, newCompleted: boolean) => newCompleted
+  );
 
   useEffect(() => {
     const handleResize = () => {
@@ -65,12 +69,16 @@ const ListItem: React.FC<ListItemProps> = ({
     }
   };
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCheckboxChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
-    updateTask(task.id, { completed: e.target.checked });
+    const newCompleted = e.target.checked;
+    // Optimistically update the UI immediately
+    setOptimisticCompleted(newCompleted);
+    // Then persist to database (async)
+    updateTask(task.id, { completed: newCompleted });
   };
 
-  const handleDelete = (e) => {
+  const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     deleteTask(task.id);
   };
@@ -136,7 +144,7 @@ const ListItem: React.FC<ListItemProps> = ({
             <Checkbox
               id={task.id}
               size="md"
-              checked={task.completed}
+              checked={optimisticCompleted}
               onChange={handleCheckboxChange}
             />
           </div>
@@ -159,7 +167,7 @@ const ListItem: React.FC<ListItemProps> = ({
               />
             ) : (
               <span
-                className={`pl-2 ${styles.title} ${task.completed ? (isDarkMode ? "text-gray-400" : "text-gray-500") : ""
+                className={`pl-2 ${styles.title} ${optimisticCompleted ? (isDarkMode ? "text-gray-400" : "text-gray-500") : ""
                   }`}
               >
                 {task.name}
@@ -170,7 +178,7 @@ const ListItem: React.FC<ListItemProps> = ({
 
         {!isMobile && (
           <div className="flex gap-1">
-            {task.completed && (
+            {optimisticCompleted && (
               <button
                 onClick={handleDelete}
                 className={`w-8 h-8 rounded-full bg-transparent hover:bg-white/10 flex items-center justify-center transition-opacity duration-200 ${isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-70'

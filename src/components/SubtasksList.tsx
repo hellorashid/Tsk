@@ -1,7 +1,6 @@
-// @ts-nocheck
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useActionState } from 'react';
 import { Task } from '../utils/types';
+import { useTheme } from '../contexts/ThemeContext';
 import Checkbox from './Checkbox';
 
 interface SubtasksListProps {
@@ -10,10 +9,7 @@ interface SubtasksListProps {
   onAddSubtask: (parentTaskId: string, name: string) => void;
   onUpdateSubtask: (id: string, changes: Partial<Task>) => void;
   onDeleteSubtask: (id: string) => void;
-  accentColor?: string;
-  isDarkMode?: boolean;
   showHeader?: boolean;
-  maxHeight?: string;
 }
 
 const SubtasksList: React.FC<SubtasksListProps> = ({
@@ -22,16 +18,26 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
   onAddSubtask,
   onUpdateSubtask,
   onDeleteSubtask,
-  accentColor = '#1F1B2F',
-  isDarkMode = true,
   showHeader = false,
-  maxHeight = '200px',
 }) => {
-  const [newSubtaskName, setNewSubtaskName] = useState('');
+  const { theme } = useTheme();
+  const { accentColor, isDarkMode } = theme;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
+
+  // Use React 19's useActionState for form submission
+  const [_error, submitAction, isPending] = useActionState(
+    async (_previousState: null, formData: FormData) => {
+      const name = formData.get('subtaskName') as string;
+      if (name?.trim()) {
+        onAddSubtask(parentTaskId, name.trim());
+      }
+      return null;
+    },
+    null
+  );
 
   useEffect(() => {
     if (editingId && editInputRef.current) {
@@ -40,20 +46,9 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
     }
   }, [editingId]);
 
-  const handleAddSubtask = (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (newSubtaskName.trim()) {
-      onAddSubtask(parentTaskId, newSubtaskName.trim());
-      setNewSubtaskName('');
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddSubtask();
-    } else if (e.key === 'Escape') {
-      setNewSubtaskName('');
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      e.currentTarget.blur();
     }
   };
 
@@ -194,8 +189,8 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
           </div>
         )}
 
-        {/* Footer - Add subtask input */}
-        <form onSubmit={handleAddSubtask}>
+        {/* Footer - Add subtask input using React 19 form actions */}
+        <form action={submitAction}>
           <div
             className={`pl-4 pr-2 py-2.5 md:py-1.5 transition-all duration-200 group ${
               isDarkMode ? 'text-gray-100' : 'text-gray-900'
@@ -231,16 +226,16 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
             </div>
         <input
           ref={inputRef}
+          name="subtaskName"
           type="text"
-          value={newSubtaskName}
-          onChange={(e) => setNewSubtaskName(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={subtasks.length === 0 ? "Add a subtask..." : "Add another subtask..."}
           className={`flex-1 min-w-0 ml-2 text-base md:text-sm bg-transparent focus:outline-none placeholder-opacity-50 ${
             isDarkMode ? 'text-gray-100 placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'
-          }`}
+          } ${isPending ? 'opacity-50' : ''}`}
           autoComplete="off"
           inputMode="text"
+          disabled={isPending}
         />
           </div>
         </div>
