@@ -11,8 +11,7 @@ import bgImage from '/bg2.jpg';
 import SilkTaskDrawer from "./components/SilkTaskDrawer";
 // import Sidebar from "./components/Sidebar"; // Removed - sidebar is empty
 // TaskDetailsSidebar removed - replaced by DynamicIsland
-import SettingsSidebar from "./components/SettingsSidebar";
-import SettingsDrawer from "./components/SettingsDrawer";
+// SettingsSidebar and SettingsDrawer removed - replaced by SettingsPage
 import AboutModal from "./components/AboutModal";
 import ScheduleSidebar from "./components/ScheduleSidebar";
 import { ScheduleCardData } from "./components/ScheduleCard";
@@ -25,6 +24,8 @@ import { fetchWeatherData } from "./utils/weather";
 import FoldersBar from "./components/FoldersBar";
 import FolderDrawer from "./components/FolderDrawer";
 import FolderSettings from "./components/FolderSettings";
+import SettingsPage from "./components/SettingsPage";
+import IconSidebar from "./components/IconSidebar";
 import { Folder } from "./utils/types";
 
 
@@ -102,11 +103,13 @@ function Home() {
   const [showSchedule, setShowSchedule] = useState(true);
   const [viewMode, setViewMode] = useState<'compact' | 'cozy' | 'chonky'>('cozy');
   // const [customFilters, setCustomFilters] = useState([]);
-  const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   // const [showFilters, setShowFilters] = useState(false);
   const [isNewTaskMode, setIsNewTaskMode] = useState(false);
   const [mobileView, setMobileView] = useState<'tasks' | 'calendar'>('tasks');
+  
+  // App-level view state (home vs settings page)
+  const [currentView, setCurrentView] = useState<'home' | 'settings'>('home');
   
   // Initialize from localStorage
   const [scheduleViewMode, setScheduleViewMode] = useState<'timeline' | 'agenda'>(() => {
@@ -138,7 +141,7 @@ function Home() {
     const saved = localStorage.getItem('tsk-show-today-folder');
     return saved !== 'false'; // Default to true
   });
-  const [suggestedTasksExpanded, setSuggestedTasksExpanded] = useState<boolean>(true);
+  const [suggestedTasksExpanded, setSuggestedTasksExpanded] = useState<boolean>(false);
   const [completedTasksExpanded, setCompletedTasksExpanded] = useState<boolean>(false);
   const hasSuggestedInitialized = useRef(false);
 
@@ -650,14 +653,14 @@ function Home() {
     });
   })();
 
-  // Set initial state of suggestedTasksExpanded based on whether there are already tasks scheduled for today
+  // Set initial state of suggestedTasksExpanded - only expand if today is empty
   useEffect(() => {
     // Wait until both tasks and scheduleEvents are loaded (they will be null/undefined while loading)
     if (!hasSuggestedInitialized.current && activeFolder === 'today' && tasks !== null && tasks !== undefined && scheduleEvents !== null && scheduleEvents !== undefined) {
       hasSuggestedInitialized.current = true;
-      // If there are already tasks scheduled for today, collapse the suggested section
-      if (filteredTasks.length > 0) {
-        setSuggestedTasksExpanded(false);
+      // Only expand suggested section if today is empty
+      if (filteredTasks.length === 0) {
+        setSuggestedTasksExpanded(true);
       }
     }
   }, [activeFolder, tasks, scheduleEvents, filteredTasks]);
@@ -708,7 +711,7 @@ function Home() {
         e.preventDefault();
         setSelectedTask(null);
         setSelectedEvent(null);
-        setSettingsDrawerOpen(false);
+        setCurrentView('home');
         setAboutModalOpen(false);
         setShowSchedule(false);
         setIslandMode('default');
@@ -849,7 +852,7 @@ function Home() {
 
     setSelectedTask({ ...task }); // Use a copy to ensure reactivity
     setSelectedEvent(null); // Clear event selection when selecting a task
-    setSettingsDrawerOpen(false); // Close settings when selecting a task
+    setCurrentView('home'); // Close settings when selecting a task
     setIsNewTaskMode(false); // Ensure we're in edit mode, not new task mode
     if (isMobile) {
       console.log("Opening drawer for mobile view");
@@ -1001,11 +1004,11 @@ function Home() {
   };
 
   const handleOpenSettings = () => {
-    setSettingsDrawerOpen(true);
+    setCurrentView('settings');
   };
 
   const handleCloseSettings = () => {
-    setSettingsDrawerOpen(false);
+    setCurrentView('home');
   };
 
   const handleOpenAbout = () => {
@@ -1173,12 +1176,14 @@ function Home() {
       }
     }
     
-    const taskId = await db.collection("tasks").add({
+    const result = await db.collection("tasks").add({
       name: taskName,
       description: "",
       completed: false,
       labels: labels
-    }) as unknown as string;
+    });
+    // Extract ID from result - Basic SDK returns object with id property
+    const taskId = typeof result === 'string' ? result : (result as { id: string })?.id;
     console.log("newTask ID:", taskId);
     
     // If Today folder is active, automatically add task to today's schedule
@@ -1198,12 +1203,14 @@ function Home() {
 
   // Add subtask to a parent task
   const handleAddSubtask = async (parentTaskId: string, subtaskName: string): Promise<string | null> => {
-    const subtaskId = await db.collection("tasks").add({
+    const result = await db.collection("tasks").add({
       name: subtaskName,
       description: "",
       completed: false,
       parentTaskId: parentTaskId
-    }) as unknown as string;
+    });
+    // Extract ID from result - Basic SDK returns object with id property
+    const subtaskId = typeof result === 'string' ? result : (result as { id: string })?.id;
     console.log("newSubtask ID:", subtaskId);
     return subtaskId || null;
   };
@@ -1311,25 +1318,55 @@ function Home() {
         />
       )}
 
-    <section className={`flex-1 task-home w-full relative overflow-hidden ${theme.isDarkMode ? 'text-gray-100' : 'text-gray-900'} ${isMobile && drawerOpen ? 'drawer-open-scale' : ''}`}
-      style={{
+      {/* Main layout with sidebar on desktop */}
+      <div className="flex" style={{ 
+        height: typeof CSS !== 'undefined' && CSS.supports('height', '100dvh') 
+          ? '100dvh' 
+          : 'calc(var(--vh, 1vh) * 100)',
         backgroundColor: theme.accentColor,
         backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4)), url(${bgImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-        // Use dvh (dynamic viewport height) with fallback
-        // Modern browsers: dvh tracks visible viewport and adjusts as address bar shows/hides
-        // Fallback: JavaScript sets --vh for older browsers
-        height: typeof CSS !== 'undefined' && CSS.supports('height', '100dvh') 
-          ? '100dvh' 
-          : 'calc(var(--vh, 1vh) * 100)',
-        maxHeight: typeof CSS !== 'undefined' && CSS.supports('height', '100dvh') 
-          ? '100dvh' 
-          : 'calc(var(--vh, 1vh) * 100)',
+      }}>
+        {/* Desktop Icon Sidebar */}
+        {!isMobile && (
+          <IconSidebar
+            onOpenSettings={handleOpenSettings}
+            onOpenAbout={handleOpenAbout}
+            currentView={currentView}
+          />
+        )}
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Settings Page */}
+          {currentView === 'settings' && (
+            <SettingsPage
+              onBack={handleCloseSettings}
+              onViewModeChange={setViewMode}
+              currentViewMode={viewMode}
+              folders={folders || []}
+              onCreateFolder={handleCreateFolder}
+              onUpdateFolder={handleUpdateFolder}
+              onDeleteFolder={handleDeleteFolder}
+              showAllFolder={showAllFolder}
+              showOtherFolder={showOtherFolder}
+              showTodayFolder={showTodayFolder}
+              onToggleAllFolder={setShowAllFolder}
+              onToggleOtherFolder={setShowOtherFolder}
+              onToggleTodayFolder={setShowTodayFolder}
+            />
+          )}
+
+          {currentView === 'home' && (
+          <section className={`flex-1 task-home w-full relative overflow-hidden ${theme.isDarkMode ? 'text-gray-100' : 'text-gray-900'} ${isMobile && drawerOpen ? 'drawer-open-scale' : ''}`}
+      style={{
         paddingBottom: 'env(safe-area-inset-bottom, 20px)'
       }}>
-      <div className=" h-12 rounded-b-md md:rounded-b-none flex justify-between items-center sticky top-0 z-100"
+      {/* Mobile header - only show on mobile since desktop has sidebar */}
+      {isMobile && (
+      <div className="h-12 rounded-b-md flex justify-between items-center sticky top-0 z-100"
         style={{ backgroundColor: 'transparent' }}>
         <div className="">
           <button 
@@ -1339,7 +1376,6 @@ function Home() {
             <img className="w-6 h-6 mr-2" src='tsk-logo.png' />
             <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">tsk.</span>
           </button>
-          {/* {isNewTaskMode && 'NT'} {drawerOpen && 'DO'} */}
         </div>
 
         <div className="flex-none flex items-center pr-2 gap-2">
@@ -1355,11 +1391,13 @@ function Home() {
           <UserAvatarButton />
         </div>
       </div>
+      )}
 
-      <div className="flex" style={{ 
-        height: typeof CSS !== 'undefined' && CSS.supports('height', '100dvh') 
-          ? 'calc(100dvh - 64px)' 
-          : 'calc(var(--vh, 1vh) * 100 - 64px)'
+      <div className="flex flex-1" style={{ 
+        // Mobile has header (48px), desktop doesn't (sidebar handles nav)
+        height: isMobile
+          ? 'calc(100% - 48px)'
+          : '100%'
       }}>
         {/* Sidebar removed - was empty after filters were commented out */}
 
@@ -1680,20 +1718,6 @@ function Home() {
         />
       )}
 
-      {/* Settings drawer - shown on both mobile and desktop */}
-      <SettingsDrawer
-        isOpen={settingsDrawerOpen}
-        setIsOpen={setSettingsDrawerOpen}
-        onViewModeChange={handleViewModeChange}
-        currentViewMode={viewMode}
-        onAccentColorChange={handleAccentColorChange}
-        currentAccentColor={theme.accentColor}
-        onThemeChange={handleThemeChange}
-        isDarkMode={theme.isDarkMode}
-        onFontStyleChange={handleFontStyleChange}
-        currentFontStyle={theme.fontStyle}
-      />
-
       {/* About modal - shown on both mobile and desktop */}
       <AboutModal
         isOpen={aboutModalOpen}
@@ -1794,6 +1818,9 @@ function Home() {
         accentColor={theme.accentColor}
       />
     </section>
+    )}
+        </div>
+      </div>
     </>
   );
 }

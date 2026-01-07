@@ -27,6 +27,9 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
 
+  // Track previous pending state to detect when submission completes
+  const wasPendingRef = useRef(false);
+
   // Use React 19's useActionState for form submission
   const [_error, submitAction, isPending] = useActionState(
     async (_previousState: null, formData: FormData) => {
@@ -38,6 +41,15 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
     },
     null
   );
+
+  // Refocus input after submission completes (isPending goes from true to false)
+  useEffect(() => {
+    if (wasPendingRef.current && !isPending) {
+      // Submission just completed - refocus the input
+      inputRef.current?.focus();
+    }
+    wasPendingRef.current = isPending;
+  }, [isPending]);
 
   useEffect(() => {
     if (editingId && editInputRef.current) {

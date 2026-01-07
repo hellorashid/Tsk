@@ -107,6 +107,10 @@ const ListItem: React.FC<ListItemProps> = ({
 
   const styles = getViewModeStyles();
 
+  // Extract folder from task labels for badge display
+  const folderLabel = task.labels?.split(',').find(l => l.trim().startsWith('folder:'));
+  const folderName = folderLabel?.replace('folder:', '').trim();
+
   // Calculate background colors based on accent color
   const getBackgroundColor = () => {
     if (isSelected && !isMobile) {
@@ -166,12 +170,21 @@ const ListItem: React.FC<ListItemProps> = ({
                 inputMode="text"
               />
             ) : (
-              <span
-                className={`pl-2 ${styles.title} ${optimisticCompleted ? (isDarkMode ? "text-gray-400" : "text-gray-500") : ""
-                  }`}
-              >
-                {task.name}
-              </span>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`pl-2 ${styles.title} ${optimisticCompleted ? (isDarkMode ? "text-gray-400 line-through" : "text-gray-500 line-through") : ""
+                    }`}
+                >
+                  {task.name}
+                </span>
+                {folderName && (
+                  <span className={`px-1.5 py-0.5 text-xs rounded capitalize ${
+                    isDarkMode ? 'bg-white/10 text-gray-400' : 'bg-black/10 text-gray-600'
+                  }`}>
+                    {folderName}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>

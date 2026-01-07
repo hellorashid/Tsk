@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScheduleCardData, getEventDuration } from './ScheduleCard';
@@ -241,60 +241,9 @@ const TimelineView: React.FC<TimelineViewProps> = ({
       }
     });
     
-    // Filter out merged completion events
-    const filteredEvents = events.filter(e => !completionEventIdsToMerge.has(e.id));
-    
-    // Group remaining completion events that are close together (within 15 minutes)
-    const COMPLETION_GROUP_THRESHOLD_MINUTES = 15;
-    const remainingCompletions = filteredEvents.filter(e => e.type === 'task:completed');
-    const nonCompletionEvents = filteredEvents.filter(e => e.type !== 'task:completed');
-    
-    // Sort completions by time
-    const sortedCompletions = [...remainingCompletions].sort((a, b) => {
-      const aTime = new Date(a.start.dateTime || '').getTime();
-      const bTime = new Date(b.start.dateTime || '').getTime();
-      return aTime - bTime;
-    });
-    
-    // Group nearby completions
-    type CompletionGroup = {
-      events: ScheduleCardData[];
-      startMinutes: number;
-    };
-    const completionGroups: CompletionGroup[] = [];
-    const groupedCompletionIds = new Set<string>();
-    
-    sortedCompletions.forEach(completion => {
-      if (groupedCompletionIds.has(completion.id)) return;
-      
-      const completionTime = new Date(completion.start.dateTime || '');
-      const completionMinutes = completionTime.getHours() * 60 + completionTime.getMinutes();
-      
-      // Find other completions within threshold
-      const nearbyCompletions = sortedCompletions.filter(other => {
-        if (other.id === completion.id || groupedCompletionIds.has(other.id)) return false;
-        const otherTime = new Date(other.start.dateTime || '');
-        const otherMinutes = otherTime.getHours() * 60 + otherTime.getMinutes();
-        return Math.abs(otherMinutes - completionMinutes) <= COMPLETION_GROUP_THRESHOLD_MINUTES;
-      });
-      
-      if (nearbyCompletions.length > 0) {
-        // Create a group
-        const allInGroup = [completion, ...nearbyCompletions];
-        allInGroup.forEach(e => groupedCompletionIds.add(e.id));
-        
-        completionGroups.push({
-          events: allInGroup,
-          startMinutes: completionMinutes,
-        });
-      }
-    });
-    
-    // Get ungrouped completions (those not in any group)
-    const ungroupedCompletions = remainingCompletions.filter(e => !groupedCompletionIds.has(e.id));
-    
-    // Combine: non-completion events + ungrouped completions
-    const eventsToPosition = [...nonCompletionEvents, ...ungroupedCompletions];
+    // Filter out ALL completion events - they will be shown in the activity column instead
+    // Only keep non-completion events for the main card display
+    const eventsToPosition = events.filter(e => e.type !== 'task:completed');
 
     // Calculate minimum height in minutes based on current zoom level
     // Dynamic min heights: compact (28/22), medium (36/28), large (44/34)
@@ -329,32 +278,6 @@ const TimelineView: React.FC<TimelineViewProps> = ({
         hasCompletionMerged: taskEventsWithCompletion.get(event.id) || false,
         mergedCompletionEvents: null as ScheduleCardData[] | null,
       };
-    });
-    
-    // Add grouped completions as single cards
-    completionGroups.forEach(group => {
-      // Use the first event as the base, but mark it as a group
-      const baseEvent = group.events[0];
-      const startDate = new Date(baseEvent.start.dateTime || '');
-      const endDate = new Date(baseEvent.end.dateTime || '');
-      const startMinutes = startDate.getHours() * 60 + startDate.getMinutes();
-      const endMinutes = endDate.getHours() * 60 + endDate.getMinutes();
-      const visualEndMinutes = startMinutes + completionMinHeightMinutes;
-      
-      eventData.push({
-        event: {
-          ...baseEvent,
-          title: `${group.events.length} tasks completed`,
-        },
-        startMinutes,
-        endMinutes,
-        visualEndMinutes,
-        duration: 0,
-        column: 0,
-        totalColumns: 1,
-        hasCompletionMerged: false,
-        mergedCompletionEvents: group.events,
-      });
     });
 
     // Sort by start time, then by duration (longer events first)
@@ -504,6 +427,47 @@ const TimelineView: React.FC<TimelineViewProps> = ({
 
     return eventData;
   }, [events, pixelsPerMinute]);
+
+  // Group completion events into 30-minute slots for the activity column
+  const activityGroups = useMemo(() => {
+    const completions = events.filter(e => e.type === 'task:completed');
+    const groups: Map<number, ScheduleCardData[]> = new Map();
+    
+    completions.forEach(event => {
+      if (!event.start.dateTime) return;
+      const time = new Date(event.start.dateTime);
+      const minutes = time.getHours() * 60 + time.getMinutes();
+      const slot = Math.floor(minutes / 30) * 30; // Round to 30-min slot
+      
+      if (!groups.has(slot)) groups.set(slot, []);
+      groups.get(slot)!.push(event);
+    });
+    
+    return Array.from(groups.entries())
+      .map(([slotMinutes, events]) => ({ slotMinutes, events }))
+      .sort((a, b) => a.slotMinutes - b.slotMinutes);
+  }, [events]);
+
+  // State for activity column hover
+  const [hoveredActivityGroup, setHoveredActivityGroup] = useState<{ slotMinutes: number; events: ScheduleCardData[] } | null>(null);
+  const [activityPopupPosition, setActivityPopupPosition] = useState<{ x: number; y: number } | null>(null);
+  const activityHoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // Helper to close activity popup with delay (allows mouse to reach popup)
+  const closeActivityPopupWithDelay = useCallback(() => {
+    activityHoverTimeoutRef.current = setTimeout(() => {
+      setHoveredActivityGroup(null);
+      setActivityPopupPosition(null);
+    }, 150);
+  }, []);
+  
+  // Helper to cancel pending close
+  const cancelActivityPopupClose = useCallback(() => {
+    if (activityHoverTimeoutRef.current) {
+      clearTimeout(activityHoverTimeoutRef.current);
+      activityHoverTimeoutRef.current = null;
+    }
+  }, []);
 
   // Check if viewing today
   const isToday = selectedDate.toDateString() === new Date().toDateString();
@@ -1013,6 +977,100 @@ const TimelineView: React.FC<TimelineViewProps> = ({
             document.body
           )}
 
+          {/* Activity popup for completed tasks - rendered via portal */}
+          {createPortal(
+            <AnimatePresence>
+              {hoveredActivityGroup && activityPopupPosition && (
+                <motion.div
+                  initial={{ opacity: 0, x: -5, scale: 0.95 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: -5, scale: 0.95 }}
+                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                  className="fixed z-[9999] pointer-events-auto"
+                  style={{
+                    left: `${activityPopupPosition.x}px`,
+                    top: `${activityPopupPosition.y}px`,
+                    transform: 'translateY(-50%)',
+                  }}
+                  onMouseEnter={() => {
+                    cancelActivityPopupClose();
+                  }}
+                  onMouseLeave={() => {
+                    setHoveredActivityGroup(null);
+                    setActivityPopupPosition(null);
+                  }}
+                >
+                  <div 
+                    className="rounded-lg shadow-xl backdrop-blur-xl border overflow-hidden"
+                    style={{
+                      backgroundColor: isDarkMode ? 'rgba(30, 30, 40, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                      borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                      minWidth: '180px',
+                      maxWidth: '280px',
+                    }}
+                  >
+                    {/* Header */}
+                    <div 
+                      className="px-3 py-2 border-b text-xs font-semibold"
+                      style={{
+                        borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                        color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                      }}
+                    >
+                      {hoveredActivityGroup.events.length} task{hoveredActivityGroup.events.length > 1 ? 's' : ''} completed
+                    </div>
+                    
+                    {/* Task list */}
+                    <div className="max-h-[200px] overflow-y-auto">
+                      {hoveredActivityGroup.events.slice(0, 8).map((completionEvent) => (
+                        <button
+                          key={completionEvent.id}
+                          onClick={() => {
+                            onCardClick?.(completionEvent);
+                            setHoveredActivityGroup(null);
+                            setActivityPopupPosition(null);
+                          }}
+                          className={`w-full text-left px-3 py-2 flex items-center gap-2 transition-colors ${
+                            isDarkMode 
+                              ? 'hover:bg-white/10 active:bg-white/20' 
+                              : 'hover:bg-black/5 active:bg-black/10'
+                          }`}
+                        >
+                          <svg className="w-3.5 h-3.5 flex-shrink-0 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          <span 
+                            className="text-sm truncate"
+                            style={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)' }}
+                          >
+                            {completionEvent.title}
+                          </span>
+                          <svg 
+                            className="w-3 h-3 flex-shrink-0 ml-auto opacity-40" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      ))}
+                      {hoveredActivityGroup.events.length > 8 && (
+                        <div 
+                          className="px-3 py-2 text-xs"
+                          style={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)' }}
+                        >
+                          +{hoveredActivityGroup.events.length - 8} more
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>,
+            document.body
+          )}
+
           {/* Current time indicator - positioned absolutely across timeline and cards */}
           {isToday && currentTimeMinutes >= timeRange.startMinutes && currentTimeMinutes <= timeRange.endMinutes && (() => {
             const now = new Date();
@@ -1061,8 +1119,84 @@ const TimelineView: React.FC<TimelineViewProps> = ({
             );
           })()}
 
+          {/* Activity Column - shows completed task icons grouped by 30-min intervals */}
+          <div 
+            className="flex-shrink-0 relative ml-1" 
+            style={{ width: '24px', minHeight: `${timelineHeight}px` }}
+          >
+            {activityGroups.map((group) => {
+              const topPosition = (group.slotMinutes - timeRange.startMinutes) * pixelsPerMinute;
+              const count = group.events.length;
+              
+              return (
+                <div
+                  key={group.slotMinutes}
+                  className="absolute left-1/2 -translate-x-1/2 cursor-pointer"
+                  style={{ top: `${topPosition}px` }}
+                  onMouseEnter={(e) => {
+                    cancelActivityPopupClose();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setHoveredActivityGroup(group);
+                    setActivityPopupPosition({
+                      x: rect.right + 8,
+                      y: rect.top + rect.height / 2
+                    });
+                  }}
+                  onMouseLeave={() => {
+                    closeActivityPopupWithDelay();
+                  }}
+                  onClick={() => {
+                    // If only one event, open it directly
+                    if (count === 1 && onCardClick) {
+                      onCardClick(group.events[0]);
+                    }
+                  }}
+                >
+                  {/* Unified rounded pill with checkbox icon and count */}
+                  <div 
+                    className="flex flex-col items-center"
+                    style={{ 
+                      backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                      border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)'}`,
+                      borderRadius: '999px',
+                      width: '18px',
+                      paddingTop: '2px',
+                      paddingBottom: count > 1 ? '3px' : '2px',
+                    }}
+                  >
+                    {/* Circular checkbox icon - keep green */}
+                    <div 
+                      className="rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ 
+                        width: '12px',
+                        height: '12px',
+                        backgroundColor: isDarkMode ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.25)',
+                      }}
+                    >
+                      <svg className="w-2 h-2" fill={isDarkMode ? 'rgba(74, 222, 128, 1)' : 'rgba(22, 163, 74, 1)'} viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    
+                    {/* Count below checkbox (only show if more than 1) */}
+                    {count > 1 && (
+                      <div 
+                        className="text-[8px] font-bold leading-none mt-0.5"
+                        style={{ 
+                          color: isDarkMode ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
+                        }}
+                      >
+                        +{count - 1}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           {/* Event Cards Area */}
-          <div className="flex-1 relative ml-6" style={{ minHeight: `${timelineHeight}px` }}>
+          <div className="flex-1 relative ml-4" style={{ minHeight: `${timelineHeight}px` }}>
             {/* Drag preview for creating new event */}
             {isDragging && dragStartMinutes !== null && dragEndMinutes !== null && (
               <div

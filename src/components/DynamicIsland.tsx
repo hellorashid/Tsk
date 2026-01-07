@@ -75,6 +75,18 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   const [eventDescription, setEventDescription] = useState('');
   const [eventStartTime, setEventStartTime] = useState('');
   const [eventEndTime, setEventEndTime] = useState('');
+  
+  // Refs to track latest values for use in event handlers (prevents stale closures)
+  const titleRef = useRef(title);
+  const descriptionRef = useRef(description);
+  const eventTitleRef = useRef(eventTitle);
+  const eventDescriptionRef = useRef(eventDescription);
+  
+  // Keep refs in sync with state
+  useEffect(() => { titleRef.current = title; }, [title]);
+  useEffect(() => { descriptionRef.current = description; }, [description]);
+  useEffect(() => { eventTitleRef.current = eventTitle; }, [eventTitle]);
+  useEffect(() => { eventDescriptionRef.current = eventDescription; }, [eventDescription]);
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
   const [isActivityExpanded, setIsActivityExpanded] = useState(false);
@@ -687,22 +699,28 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   };
 
   const handleClose = () => {
+    // Use refs to get the latest values (prevents stale closure issues with Escape key handler)
+    const currentTitle = titleRef.current;
+    const currentDescription = descriptionRef.current;
+    const currentEventTitle = eventTitleRef.current;
+    const currentEventDescription = eventDescriptionRef.current;
+    
     // Save pending task changes before closing
     if (selectedTask) {
-      if (title.trim() !== selectedTask.name) {
-        onUpdateTask(selectedTask.id, { name: title.trim() });
+      if (currentTitle.trim() !== selectedTask.name) {
+        onUpdateTask(selectedTask.id, { name: currentTitle.trim() });
       }
-      if (description !== selectedTask.description) {
-        onUpdateTask(selectedTask.id, { description });
+      if (currentDescription !== selectedTask.description) {
+        onUpdateTask(selectedTask.id, { description: currentDescription });
       }
     }
     // Save pending event changes before closing
     if (currentEvent && onUpdateEvent) {
-      if (eventTitle.trim() !== currentEvent.title) {
-        onUpdateEvent(currentEvent.id, { title: eventTitle.trim() });
+      if (currentEventTitle.trim() !== currentEvent.title) {
+        onUpdateEvent(currentEvent.id, { title: currentEventTitle.trim() });
       }
-      if (eventDescription !== currentEvent.description) {
-        onUpdateEvent(currentEvent.id, { description: eventDescription });
+      if (currentEventDescription !== currentEvent.description) {
+        onUpdateEvent(currentEvent.id, { description: currentEventDescription });
       }
     }
     
