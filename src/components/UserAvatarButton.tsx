@@ -64,6 +64,9 @@ function UserAvatarButton() {
                 <p className="text-slate-100 font-medium">
                   hi, {user?.name}
                 </p>
+                {user?.username && (
+                  <p className="text-gray-400 text-sm mt-0.5">@{user.username}</p>
+                )}
 
                 <div className="border-t border-gray-600 my-4"></div>
 
