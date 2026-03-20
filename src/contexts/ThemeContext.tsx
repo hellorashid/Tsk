@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 
 // Define the shape of our theme
 export interface Theme {
@@ -86,24 +86,28 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     document.documentElement.style.setProperty('--font-style', theme.fontStyle);
   }, [theme.fontStyle]);
 
-  const setAccentColor = (color: string) => {
+  const setAccentColor = useCallback((color: string) => {
     setTheme(prevTheme => ({ ...prevTheme, accentColor: color }));
-  };
+  }, []);
 
-  const setFontStyle = (style: 'mono' | 'sans' | 'serif') => {
+  const setFontStyle = useCallback((style: 'mono' | 'sans' | 'serif') => {
     setTheme(prevTheme => ({ ...prevTheme, fontStyle: style }));
-  };
+  }, []);
 
-  const setIsDarkMode = (isDark: boolean) => {
+  const setIsDarkMode = useCallback((isDark: boolean) => {
     setTheme(prevTheme => ({ ...prevTheme, isDarkMode: isDark }));
-  };
+  }, []);
 
-  const setLocation = (latitude: number, longitude: number, name: string) => {
+  const setLocation = useCallback((latitude: number, longitude: number, name: string) => {
     setTheme(prevTheme => ({ ...prevTheme, location: { latitude, longitude, name } }));
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    theme, setTheme, setAccentColor, setFontStyle, setIsDarkMode, setLocation
+  }), [theme, setAccentColor, setFontStyle, setIsDarkMode, setLocation]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, setAccentColor, setFontStyle, setIsDarkMode, setLocation }}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );
