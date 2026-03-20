@@ -146,7 +146,6 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
       : null,
     [selectedTask?.id]
   ) as ScheduleCardData[] | null;
-  console.log("scheduledEvents:", scheduledEvents);
 
   // Check if task has any scheduled events for today
   const hasScheduledEventToday = (() => {
@@ -606,7 +605,6 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
         if (creationMode === 'task') {
           try {
             const newTaskId = await onAddTask(title);
-            console.log("newTaskId:", newTaskId);
             
             if (newTaskId) {
               // Try to find the task in the current tasks list
@@ -626,7 +624,6 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                     setPendingTaskId(null);
                   } else {
                     // If still not found, keep pending ID and let useEffect handle it
-                    console.log('Task not found yet, waiting for query update...');
                   }
                 }, 300);
               }
