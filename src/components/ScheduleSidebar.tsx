@@ -172,13 +172,13 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   };
 
   // Handle drag end
-  const handleDragEnd = (id: string, newStartMinutes: number) => {
+  const handleDragEnd = useCallback((id: string, newStartMinutes: number) => {
     const event = events.find(e => e.id === id);
     if (!event || !onUpdateEvent) return;
-    
+
     const duration = getEventDuration(event);
     const baseDate = event.start.dateTime ? new Date(event.start.dateTime) : new Date();
-    
+
     onUpdateEvent(id, {
       start: {
         ...event.start,
@@ -189,15 +189,15 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
         dateTime: minutesToDateTime(newStartMinutes + duration, baseDate)
       }
     });
-  };
+  }, [events, onUpdateEvent]);
 
   // Handle resize end
-  const handleResizeEnd = (id: string, newStartMinutes: number, newDuration: number) => {
+  const handleResizeEnd = useCallback((id: string, newStartMinutes: number, newDuration: number) => {
     const event = events.find(e => e.id === id);
     if (!event || !onUpdateEvent) return;
-    
+
     const baseDate = event.start.dateTime ? new Date(event.start.dateTime) : new Date();
-    
+
     onUpdateEvent(id, {
       start: {
         ...event.start,
@@ -208,29 +208,29 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
         dateTime: minutesToDateTime(newStartMinutes + newDuration, baseDate)
       }
     });
-  };
+  }, [events, onUpdateEvent]);
 
   // Handle click
-  const handleCardClick = (id: string) => {
+  const handleCardClick = useCallback((id: string) => {
     const cardData = events.find(event => event.id === id);
     if (cardData && onCardClick) {
       onCardClick(cardData);
     }
-  };
+  }, [events, onCardClick]);
 
   // Handle delete
-  const handleCardDelete = (id: string) => {
+  const handleCardDelete = useCallback((id: string) => {
     if (onDeleteEvent) {
       onDeleteEvent(id);
     }
-  };
+  }, [onDeleteEvent]);
 
-  // Handle task checkbox toggle - this is now handled in ScheduleCard directly
-  const handleTaskToggle = (taskId: string, completed: boolean) => {
+  // Handle task checkbox toggle
+  const handleTaskToggle = useCallback((taskId: string, completed: boolean) => {
     if (onTaskToggle) {
       onTaskToggle(taskId, completed);
     }
-  };
+  }, [onTaskToggle]);
 
   // Snap time to nearest interval
   const snapToInterval = (minutes: number, interval: number = 15): number => {

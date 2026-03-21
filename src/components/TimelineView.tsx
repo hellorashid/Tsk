@@ -179,7 +179,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
     });
 
     return segs;
-  }, [timeRange, isDarkMode, pixelsPerMinute, weatherData]);
+  }, [timeRange, isDarkMode, weatherData]);
 
   // Zoom controls
   const handleZoomIn = () => {

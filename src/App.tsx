@@ -1,17 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import "./App.css";
 
-import { TaskModal } from "./components/TaskModal";
 import ListItem from "./components/ListItem";
-import { Task } from "./utils/types";
+import { Task, Folder } from "./utils/types";
 import UserAvatarButton from "./components/UserAvatarButton";
 import { useBasic, useQuery } from "@basictech/react";
 import bgImage from '/bg2.jpg';
 
 import SilkTaskDrawer from "./components/SilkTaskDrawer";
-// import Sidebar from "./components/Sidebar"; // Removed - sidebar is empty
-// TaskDetailsSidebar removed - replaced by DynamicIsland
-// SettingsSidebar and SettingsDrawer removed - replaced by SettingsPage
 import AboutModal from "./components/AboutModal";
 import ScheduleSidebar from "./components/ScheduleSidebar";
 import { ScheduleCardData } from "./components/ScheduleCard";
@@ -26,48 +22,13 @@ import FolderDrawer from "./components/FolderDrawer";
 import FolderSettings from "./components/FolderSettings";
 import SettingsPage from "./components/SettingsPage";
 import IconSidebar from "./components/IconSidebar";
-import { Folder } from "./utils/types";
-
-
-function StatusIcon({ status }: { status: string }) {
-
-
-  return (
-    <div className="px-2 opacity-80">
-      {status === "OFFLINE" && (
-        <div className="text-red-500">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3" />
-          </svg>
-        </div>
-      )}
-      {status === "ONLINE" && (
-        <div className="text-green-500">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
-          </svg>
-        </div>
-      )}
-      {status !== "OFFLINE" && status !== "ONLINE" && (
-        <div className="text-gray-500 animate-spin">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-        </div>
-      )}
-    </div>
-  )
-}
-
 
 
 
 
 function Home() {
-  const { db, dbStatus } = useBasic();
-  const { theme, setAccentColor, setIsDarkMode, setFontStyle } = useTheme();
+  const { db } = useBasic();
+  const { theme } = useTheme();
 
   const tasksData = useQuery(() => db.collection("tasks").getAll());
   const tasks = (tasksData || []) as Task[];
@@ -76,9 +37,6 @@ function Home() {
   const foldersData = useQuery(() => db.collection("filters").getAll());
   const folders = (foldersData || []) as Folder[];
 
-  console.log("tasks from DB:", tasks);
-  console.log("schedule from DB:", scheduleEventsData);
-  console.log("folders from DB:", folders);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleCardData | null>(null);
   const [focusedTask, setFocusedTask] = useState<Task | null>(null);
@@ -87,24 +45,18 @@ function Home() {
 
   
   // Update a schedule event in the database
-  const updateScheduleEvent = async (id: string, changes: Partial<ScheduleCardData>) => {
+  const updateScheduleEvent = useCallback(async (id: string, changes: Partial<ScheduleCardData>) => {
     await db.collection("schedule").update(id, changes);
-  };
-  
+  }, [db]);
+
   // Delete a schedule event from the database
-  const deleteScheduleEvent = async (id: string) => {
+  const deleteScheduleEvent = useCallback(async (id: string) => {
     await db.collection("schedule").delete(id);
-  };
-  const [newInput, setNewInput] = useState("");
+  }, [db]);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  // Filter-related state - commented out for now
-  // const [activeFilter, setActiveFilter] = useState('all');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [showSchedule, setShowSchedule] = useState(true);
   const [viewMode, setViewMode] = useState<'compact' | 'cozy' | 'chonky'>('cozy');
-  // const [customFilters, setCustomFilters] = useState([]);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
-  // const [showFilters, setShowFilters] = useState(false);
   const [isNewTaskMode, setIsNewTaskMode] = useState(false);
   const [mobileView, setMobileView] = useState<'tasks' | 'calendar'>('tasks');
   
@@ -150,7 +102,7 @@ function Home() {
   }, [showTodayFolder]);
 
   // Handle mobile view change - close drawer when switching views
-  const handleMobileViewChange = (view: 'tasks' | 'calendar') => {
+  const handleMobileViewChange = useCallback((view: 'tasks' | 'calendar') => {
     setMobileView(view);
     if (drawerOpen) {
       setDrawerOpen(false);
@@ -158,7 +110,7 @@ function Home() {
       setSelectedTask(null);
       setSelectedEvent(null);
     }
-  };
+  }, [drawerOpen]);
 
   // Focus mode handlers - wrapped in useCallback for stable reference
   const handleEnterFocus = useCallback(async (task: Task) => {
@@ -231,7 +183,7 @@ function Home() {
     }
   }, [scheduleEvents, db]);
 
-  const handleExitFocus = async () => {
+  const handleExitFocus = useCallback(async () => {
     // Update the focus session event's end time
     if (focusSessionEventId) {
       const now = new Date();
@@ -243,9 +195,9 @@ function Home() {
       });
       setFocusSessionEventId(null);
     }
-    
+
     setFocusedTask(null);
-  };
+  }, [focusSessionEventId, db]);
 
   // Fetch weather and create weather events - wrapped in useCallback for stable reference
   const handleFetchWeather = useCallback(async (date: Date) => {
@@ -379,71 +331,37 @@ function Home() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleThemeChange = (isDark: boolean) => {
-    setIsDarkMode(isDark);
-  };
-
-  // Filter-related code - commented out for now
-  // Define filters
-  // const filters = [
-  //   { id: 'all', label: 'All Tasks', count: tasks?.length },
-  //   { id: 'active', label: 'Active', count: tasks?.filter(task => !task.completed).length },
-  //   { id: 'completed', label: 'Completed', count: tasks?.filter(task => task.completed).length },
-  //   ...customFilters
-  // ];
-
-  // Filter tasks based on active filter - commented out, showing all tasks instead
-  // const filteredTasks = tasks?.filter(task => {
-  //   if (activeFilter === 'all') return true;
-  //   if (activeFilter === 'active') return !task.completed;
-  //   if (activeFilter === 'completed') return task.completed;
-  //   
-  //   // Handle custom filters
-  //   const customFilter = customFilters.find(f => f.id === activeFilter);
-  //   if (customFilter) {
-  //     // Check if the task has any of the filter's labels
-  //     if (customFilter.labels && customFilter.labels.length > 0) {
-  //       return customFilter.labels.some(label => 
-  //         task.labels && task.labels.includes(label)
-  //       );
-  //     }
-  //     return true;
-  //   }
-  //   
-  //   return true;
-  // });
-
-  const filteredTasks = (() => {
+  const filteredTasks = useMemo(() => {
     const topLevelTasks = tasks?.filter((task: Task) => !task.parentTaskId && !task.completed) || [];
-    
+
     if (activeFolder === null || activeFolder === 'all') {
       return topLevelTasks;
     }
-    
+
     if (activeFolder === 'other') {
       return topLevelTasks.filter((task: Task) => {
         if (!task.labels) return true;
-        
+
         const taskLabels = task.labels.split(',').map(l => l.trim());
         const hasFolder = taskLabels.some(label => label.startsWith('folder:'));
         return !hasFolder;
       });
     }
-    
+
     if (activeFolder === 'today') {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      
+
       return topLevelTasks.filter((task: Task) => {
         return scheduleEvents.some((event: ScheduleCardData) => {
           if (event.type !== 'task' || event.taskId !== task.id) {
             return false;
           }
-          
+
           let eventDate: Date | null = null;
-          
+
           if (event.start?.dateTime) {
             eventDate = new Date(event.start.dateTime);
             eventDate.setHours(0, 0, 0, 0);
@@ -451,45 +369,45 @@ function Home() {
             eventDate = new Date(event.start.date);
             eventDate.setHours(0, 0, 0, 0);
           }
-          
+
           if (!eventDate) {
             return false;
           }
-          
+
           return eventDate.getTime() >= today.getTime() && eventDate.getTime() < tomorrow.getTime();
         });
       });
     }
-    
+
     const selectedFolder = folders?.find((f: Folder) => f.id === activeFolder);
     if (!selectedFolder) {
       return topLevelTasks;
     }
-    
+
     const folderLabels = selectedFolder.labels
       ? selectedFolder.labels.split(',').map(l => l.trim()).filter(l => l)
       : [];
-    
+
     if (folderLabels.length === 0) {
       return topLevelTasks;
     }
-    
+
     return topLevelTasks.filter((task: Task) => {
       if (!task.labels) return false;
-      
+
       const taskLabels = task.labels.split(',').map(l => l.trim());
-      return folderLabels.some(folderLabel => 
+      return folderLabels.some(folderLabel =>
         taskLabels.some(taskLabel => taskLabel === folderLabel)
       );
     });
-  })();
+  }, [tasks, activeFolder, scheduleEvents, folders]);
 
   // Get suggested tasks (uncompleted tasks from past week + unscheduled tasks) for Today folder empty state
-  const suggestedTasks = (() => {
+  const suggestedTasks = useMemo(() => {
     if (activeFolder !== 'today') {
       return [];
     }
-    
+
     const topLevelTasks = tasks?.filter((task: Task) => !task.parentTaskId && !task.completed) || [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -497,7 +415,7 @@ function Home() {
     tomorrow.setDate(tomorrow.getDate() + 1);
     const oneWeekAgo = new Date(today);
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    
+
     // Get task IDs that are already scheduled for today (these are already shown in the main list)
     const todayScheduledTaskIds = new Set(
       topLevelTasks
@@ -506,9 +424,9 @@ function Home() {
             if (event.type !== 'task' || event.taskId !== task.id) {
               return false;
             }
-            
+
             let eventDate: Date | null = null;
-            
+
             if (event.start?.dateTime) {
               eventDate = new Date(event.start.dateTime);
               eventDate.setHours(0, 0, 0, 0);
@@ -516,31 +434,30 @@ function Home() {
               eventDate = new Date(event.start.date);
               eventDate.setHours(0, 0, 0, 0);
             }
-            
+
             if (!eventDate) {
               return false;
             }
-            
+
             return eventDate.getTime() >= today.getTime() && eventDate.getTime() < tomorrow.getTime();
           });
         })
         .map((task: Task) => task.id)
     );
-    
+
     // Get tasks scheduled in the past week (but not today)
     const pastWeekScheduledTasks = topLevelTasks.filter((task: Task) => {
-      // Exclude tasks already scheduled for today
       if (todayScheduledTaskIds.has(task.id)) {
         return false;
       }
-      
+
       return scheduleEvents.some((event: ScheduleCardData) => {
         if (event.type !== 'task' || event.taskId !== task.id) {
           return false;
         }
-        
+
         let eventDate: Date | null = null;
-        
+
         if (event.start?.dateTime) {
           eventDate = new Date(event.start.dateTime);
           eventDate.setHours(0, 0, 0, 0);
@@ -548,71 +465,72 @@ function Home() {
           eventDate = new Date(event.start.date);
           eventDate.setHours(0, 0, 0, 0);
         }
-        
+
         if (!eventDate) {
           return false;
         }
-        
+
         return eventDate.getTime() >= oneWeekAgo.getTime() && eventDate.getTime() < today.getTime();
       });
     });
-    
+
     // Get unscheduled tasks (tasks with no schedule events)
     const unscheduledTasks = topLevelTasks.filter((task: Task) => {
-      // Exclude tasks already scheduled for today
       if (todayScheduledTaskIds.has(task.id)) {
         return false;
       }
-      
-      return !scheduleEvents.some((event: ScheduleCardData) => 
+
+      return !scheduleEvents.some((event: ScheduleCardData) =>
         event.type === 'task' && event.taskId === task.id
       );
     });
-    
+
     // Combine both lists, prioritizing past week scheduled tasks, then unscheduled tasks
-    // Remove duplicates and limit to 5
+    // Remove duplicates using Set for O(1) lookups and limit to 5
     const allSuggested = [...pastWeekScheduledTasks];
-    unscheduledTasks.forEach(task => {
-      if (!allSuggested.find(t => t.id === task.id)) {
+    const suggestedIds = new Set(allSuggested.map(t => t.id));
+    for (const task of unscheduledTasks) {
+      if (!suggestedIds.has(task.id)) {
         allSuggested.push(task);
+        suggestedIds.add(task.id);
       }
-    });
-    
+    }
+
     return allSuggested.slice(0, 5);
-  })();
+  }, [activeFolder, tasks, scheduleEvents]);
 
   // Get completed tasks for the active folder
-  const completedTasks = (() => {
+  const completedTasks = useMemo(() => {
     const topLevelTasks = tasks?.filter((task: Task) => !task.parentTaskId && task.completed) || [];
-    
+
     if (activeFolder === null || activeFolder === 'all') {
       return topLevelTasks;
     }
-    
+
     if (activeFolder === 'other') {
       return topLevelTasks.filter((task: Task) => {
         if (!task.labels) return true;
-        
+
         const taskLabels = task.labels.split(',').map(l => l.trim());
         const hasFolder = taskLabels.some(label => label.startsWith('folder:'));
         return !hasFolder;
       });
     }
-    
+
     if (activeFolder === 'today') {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      
+
       return topLevelTasks.filter((task: Task) => {
         return scheduleEvents.some((event: ScheduleCardData) => {
           if (event.type !== 'task' || event.taskId !== task.id) {
             return false;
           }
-          
+
           let eventDate: Date | null = null;
-          
+
           if (event.start?.dateTime) {
             eventDate = new Date(event.start.dateTime);
             eventDate.setHours(0, 0, 0, 0);
@@ -620,38 +538,38 @@ function Home() {
             eventDate = new Date(event.start.date);
             eventDate.setHours(0, 0, 0, 0);
           }
-          
+
           if (!eventDate) {
             return false;
           }
-          
+
           return eventDate.getTime() >= today.getTime() && eventDate.getTime() < tomorrow.getTime();
         });
       });
     }
-    
+
     const selectedFolder = folders?.find((f: Folder) => f.id === activeFolder);
     if (!selectedFolder) {
       return [];
     }
-    
+
     const folderLabels = selectedFolder.labels
       ? selectedFolder.labels.split(',').map(l => l.trim()).filter(l => l)
       : [];
-    
+
     if (folderLabels.length === 0) {
       return topLevelTasks;
     }
-    
+
     return topLevelTasks.filter((task: Task) => {
       if (!task.labels) return false;
-      
+
       const taskLabels = task.labels.split(',').map(l => l.trim());
-      return folderLabels.some(folderLabel => 
+      return folderLabels.some(folderLabel =>
         taskLabels.some(taskLabel => taskLabel === folderLabel)
       );
     });
-  })();
+  }, [tasks, activeFolder, scheduleEvents, folders]);
 
   // Set initial state of suggestedTasksExpanded - only expand if today is empty
   useEffect(() => {
@@ -713,7 +631,6 @@ function Home() {
         setSelectedEvent(null);
         setCurrentView('home');
         setAboutModalOpen(false);
-        setShowSchedule(false);
         setIslandMode('default');
         if (isMobile) {
           setDrawerOpen(false);
@@ -835,47 +752,34 @@ function Home() {
   ]);
 
   // When opening a task in the drawer
-  const handleTaskSelect = (task: Task) => {
-    console.log("Selected task:", task);
-    console.log("isMobile state:", isMobile);
+  const handleTaskSelect = useCallback((task: Task) => {
+    if (!task || !task.id) return;
 
-    // Validate the task
-    if (!task) {
-      console.error("Cannot select null task");
-      return;
-    }
-
-    if (!task.id) {
-      console.error("Task is missing ID:", task);
-      return;
-    }
-
-    setSelectedTask({ ...task }); // Use a copy to ensure reactivity
-    setSelectedEvent(null); // Clear event selection when selecting a task
-    setCurrentView('home'); // Close settings when selecting a task
-    setIsNewTaskMode(false); // Ensure we're in edit mode, not new task mode
+    setSelectedTask({ ...task });
+    setSelectedEvent(null);
+    setCurrentView('home');
+    setIsNewTaskMode(false);
     if (isMobile) {
-      console.log("Opening drawer for mobile view");
       setDrawerOpen(true);
     }
-  };
+  }, [isMobile]);
 
   // Wrapper to ensure mutual exclusivity when selecting tasks
-  const handleTaskSelectWrapper = (task: Task | null) => {
+  const handleTaskSelectWrapper = useCallback((task: Task | null) => {
     setSelectedTask(task);
     setSelectedEvent(null); // Clear event when selecting task
-  };
+  }, []);
 
-  const handleCloseTaskDetails = () => {
+  const handleCloseTaskDetails = useCallback(() => {
     setSelectedTask(null);
     setSelectedEvent(null);
     if (isMobile) {
       setDrawerOpen(false);
     }
-  };
+  }, [isMobile]);
 
   // Handle schedule card clicks
-  const handleScheduleCardClick = (cardData: ScheduleCardData) => {
+  const handleScheduleCardClick = useCallback((cardData: ScheduleCardData) => {
     // Check if this is a deleted task (empty taskId but has snapshot)
     const isDeletedTask = cardData.type === 'task' && (!cardData.taskId || cardData.taskId === '') && cardData.metadata?.taskSnapshot;
     
@@ -915,20 +819,7 @@ function Home() {
         setDrawerOpen(true);
       }
     }
-  };
-
-  // Convert minutes from midnight to HH:MM format
-  const minutesToTimeString = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60) % 24;
-    const mins = minutes % 60;
-    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-  };
-
-  // Get current time in minutes from midnight
-  const getCurrentTimeInMinutes = (): number => {
-    const now = new Date();
-    return now.getHours() * 60 + now.getMinutes();
-  };
+  }, [tasks, isMobile]);
 
   // Find next available time slot (30 min duration)
   const findNextAvailableSlot = (durationMinutes: number = 30): { start: Date; end: Date } => {
@@ -974,7 +865,7 @@ function Home() {
   };
 
   // Handle adding task to schedule
-  const handleAddToSchedule = async (task: Task) => {
+  const handleAddToSchedule = useCallback(async (task: Task) => {
     const { start, end } = findNextAvailableSlot(30); // 30 minute duration
 
     const newScheduleItem = {
@@ -995,74 +886,19 @@ function Home() {
 
     // Add to database (DB will auto-generate ID)
     await db.collection("schedule").add(newScheduleItem);
-  };
+  }, [db, scheduleEvents]);
 
   // Handle adding new event
-  const handleAddEvent = async (eventData: Omit<ScheduleCardData, 'id'>): Promise<ScheduleCardData> => {
+  const handleAddEvent = useCallback(async (eventData: Omit<ScheduleCardData, 'id'>): Promise<ScheduleCardData> => {
     const eventId = await db.collection("schedule").add(eventData) as unknown as string;
     return { ...eventData, id: eventId }; // Return with DB-assigned ID
-  };
+  }, [db]);
 
-  const handleOpenSettings = () => {
-    setCurrentView('settings');
-  };
+  const handleOpenSettings = useCallback(() => setCurrentView('settings'), []);
+  const handleOpenAbout = useCallback(() => setAboutModalOpen(true), []);
 
-  const handleCloseSettings = () => {
-    setCurrentView('home');
-  };
-
-  const handleOpenAbout = () => {
-    setAboutModalOpen(true);
-  };
-
-  const handleCloseAbout = () => {
-    setAboutModalOpen(false);
-  };
-
-
-  const handleViewModeChange = (mode: 'compact' | 'cozy' | 'chonky') => {
-    setViewMode(mode);
-  };
-
-  const handleAccentColorChange = (color: string) => {
-    setAccentColor(color);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newInput.trim() === "") {
-      alert('Please fill out this field');
-      return;
-    }
-
-    const newTask = await db.collection("tasks").add({
-      name: newInput,
-      description: "",
-      completed: false
-    });
-    console.log("newTask:", newTask);
-
-    setNewInput("");
-  };
-
-  const updateTask = async (taskId: string, changes: any) => {
-    console.log(`Updating task ${taskId} with:`, changes);
-    
-    // Check if task is being marked as complete
-    if (changes.completed === true) {
-      const task = await db.collection("tasks").get(taskId) as Task | null;
-      
-      // Only create completion event if task wasn't already completed
-      if (task && !task.completed) {
-        await createTaskCompletionEvent(task);
-      }
-    }
-    
-    await db.collection("tasks").update(taskId, changes);
-  }
-  
   // Create or update a completion activity event
-  const createTaskCompletionEvent = async (task: Task) => {
+  const createTaskCompletionEvent = useCallback(async (task: Task) => {
     const now = new Date();
     
     // Check if a completion event already exists for this task today
@@ -1104,14 +940,28 @@ function Home() {
       // Create new completion event
       await db.collection("schedule").add(completionEventData);
     }
-  };
-  
-  // Handle task toggle from schedule - wrapper for updateTask
-  const handleTaskToggle = (taskId: string, completed: boolean) => {
-    updateTask(taskId, { completed });
-  };
+  }, [db]);
 
-  const deleteTask = async (taskId: string) => {
+  const updateTask = useCallback(async (taskId: string, changes: any) => {
+    // Check if task is being marked as complete
+    if (changes.completed === true) {
+      const task = await db.collection("tasks").get(taskId) as Task | null;
+
+      // Only create completion event if task wasn't already completed
+      if (task && !task.completed) {
+        await createTaskCompletionEvent(task);
+      }
+    }
+
+    await db.collection("tasks").update(taskId, changes);
+  }, [db, createTaskCompletionEvent]);
+
+  // Handle task toggle from schedule - wrapper for updateTask
+  const handleTaskToggle = useCallback((taskId: string, completed: boolean) => {
+    updateTask(taskId, { completed });
+  }, [updateTask]);
+
+  const deleteTask = useCallback(async (taskId: string) => {
     // First, check if this task has any schedule items
     const scheduleItems = await db.collection("schedule")
       .filter((item: any) => item.taskId === taskId)
@@ -1150,23 +1000,9 @@ function Home() {
     if (selectedTask?.id === taskId) {
       setSelectedTask(null);
     }
-  }
+  }, [db, selectedTask?.id]);
 
-  // Filter creation handler - commented out for now
-  // const handleCreateFilter = (filterName, labels) => {
-  //   const newFilterId = `custom-${Date.now()}`;
-  //   const newFilter = {
-  //     id: newFilterId,
-  //     label: filterName,
-  //     labels: labels,
-  //     count: 0, // This will be updated when tasks are filtered
-  //   };
-  //   
-  //   setCustomFilters([...customFilters, newFilter]);
-  //   setActiveFilter(newFilterId); // Switch to the new filter
-  // };
-
-  const handleAddTask = async (taskName: string): Promise<string | null> => {
+  const handleAddTask = useCallback(async (taskName: string): Promise<string | null> => {
     // Auto-add current folder label if a folder is selected
     let labels = '';
     if (activeFolder) {
@@ -1182,9 +1018,7 @@ function Home() {
       completed: false,
       labels: labels
     });
-    // Extract ID from result - Basic SDK returns object with id property
     const taskId = typeof result === 'string' ? result : (result as { id: string })?.id;
-    console.log("newTask ID:", taskId);
     
     // If Today folder is active, automatically add task to today's schedule
     if (activeFolder === 'today' && taskId) {
@@ -1199,34 +1033,27 @@ function Home() {
     }
     
     return taskId || null;
-  };
+  }, [db, activeFolder, folders, handleAddToSchedule]);
 
   // Add subtask to a parent task
-  const handleAddSubtask = async (parentTaskId: string, subtaskName: string): Promise<string | null> => {
+  const handleAddSubtask = useCallback(async (parentTaskId: string, subtaskName: string): Promise<string | null> => {
     const result = await db.collection("tasks").add({
       name: subtaskName,
       description: "",
       completed: false,
       parentTaskId: parentTaskId
     });
-    // Extract ID from result - Basic SDK returns object with id property
     const subtaskId = typeof result === 'string' ? result : (result as { id: string })?.id;
-    console.log("newSubtask ID:", subtaskId);
     return subtaskId || null;
-  };
+  }, [db]);
 
   // New function to open drawer in "new task" mode
-  const openNewTaskDrawer = () => {
-    console.log("Opening new task drawer");
+  const openNewTaskDrawer = useCallback(() => {
     setIsNewTaskMode(true);
     setSelectedTask(null);
     setSelectedEvent(null);
     setDrawerOpen(true);
-  };
-
-  const handleFontStyleChange = (style: 'mono' | 'sans' | 'serif') => {
-    setFontStyle(style);
-  };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('tsk-active-folder', activeFolder === null ? 'null' : activeFolder);
@@ -1244,42 +1071,35 @@ function Home() {
     localStorage.setItem('tsk-show-other-folder', showOtherFolder.toString());
   }, [showOtherFolder]);
 
-  // Folder handlers
-  const handleFolderSelect = (folderId: string | null) => {
-    setActiveFolder(folderId);
-  };
+  const handleFolderSelect = useCallback((folderId: string | null) => setActiveFolder(folderId), []);
 
-  const handleCreateFolder = async (name: string, labels?: string, color?: string) => {
-    // Auto-generate folder label if not provided
+  const handleCreateFolder = useCallback(async (name: string, labels?: string, color?: string) => {
     const folderLabel = `folder:${name.toLowerCase()}`;
     const allLabels = labels ? `${folderLabel},${labels}` : folderLabel;
-    
+
     await db.collection("filters").add({
-      name: name.toLowerCase(), // Store lowercase
+      name: name.toLowerCase(),
       labels: allLabels,
       color: color || ''
     });
-  };
+  }, [db]);
 
-  const handleUpdateFolder = async (folderId: string, name: string, labels: string, color?: string) => {
+  const handleUpdateFolder = useCallback(async (folderId: string, name: string, labels: string, color?: string) => {
     await db.collection("filters").update(folderId, {
-      name: name.toLowerCase(), // Store lowercase
+      name: name.toLowerCase(),
       labels: labels,
       color: color || ''
     });
-  };
+  }, [db]);
 
-  const handleDeleteFolder = async (folderId: string) => {
+  const handleDeleteFolder = useCallback(async (folderId: string) => {
     await db.collection("filters").delete(folderId);
-    // If deleted folder was active, switch to "All"
     if (activeFolder === folderId) {
       setActiveFolder(null);
     }
-  };
+  }, [db, activeFolder]);
 
-  const handleOpenFolderSettings = () => {
-    setFolderSettingsOpen(true);
-  };
+  const handleOpenFolderSettings = useCallback(() => setFolderSettingsOpen(true), []);
 
   // Update viewport height on resize for mobile Chrome fix (fallback for older browsers)
   // Modern browsers use dvh (dynamic viewport height) natively, so this is only needed for legacy support
@@ -1343,7 +1163,7 @@ function Home() {
           {/* Settings Page */}
           {currentView === 'settings' && (
             <SettingsPage
-              onBack={handleCloseSettings}
+              onBack={() => setCurrentView('home')}
               onViewModeChange={setViewMode}
               currentViewMode={viewMode}
               folders={folders || []}
@@ -1399,8 +1219,6 @@ function Home() {
           ? 'calc(100% - 48px)'
           : '100%'
       }}>
-        {/* Sidebar removed - was empty after filters were commented out */}
-
         {/* Tasks View - shown on desktop or mobile when tasks tab is selected */}
         {(!isMobile || mobileView === 'tasks') && (
           <div className="flex-1 flex flex-col relative">
@@ -1452,15 +1270,8 @@ function Home() {
 
                 <div className={`flex flex-col ${viewMode === 'compact' ? 'space-y-0' : viewMode === 'cozy' ? 'space-y-1' : 'space-y-2'}`}>
                   {filteredTasks?.map((task: Task) => (
-                    <div
-                      key={task.id}
-                      className="w-full "
-                      onClick={() => {
-                        // handleTaskSelect(task);
-                      }}
-                    >
+                    <div key={task.id} className="w-full">
                       <ListItem
-                        key={task.id}
                         task={task}
                         deleteTask={deleteTask}
                         updateTask={updateTask}
@@ -1469,6 +1280,7 @@ function Home() {
                         handleTaskSelect={handleTaskSelect}
                         onEnterFocus={handleEnterFocus}
                         onAddToSchedule={handleAddToSchedule}
+                        isMobile={isMobile}
                       />
                     </div>
                   ))}
@@ -1555,6 +1367,7 @@ function Home() {
                               onEnterFocus={handleEnterFocus}
                               onAddToSchedule={handleAddToSchedule}
                               isSuggested={true}
+                              isMobile={isMobile}
                             />
                           </div>
                         ))}
@@ -1625,8 +1438,6 @@ function Home() {
             )}
           </div>
         )}
-
-        {/* Desktop task details sidebar - disabled in favor of dynamic island */}
 
         {/* Schedule sidebar - always show on desktop */}
         {!isMobile && (

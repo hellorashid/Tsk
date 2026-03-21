@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useOptimistic } from "react";
+import React, { useState, useOptimistic } from "react";
 import { Task } from "../utils/types";
 import { useBasic } from "@basictech/react";
 import { useTheme } from "../contexts/ThemeContext";
@@ -14,6 +14,7 @@ interface ListItemProps {
   onEnterFocus?: (task: Task) => void;
   onAddToSchedule?: (task: Task) => void;
   isSuggested?: boolean;
+  isMobile?: boolean;
 }
 
 const ListItem: React.FC<ListItemProps> = ({
@@ -25,29 +26,20 @@ const ListItem: React.FC<ListItemProps> = ({
   handleTaskSelect,
   onEnterFocus,
   onAddToSchedule,
-  isSuggested = false
+  isSuggested = false,
+  isMobile = false
 }) => {
   const { dbStatus } = useBasic();
   const { theme } = useTheme();
   const { accentColor, isDarkMode } = theme;
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(task.name);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  
+
   // Optimistic UI for checkbox - provides instant feedback while update is in progress
   const [optimisticCompleted, setOptimisticCompleted] = useOptimistic(
     task.completed,
     (_currentState, newCompleted: boolean) => newCompleted
   );
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditedTitle(e.target.value);

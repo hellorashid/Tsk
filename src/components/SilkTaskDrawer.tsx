@@ -455,9 +455,8 @@ export default function SilkTaskDrawer({
                                 }}
                                 deleteTask={() => { /* Optionally allow removal from this list */ }}
                                 isSelected={false} // Temporary items are not "selected" in the main app sense
-                                viewMode={"cozy"} // Or a viewMode prop from parent if available
-                                // Pass any other necessary props that ListItem expects
-                                // Ensure ListItem can handle a task object that might not have all DB fields
+                                viewMode={"cozy"}
+                                isMobile={true}
                               />
                             </motion.div>
                           ))}
