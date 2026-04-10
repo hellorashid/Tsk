@@ -8,13 +8,15 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg', 'tsk-logo.png'],
       manifest: {
+        id: '/',
         name: 'tsk',
         short_name: 'tsk',
         description: 'tsk - cozy task manager',
         theme_color: '#1F1B2F',
         background_color: '#1F1B2F',
+        start_url: '/',
+        scope: '/',
         display: 'standalone',
         icons: [
           {
@@ -36,7 +38,8 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,jpg,svg,woff2}'],
+        cleanupOutdatedCaches: true,
+        globPatterns: ['**/*.{js,css,html,ico,png,jpg,svg,woff2,webmanifest}'],
         runtimeCaching: []
       }
     })
