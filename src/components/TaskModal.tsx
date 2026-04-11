@@ -39,11 +39,6 @@ export const TaskModal = ({
     return folderLabel ? folderLabel.replace('folder:', '') : null;
   });
   
-  // Log task for debugging
-  useEffect(() => {
-    console.log("TaskModal received task:", task);
-  }, [task]);
-
   const [taskCompleted, setTaskCompleted] = useState(task?.completed || false);
   const [taskName, setTaskName] = useState(task?.name || '');
   const [taskDescription, setTaskDescription] = useState(task?.description || '');
@@ -169,7 +164,6 @@ export const TaskModal = ({
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log("delete button clicked");
     if (task?.id && deleteTask) {
       deleteTask(task.id);
       if (onDelete) {
