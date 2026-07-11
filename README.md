@@ -1,6 +1,6 @@
 # tsk.lol
 
-A cozy task management and scheduling app that helps you organize your life. 
+A cozy task and schedule manager, now organized as a simple monorepo so the current web app can grow into future mobile and desktop clients.
 
 
 ## Main Features
@@ -55,6 +55,20 @@ Everything is stored using Basic.tech, so your data stays private and syncs acro
 3. Organize things into folders using the folder bar
 4. Schedule tasks by selecting them and adding them to your calendar
 5. Hit focus mode when you need to actually get stuff done
+
+### Local Development
+
+```bash
+npm install
+npm run dev
+```
+
+### Repo Layout
+
+- `apps/web` contains the current Vite app
+- `apps/mobile` is a placeholder for the future Expo client
+- `apps/desktop` is a placeholder for a future desktop shell
+- `packages/shared` is reserved for shared types, utilities, and tokens
 
 ## Tech Stack
 

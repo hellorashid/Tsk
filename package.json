@@ -1,45 +1,29 @@
 {
-  "name": "tsk",
+  "name": "tsk-monorepo",
   "private": true,
-  "version": "0.6.2",
-  "type": "module",
+  "version": "7.0.0",
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@basictech/react": "^0.8.0-beta.4",
-    "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/utilities": "^3.2.2",
-    "@heroicons/react": "^2.0.18",
-    "@radix-ui/react-popover": "^1.1.13",
-    "@radix-ui/react-switch": "^1.2.4",
-    "@silk-hq/components": "^0.8.15",
-    "framer-motion": "^12.23.24",
-    "motion": "^12.6.3",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "vaul": "^1.1.2"
+    "dev": "npm run dev --workspace @tsk/web",
+    "build": "npm run build --workspace @tsk/web",
+    "lint": "npm run lint --workspace @tsk/web",
+    "test": "npm run test --workspace @tsk/web",
+    "preview": "npm run preview --workspace @tsk/web",
+    "dev:web": "npm run dev --workspace @tsk/web",
+    "build:web": "npm run build --workspace @tsk/web",
+    "lint:web": "npm run lint --workspace @tsk/web",
+    "test:web": "npm run test --workspace @tsk/web"
   },
   "devDependencies": {
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@typescript-eslint/eslint-plugin": "^5.61.0",
-    "@typescript-eslint/parser": "^5.61.0",
-    "@vitejs/plugin-react-swc": "^3.11.0",
-    "autoprefixer": "^10.4.15",
-    "eslint": "^8.44.0",
-    "eslint-plugin-react": "^7.32.2",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.1",
-    "postcss": "^8.4.28",
-    "tailwindcss": "^3.3.3",
-    "typescript": "^5.0.2",
-    "vite": "^4.5.14",
-    "vite-plugin-pwa": "^1.2.0",
-    "workbox-cli": "^7.4.0",
-    "workbox-window": "^7.4.0"
+    "@eslint/js": "^9.39.4",
+    "@typescript-eslint/eslint-plugin": "^8.63.0",
+    "@typescript-eslint/parser": "^8.63.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "globals": "^17.7.0"
   }
 }
