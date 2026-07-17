@@ -3,9 +3,11 @@ import { useBasic } from "@basictech/react";
 const BASIC_SUBSCRIPTION_NOT_OPEN_MESSAGE = "subscription 'own' is not open";
 
 export function useBasicDbReady() {
-  const { isReady, isSignedIn, sync } = useBasic();
+  const { isReady, sync } = useBasic();
 
-  return isReady && isSignedIn && sync.enabled && (sync.status === "online" || sync.status === "offline");
+  // Basic 0.9.0-beta.1 exposes a local-first mode where the app DB can be
+  // usable before sign-in. `local` is a real ready state, not just a loading phase.
+  return isReady && (sync.status === "local" || sync.status === "online" || sync.status === "offline");
 }
 
 export function isBasicDbNotReadyError(error: unknown) {
