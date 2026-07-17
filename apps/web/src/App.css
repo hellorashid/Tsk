@@ -103,3 +103,29 @@ form input[type="text"]:focus {
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 60px, black calc(100% - 80px), transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0%, black 60px, black calc(100% - 80px), transparent 100%);
 }
+
+.task-loading-state {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.75rem;
+  padding-bottom: 1.25rem;
+}
+
+.task-loading-spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-top-color: rgba(255, 255, 255, 0.8);
+  animation: task-loading-spin 0.8s linear infinite;
+}
+
+@keyframes task-loading-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}

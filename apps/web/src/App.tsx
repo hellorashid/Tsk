@@ -47,9 +47,13 @@ function Home() {
     [isDbReady],
   );
 
+  const isCollectionsLoading =
+    !isDbReady || tasksData === undefined || scheduleEventsData === undefined || foldersData === undefined;
+
   const tasks = useMemo(() => (tasksData ?? []) as Task[], [tasksData]);
   const scheduleEvents = useMemo(() => (scheduleEventsData ?? []) as ScheduleCardData[], [scheduleEventsData]);
   const folders = useMemo(() => (foldersData ?? []) as Folder[], [foldersData]);
+  const [showDelayedLoadingState, setShowDelayedLoadingState] = useState(false);
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleCardData | null>(null);
@@ -100,9 +104,25 @@ function Home() {
     folders,
     tasks,
     scheduleEvents,
+    isCollectionsLoading,
     hasSuggestedInitializedRef,
     setSuggestedTasksExpanded,
   });
+
+  useEffect(() => {
+    if (!isCollectionsLoading) {
+      setShowDelayedLoadingState(false);
+      return;
+    }
+
+    // TODO(basic-sdk): replace this heuristic when the SDK exposes first-class
+    // query loading / own-subscription readiness so apps don't have to infer it.
+    const timer = window.setTimeout(() => {
+      setShowDelayedLoadingState(true);
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [isCollectionsLoading]);
 
   const {
     deleteScheduleEvent,
@@ -383,7 +403,13 @@ function Home() {
                     >
                       <div className="mt-10 flex justify-center">
                         <div className="w-full max-w-2xl relative">
-                          {filteredTasks.length === 0 && (
+                          {showDelayedLoadingState && filteredTasks.length === 0 && (
+                            <div className="task-loading-state" aria-live="polite" aria-busy="true">
+                              <div className="task-loading-spinner" />
+                            </div>
+                          )}
+
+                          {!isCollectionsLoading && filteredTasks.length === 0 && (
                             <div>
                               {activeFolder === "today" ? (
                                 <>

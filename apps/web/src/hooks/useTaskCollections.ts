@@ -8,6 +8,7 @@ interface UseTaskCollectionsOptions {
   folders: Folder[];
   tasks: Task[];
   scheduleEvents: ScheduleCardData[];
+  isCollectionsLoading: boolean;
   hasSuggestedInitializedRef: MutableRefObject<boolean>;
   setSuggestedTasksExpanded: Dispatch<SetStateAction<boolean>>;
 }
@@ -17,6 +18,7 @@ export function useTaskCollections({
   folders,
   tasks,
   scheduleEvents,
+  isCollectionsLoading,
   hasSuggestedInitializedRef,
   setSuggestedTasksExpanded,
 }: UseTaskCollectionsOptions) {
@@ -36,13 +38,17 @@ export function useTaskCollections({
   );
 
   useEffect(() => {
+    if (isCollectionsLoading) {
+      return;
+    }
+
     if (!hasSuggestedInitializedRef.current && activeFolder === "today") {
       hasSuggestedInitializedRef.current = true;
       if (filteredTasks.length === 0) {
         setSuggestedTasksExpanded(true);
       }
     }
-  }, [activeFolder, filteredTasks.length, hasSuggestedInitializedRef, setSuggestedTasksExpanded]);
+  }, [activeFolder, filteredTasks.length, hasSuggestedInitializedRef, isCollectionsLoading, setSuggestedTasksExpanded]);
 
   return {
     completedTasks,
