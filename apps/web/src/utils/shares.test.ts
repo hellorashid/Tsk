@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { isOpenShare, normalizeShareHandle, shareIncludesTask, shortDid } from "./shares";
+import { describe, expect, it, vi } from "vitest";
+import { isOpenShare, normalizeShareHandle, resolveShareRecipient, shareIncludesTask, shortDid } from "./shares";
 
 describe("normalizeShareHandle", () => {
   it("trims, lowercases, and adds .basic.id when needed", () => {
@@ -36,5 +36,30 @@ describe("shortDid", () => {
   it("shortens long DIDs", () => {
     expect(shortDid("did:web:fff.basic.id")).toBe("did:web:fff.basic.id");
     expect(shortDid("did:plc:abcdefghijklmnopqrstuvwxyz")).toBe("did:plc:ab…uvwxyz");
+  });
+});
+
+describe("resolveShareRecipient", () => {
+  it("returns a DID unchanged", async () => {
+    await expect(resolveShareRecipient("did:web:fff.basic.id")).resolves.toBe("did:web:fff.basic.id");
+  });
+
+  it("resolves a handle through the PDS", async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({
+      did: "did:web:basicid.net:u:e32d5eb80402ae5e3ca83379",
+      handle: "fff.basic.id",
+    })));
+
+    await expect(resolveShareRecipient("fff", fetcher)).resolves.toBe(
+      "did:web:basicid.net:u:e32d5eb80402ae5e3ca83379",
+    );
+    expect(fetcher).toHaveBeenCalledWith(
+      "https://pds.basic.id/auth/handle/resolve?handle=fff.basic.id",
+    );
+  });
+
+  it("surfaces handle-not-found errors", async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({ error: "Handle not found" }), { status: 404 }));
+    await expect(resolveShareRecipient("alice", fetcher)).rejects.toThrow("Handle not found");
   });
 });

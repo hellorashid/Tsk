@@ -1,6 +1,6 @@
 import { useMemo, useState, useTransition } from "react";
 import { basic } from "../basic";
-import { isOpenShare, normalizeShareHandle, shareIncludesTask, shortDid } from "../utils/shares";
+import { isOpenShare, resolveShareRecipient, shareIncludesTask, shortDid } from "../utils/shares";
 
 interface TaskSharePanelProps {
   taskId: string;
@@ -21,18 +21,13 @@ export default function TaskSharePanel({ taskId, taskName, compact = false }: Ta
   );
 
   const submitShare = () => {
-    const recipientHandle = normalizeShareHandle(handle);
-    if (!recipientHandle) {
-      setError("Enter a Basic handle.");
-      return;
-    }
-
     setError(null);
     startTransition(async () => {
       try {
+        const recipientDid = await resolveShareRecipient(handle);
         await shares.create({
           repo: "default",
-          recipientHandle,
+          recipientDid,
           role: "editor",
           scope: [{ table: "tasks", recordIds: [taskId] }],
           display: { shareName: taskName },
