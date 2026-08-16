@@ -6,6 +6,7 @@ import { ScheduleCardData, getTimeFromDateTime, getEventDuration } from '../util
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubtaskRecords } from '../hooks/useBasicData';
 import SubtasksList from './SubtasksList';
+import TaskSharePanel from './TaskSharePanel';
 import { useAutoResizeTextarea } from '../hooks/useAutoResizeTextarea';
 import { showPickerOrClick } from '../utils/showPicker';
 
@@ -668,6 +669,9 @@ export const TaskModal = ({
           placeholder="Some description..."
           style={{ height: 'auto' }}
         />
+        {!isNew && task?.id ? (
+          <TaskSharePanel taskId={task.id} taskName={taskName || task.name} />
+        ) : null}
         </div>{/* End scrollable content area */}
         
         {/* Bottom Action Buttons - positioned at bottom, outside scroll */}

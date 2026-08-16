@@ -8,6 +8,7 @@ interface FoldersBarProps {
   showAllFolder?: boolean;
   showOtherFolder?: boolean;
   showTodayFolder?: boolean;
+  showSharedFolder?: boolean;
   isDarkMode?: boolean;
 }
 
@@ -18,6 +19,7 @@ const FoldersBar: React.FC<FoldersBarProps> = ({
   showAllFolder = false,
   showOtherFolder = true,
   showTodayFolder = true,
+  showSharedFolder = true,
   isDarkMode = true,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -84,6 +86,8 @@ const FoldersBar: React.FC<FoldersBarProps> = ({
         ))}
 
         {showTodayFolder ? renderChip('today', 'Today') : null}
+
+        {showSharedFolder ? renderChip('shared', 'Shared') : null}
 
         {showAllFolder ? renderChip('all', 'All') : null}
         </div>

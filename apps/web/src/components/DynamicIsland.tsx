@@ -6,6 +6,7 @@ import Checkbox from './Checkbox';
 import { useTheme } from '../contexts/ThemeContext';
 import { useScheduleRecord, useScheduleRecords, useSubtaskRecords, useTaskRecord } from '../hooks/useBasicData';
 import SubtasksList from './SubtasksList';
+import TaskSharePanel from './TaskSharePanel';
 import { useAutoResizeTextarea } from '../hooks/useAutoResizeTextarea';
 
 interface DynamicIslandProps {
@@ -1403,6 +1404,14 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   placeholder="Add a description..."
                   style={{ height: 'auto' }}
                 />
+
+                {currentTask?.id ? (
+                  <TaskSharePanel
+                    taskId={currentTask.id}
+                    taskName={currentTask.name || title}
+                    compact
+                  />
+                ) : null}
 
               {/* Activity Section - show scheduled events if any exist */}
               {scheduledEvents && scheduledEvents.length > 0 && (() => {

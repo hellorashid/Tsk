@@ -85,6 +85,35 @@ function getBackupState({
   };
 }
 
+function SharingSettings() {
+  const shares = basic.useOutgoingShares();
+  const mounts = basic.useMounts();
+  const { theme } = useTheme();
+  const { isDarkMode } = theme;
+  const openShares = shares.outgoingShares.filter((share) => share.state === "pending" || share.state === "active");
+
+  return (
+    <section className={`rounded-xl p-4 ${isDarkMode ? 'bg-white/5' : 'bg-black/5'}`}>
+      <h2 className="text-lg font-semibold mb-2">Sharing</h2>
+      <p className={`text-sm mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+        Share individual tasks from a task’s details. {openShares.length === 1 ? "1 task is" : `${openShares.length} tasks are`} shared outbound
+        {mounts.mounts.length > 0 ? `, and ${mounts.mounts.length} ${mounts.mounts.length === 1 ? "share is" : "shares are"} incoming.` : "."}
+      </p>
+      <button
+        type="button"
+        onClick={() => { window.location.assign(shares.manageUrl()); }}
+        className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+          isDarkMode
+            ? 'bg-white/15 hover:bg-white/25'
+            : 'bg-black/10 hover:bg-black/15'
+        }`}
+      >
+        Manage shares in Basic ID
+      </button>
+    </section>
+  );
+}
+
 const backupToneClass: Record<BackupTone, string> = {
   good: 'bg-green-500',
   warn: 'bg-yellow-500',
@@ -412,6 +441,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                   ) : null}
                 </div>
               </section>
+
+              {isReady && !isLocalAccount ? (
+                <SharingSettings />
+              ) : null}
 
               {/* About */}
               <section className={`rounded-xl p-4 ${isDarkMode ? 'bg-white/5' : 'bg-black/5'}`}>

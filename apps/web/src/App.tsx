@@ -13,6 +13,7 @@ import ListItem from "./components/ListItem";
 import MobileNavBar from "./components/MobileNavBar";
 import ScheduleSidebar from "./components/ScheduleSidebar";
 import SettingsPage from "./components/SettingsPage";
+import SharedTasksView from "./components/SharedTasksView";
 import SilkTaskDrawer from "./components/SilkTaskDrawer";
 import UserAvatarButton from "./components/UserAvatarButton";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
@@ -369,6 +370,7 @@ function Home() {
                       showAllFolder={showAllFolder}
                       showOtherFolder={showOtherFolder}
                       showTodayFolder={showTodayFolder}
+                      showSharedFolder
                     />
 
                     <div
@@ -383,13 +385,21 @@ function Home() {
                     >
                       <div className="mt-10 flex justify-center">
                         <div className="w-full max-w-2xl relative">
-                          {showDelayedLoadingState && filteredTasks.length === 0 && (
+                          {activeFolder === "shared" ? (
+                            <SharedTasksView
+                              viewMode={viewMode}
+                              isMobile={isMobile}
+                              isDarkMode={theme.isDarkMode}
+                            />
+                          ) : null}
+
+                          {activeFolder !== "shared" && showDelayedLoadingState && filteredTasks.length === 0 && (
                             <div className="task-loading-state" aria-live="polite" aria-busy="true">
                               <div className="task-loading-spinner" />
                             </div>
                           )}
 
-                          {!isCollectionsLoading && filteredTasks.length === 0 && (
+                          {activeFolder !== "shared" && !isCollectionsLoading && filteredTasks.length === 0 && (
                             <div>
                               {activeFolder === "today" ? (
                                 <>
@@ -417,7 +427,7 @@ function Home() {
                           )}
 
                           <div className={`flex flex-col ${viewMode === "compact" ? "space-y-0" : viewMode === "cozy" ? "space-y-1" : "space-y-2"}`}>
-                            {filteredTasks.map((task) => (
+                            {activeFolder !== "shared" && filteredTasks.map((task) => (
                               <div key={task.id} className="w-full">
                                 <ListItem
                                   task={task}
@@ -434,7 +444,7 @@ function Home() {
                             ))}
                           </div>
 
-                          {((activeFolder === "today" && suggestedTasks.length > 0) || completedTasks.length > 0) && (
+                          {activeFolder !== "shared" && ((activeFolder === "today" && suggestedTasks.length > 0) || completedTasks.length > 0) && (
                             <div className={`mt-8 ${filteredTasks.length > 0 ? "pt-8" : ""}`}>
                               <div className="flex items-center gap-4 mb-4">
                                 {activeFolder === "today" && suggestedTasks.length > 0 && (
