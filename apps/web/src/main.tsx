@@ -3,9 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-import { BasicProvider } from "@basictech/react";
-
-import { schema } from "../basic.config";
+import { basic } from "./basic";
 import './registerSW';
 
 // Fix for mobile Chrome address bar collapsing issue
@@ -30,9 +28,9 @@ if (typeof CSS === 'undefined' || !CSS.supports('height', '100dvh')) {
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <BasicProvider schema={schema} debug={import.meta.env.DEV}>
+    <basic.Provider renderWhileLoading>
       <App />
-    </BasicProvider>
+    </basic.Provider>
   </React.StrictMode>
 );
 

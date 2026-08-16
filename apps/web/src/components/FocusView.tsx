@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Task, TaskUpdate } from '../utils/types';
-import { useBasic, useQuery } from '@basictech/react';
 import { useTheme } from '../contexts/ThemeContext';
-import { readBasicDbSafely, useBasicDbReady } from '../hooks/useBasicDbReady';
+import { useSubtaskRecords, useTaskRecord } from '../hooks/useBasicData';
 import Checkbox from './Checkbox';
 import SubtasksList from './SubtasksList';
 
@@ -23,8 +22,6 @@ const FocusView: React.FC<FocusViewProps> = ({
   onAddSubtask,
   onDeleteSubtask
 }) => {
-  const { db } = useBasic();
-  const isDbReady = useBasicDbReady();
   const { theme } = useTheme();
   const { isDarkMode } = theme;
   
@@ -36,30 +33,9 @@ const FocusView: React.FC<FocusViewProps> = ({
   // Local state for description to prevent cursor jumping
   const [localDescription, setLocalDescription] = useState(task?.description || '');
   
-  // Fetch live task data
-  const liveTask = useQuery(
-    () => readBasicDbSafely(
-      isDbReady,
-      () => task?.id ? db.table<Task>('tasks').get(task.id) : Promise.resolve(null),
-      Promise.resolve(null),
-    ),
-    [isDbReady, task?.id]
-  );
-  
-  // Use live task data if available
+  const liveTask = useTaskRecord(task?.id);
   const currentTask = liveTask || task;
-  
-  // Fetch subtasks
-  const subtasks = (useQuery(
-    () => readBasicDbSafely(
-      isDbReady,
-      () => currentTask?.id && !currentTask?.parentTaskId
-        ? db.table<Task>('tasks').find((t) => t.parentTaskId === currentTask.id)
-        : Promise.resolve(null),
-      Promise.resolve(null),
-    ),
-    [isDbReady, currentTask?.id, currentTask?.parentTaskId]
-  ) || []) as Task[];
+  const subtasks = useSubtaskRecords(currentTask?.id && !currentTask?.parentTaskId ? currentTask.id : null);
 
   // Update elapsed time every second
   useEffect(() => {

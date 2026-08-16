@@ -3,9 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Folder, Task, TaskUpdate } from '../utils/types';
 import { ScheduleCardData, ScheduleCardInput, ScheduleCardUpdate, getEventDuration, getTimeFromDateTime } from '../utils/schedule';
 import Checkbox from './Checkbox';
-import { useBasic, useQuery } from '@basictech/react';
 import { useTheme } from '../contexts/ThemeContext';
-import { readBasicDbSafely, useBasicDbReady } from '../hooks/useBasicDbReady';
+import { useScheduleRecord, useScheduleRecords, useSubtaskRecords, useTaskRecord } from '../hooks/useBasicData';
 import SubtasksList from './SubtasksList';
 import { useAutoResizeTextarea } from '../hooks/useAutoResizeTextarea';
 
@@ -114,43 +113,12 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   const isEventView = selectedEvent !== null;
   
   // Fetch scheduled events for the selected task
-  const { db } = useBasic();
-  const isDbReady = useBasicDbReady();
-  
-  // Fetch live task data from database (like ScheduleCard does)
-  const liveTask = useQuery(
-    () => readBasicDbSafely(
-      isDbReady,
-      () => selectedTask?.id ? db.table<Task>('tasks').get(selectedTask.id) : Promise.resolve(null),
-      Promise.resolve(null),
-    ),
-    [isDbReady, selectedTask?.id]
-  );
-  
-  // Fetch live event data from database (same pattern as tasks)
-  const liveEvent = useQuery(
-    () => readBasicDbSafely(
-      isDbReady,
-      () => selectedEvent?.id ? db.table<ScheduleCardData>('schedule').get(selectedEvent.id) : Promise.resolve(null),
-      Promise.resolve(null),
-    ),
-    [isDbReady, selectedEvent?.id]
-  );
-  
-  // Use live data if available, otherwise fall back to props
+  const liveTask = useTaskRecord(selectedTask?.id);
+  const liveEvent = useScheduleRecord(selectedEvent?.id);
   const currentTask = liveTask || selectedTask;
   const currentEvent = liveEvent || selectedEvent;
-  
-  const scheduledEvents = useQuery(
-    () => readBasicDbSafely(
-      isDbReady,
-      () => selectedTask?.id
-        ? db.table<ScheduleCardData>('schedule').find((event) => event.taskId === selectedTask.id)
-        : Promise.resolve(null),
-      Promise.resolve(null),
-    ),
-    [isDbReady, selectedTask?.id]
-  ) as ScheduleCardData[] | null;
+  const { events: scheduledEventsForTask } = useScheduleRecords(selectedTask?.id);
+  const scheduledEvents = selectedTask?.id ? scheduledEventsForTask : null;
 
   // Check if task has any scheduled events for today
   const hasScheduledEventToday = (() => {
@@ -179,30 +147,15 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   })();
 
   // Query subtasks for deleted task (if viewing a deleted task schedule item)
-  const deletedTaskSubtasks = useQuery(
-    () => readBasicDbSafely(
-      isDbReady,
-      () => selectedEvent?.type === 'task' &&
-            (!selectedEvent?.taskId || selectedEvent?.taskId === '') &&
-            selectedEvent?.metadata?.taskSnapshot?.id
-        ? db.table<Task>('tasks').find((task) => task.parentTaskId === selectedEvent.metadata?.taskSnapshot?.id)
-        : Promise.resolve(null),
-      Promise.resolve(null),
-    ),
-    [isDbReady, selectedEvent?.metadata?.taskSnapshot?.id]
-  ) as Task[] | null;
-
-  // Query subtasks for the selected task
-  const subtasks = (useQuery(
-    () => readBasicDbSafely(
-      isDbReady,
-      () => selectedTask?.id && !selectedTask?.parentTaskId
-        ? db.table<Task>('tasks').find((t) => t.parentTaskId === selectedTask.id)
-        : Promise.resolve(null),
-      Promise.resolve(null),
-    ),
-    [isDbReady, selectedTask?.id, selectedTask?.parentTaskId]
-  ) || []) as Task[];
+  const deletedTaskParentId =
+    selectedEvent?.type === 'task' &&
+    (!selectedEvent?.taskId || selectedEvent.taskId === '') &&
+    selectedEvent?.metadata?.taskSnapshot?.id
+      ? selectedEvent.metadata.taskSnapshot.id
+      : null;
+  const deletedTaskSubtasksResult = useSubtaskRecords(deletedTaskParentId);
+  const deletedTaskSubtasks = deletedTaskParentId ? deletedTaskSubtasksResult : null;
+  const subtasks = useSubtaskRecords(selectedTask?.id && !selectedTask?.parentTaskId ? selectedTask.id : null);
 
   // Watch for newly created task to appear in tasks list
   useEffect(() => {

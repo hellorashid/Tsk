@@ -3,9 +3,8 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Checkbox from './Checkbox';
 import { ScheduleCardData, getTimeFromDateTime, getEventDuration } from '../utils/schedule';
-import { useBasic, useQuery } from '@basictech/react';
 import { useTheme } from '../contexts/ThemeContext';
-import { readBasicDbSafely, useBasicDbReady } from '../hooks/useBasicDbReady';
+import { useSubtaskRecords } from '../hooks/useBasicData';
 import SubtasksList from './SubtasksList';
 import { useAutoResizeTextarea } from '../hooks/useAutoResizeTextarea';
 import { showPickerOrClick } from '../utils/showPicker';
@@ -47,20 +46,7 @@ export const TaskModal = ({
   const nameInputRef = useRef<HTMLTextAreaElement | null>(null);
   const descTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   
-  // Query subtasks for this task
-  const { db } = useBasic();
-  const isDbReady = useBasicDbReady();
-  const subtasksData = useQuery(
-    () => readBasicDbSafely(
-      isDbReady,
-      () => task?.id && !task?.parentTaskId
-        ? db.table<Task>('tasks').find((t) => t.parentTaskId === task.id)
-        : Promise.resolve(null),
-      Promise.resolve(null),
-    ),
-    [isDbReady, task?.id, task?.parentTaskId]
-  );
-  const subtasks: Task[] = (subtasksData || []) as Task[];
+  const subtasks = useSubtaskRecords(task?.id && !task?.parentTaskId ? task.id : null);
 
   // Check if task has any scheduled events for today
   const hasScheduledEventToday = (() => {

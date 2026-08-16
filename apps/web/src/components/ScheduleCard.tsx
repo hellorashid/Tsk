@@ -1,10 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Checkbox from './Checkbox';
-import { useBasic, useQuery } from '@basictech/react';
-import { readBasicDbSafely, useBasicDbReady } from '../hooks/useBasicDbReady';
+import { useTaskRecord } from '../hooks/useBasicData';
 import { ScheduleCardData, getEventDuration } from '../utils/schedule';
-import { Task } from '../utils/types';
 
 export interface ScheduleCardProps {
   data: ScheduleCardData;
@@ -68,16 +66,7 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
   const duration = getEventDuration(data);
   
   // Fetch linked task if this is a task event
-  const { db } = useBasic();
-  const isDbReady = useBasicDbReady();
-  const linkedTask = useQuery(
-    () => readBasicDbSafely(
-      isDbReady,
-      () => data.taskId && data.taskId !== '' ? db.table<Task>('tasks').get(data.taskId) : Promise.resolve(null),
-      Promise.resolve(null),
-    ),
-    [data.taskId, isDbReady]
-  );
+  const linkedTask = useTaskRecord(data.taskId && data.taskId !== '' ? data.taskId : null);
   
   // Check if this is a deleted task (has snapshot in metadata, taskId is empty string)
   const isDeletedTask = data.type === 'task' && (!data.taskId || data.taskId === '') && data.metadata?.taskSnapshot;

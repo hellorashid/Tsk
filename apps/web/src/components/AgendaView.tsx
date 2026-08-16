@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ScheduleCardData } from '../utils/schedule';
-import { useBasic, useQuery } from '@basictech/react';
-import { readBasicDbSafely, useBasicDbReady } from '../hooks/useBasicDbReady';
-import { Folder, Task } from '../utils/types';
+import { useTaskRecord, useTaskRecords } from '../hooks/useBasicData';
+import { Folder } from '../utils/types';
 import { 
   isToday, 
   getStartOfDay, 
@@ -92,18 +91,7 @@ const ScheduleItemRow: React.FC<ScheduleItemRowProps> = ({
   isDarkMode,
   onCardClick,
 }) => {
-  const { db } = useBasic();
-  const isDbReady = useBasicDbReady();
-  
-  // Fetch linked task if this is a task event
-  const linkedTask = useQuery(
-    () => readBasicDbSafely(
-      isDbReady,
-      () => event.taskId && event.taskId !== '' ? db.table<Task>('tasks').get(event.taskId) : Promise.resolve(null),
-      Promise.resolve(null),
-    ),
-    [isDbReady, event.taskId]
-  );
+  const linkedTask = useTaskRecord(event.taskId && event.taskId !== '' ? event.taskId : null);
   
   const isTask = event.type === 'task';
   const isCompleted = isTask && linkedTask?.completed;
@@ -238,14 +226,7 @@ const RadialProgress: React.FC<{
 };
 
 const TaskProgress: React.FC<TaskProgressProps> = ({ taskIds, isDarkMode }) => {
-  const { db } = useBasic();
-  const isDbReady = useBasicDbReady();
-  
-  // Fetch all tasks
-  const allTasks = useQuery(
-    () => readBasicDbSafely(isDbReady, () => db.table<Task>('tasks').getAll(), Promise.resolve([] as Task[])),
-    [isDbReady],
-  );
+  const { tasks: allTasks } = useTaskRecords();
   
   // Compute stats
   const stats = useMemo(() => {
@@ -253,7 +234,7 @@ const TaskProgress: React.FC<TaskProgressProps> = ({ taskIds, isDarkMode }) => {
       return { total: 0, completed: 0 };
     }
     
-    const scheduledTasks = (allTasks as Task[]).filter((task) => taskIds.includes(task.id));
+    const scheduledTasks = allTasks.filter((task) => taskIds.includes(task.id));
     const completedCount = scheduledTasks.filter((task) => task.completed).length;
     
     return {
@@ -299,19 +280,14 @@ interface TaskCountSummaryProps {
 }
 
 const TaskCountSummary: React.FC<TaskCountSummaryProps> = ({ taskIds, eventCount }) => {
-  const { db } = useBasic();
-  const isDbReady = useBasicDbReady();
-  const allTasks = useQuery(
-    () => readBasicDbSafely(isDbReady, () => db.table<Task>('tasks').getAll(), Promise.resolve([] as Task[])),
-    [isDbReady],
-  );
+  const { tasks: allTasks } = useTaskRecords();
   
   const stats = useMemo(() => {
     if (!allTasks || taskIds.length === 0) {
       return { total: 0, completed: 0, pending: 0 };
     }
     
-    const scheduledTasks = (allTasks as Task[]).filter((task) => taskIds.includes(task.id));
+    const scheduledTasks = allTasks.filter((task) => taskIds.includes(task.id));
     const completedCount = scheduledTasks.filter((task) => task.completed).length;
     
     return {

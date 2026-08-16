@@ -8,9 +8,8 @@ import { EventModal } from './EventModal';
 import ListItem from './ListItem';
 import Checkbox from './Checkbox';
 import { ScheduleCardData } from '../utils/schedule';
-import { useBasic, useQuery } from '@basictech/react';
 import { useTheme } from '../contexts/ThemeContext';
-import { readBasicDbSafely, useBasicDbReady } from '../hooks/useBasicDbReady';
+import { useScheduleRecords, useSubtaskRecords, useTaskRecords } from '../hooks/useBasicData';
 import { useModalHistory } from '../hooks/useModalHistory';
 import { Task, Folder } from '../utils/types';
 import './SilkTaskDrawer.css';
@@ -74,14 +73,9 @@ export default function SilkTaskDrawer({
   const [creationMode, setCreationMode] = useState<'task' | 'event'>('task');
   
   // Query all tasks to find created tasks by ID
-  const { db } = useBasic();
-  const isDbReady = useBasicDbReady();
   const { theme } = useTheme();
   const { accentColor, isDarkMode } = theme;
-  const allTasks = (useQuery(
-    () => readBasicDbSafely(isDbReady, () => db.table<Task>("tasks").getAll(), Promise.resolve([] as Task[])),
-    [isDbReady],
-  ) || []) as Task[];
+  const { tasks: allTasks } = useTaskRecords();
   
   // Event creation state
   const [eventTitle, setEventTitle] = useState('');
@@ -91,33 +85,20 @@ export default function SilkTaskDrawer({
   const [eventEndTime, setEventEndTime] = useState('');
   const eventTitleRef = useRef<HTMLInputElement>(null);
   
-  // Fetch scheduled events for the selected task
-  const allScheduleEvents = useQuery(
-    () => readBasicDbSafely(
-      isDbReady,
-      () => db.table<ScheduleCardData>('schedule').getAll(),
-      Promise.resolve([] as ScheduleCardData[]),
-    ),
-    [isDbReady],
-  );
+  const { events: allScheduleEvents } = useScheduleRecords();
   const scheduledEvents = useMemo(() => {
-    if (!task?.id || !allScheduleEvents) return [];
-    return allScheduleEvents.filter((event) => (event as ScheduleCardData).taskId === task.id) as ScheduleCardData[];
+    if (!task?.id) return [];
+    return allScheduleEvents.filter((scheduleEvent) => scheduleEvent.taskId === task.id);
   }, [task?.id, allScheduleEvents]);
 
-  // Query subtasks for deleted task (if viewing a deleted task schedule item)
-  const deletedTaskSubtasks = useQuery(
-    () => readBasicDbSafely(
-      isDbReady,
-      () => event?.type === 'task' &&
-            (!event?.taskId || event?.taskId === '') &&
-            event?.metadata?.taskSnapshot?.id
-        ? db.table<Task>('tasks').find((task) => task.parentTaskId === event.metadata?.taskSnapshot?.id)
-        : Promise.resolve(null),
-      Promise.resolve(null),
-    ),
-    [isDbReady, event?.metadata?.taskSnapshot?.id]
-  ) as Task[] | null;
+  const deletedTaskParentId =
+    event?.type === 'task' &&
+    (!event?.taskId || event.taskId === '') &&
+    event?.metadata?.taskSnapshot?.id
+      ? event.metadata.taskSnapshot.id
+      : null;
+  const deletedTaskSubtasksResult = useSubtaskRecords(deletedTaskParentId);
+  const deletedTaskSubtasks = deletedTaskParentId ? deletedTaskSubtasksResult : null;
 
   // Memoize the placeholder task to ensure stable reference
   const placeholderTask = useMemo(() => ({

@@ -2,10 +2,9 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScheduleCardData, ScheduleCardInput, getEventDuration } from '../utils/schedule';
-import { useBasic, useQuery } from '@basictech/react';
-import { readBasicDbSafely, useBasicDbReady } from '../hooks/useBasicDbReady';
+import { useTaskRecord } from '../hooks/useBasicData';
 import Checkbox from './Checkbox';
-import { Folder, Task } from '../utils/types';
+import { Folder } from '../utils/types';
 
 interface TimelineSegment {
   startMinutes: number;
@@ -1330,18 +1329,7 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
   hasAdjacentBelow = false,
   adjacentCorners = { topLeft: false, topRight: false, bottomLeft: false, bottomRight: false }
 }) => {
-  const { db } = useBasic();
-  const isDbReady = useBasicDbReady();
-  
-  // Fetch linked task if this is a task event (only if taskId is not empty)
-  const linkedTask = useQuery(
-    () => readBasicDbSafely(
-      isDbReady,
-      () => event.taskId && event.taskId !== '' ? db.table<Task>('tasks').get(event.taskId) : Promise.resolve(null),
-      Promise.resolve(null),
-    ),
-    [event.taskId, isDbReady]
-  );
+  const linkedTask = useTaskRecord(event.taskId && event.taskId !== '' ? event.taskId : null);
   
   // Check if this is a deleted task (has snapshot in metadata, taskId is empty string)
   const taskSnapshot = event.metadata?.taskSnapshot;

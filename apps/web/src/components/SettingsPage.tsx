@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useBasic } from "@basictech/react";
+import { basic } from "../basic";
 import { useTheme } from '../contexts/ThemeContext';
 import * as Switch from '@radix-ui/react-switch';
 import { Folder } from '../utils/types';
@@ -54,7 +54,7 @@ function getBackupState({
     };
   }
 
-  if (syncStatus === 'connecting' || syncStatus === 'idle' || !syncStatus) {
+  if (syncStatus === 'connecting' || syncStatus === 'idle' || syncStatus === 'bootstrapping' || !syncStatus) {
     return {
       label: 'Connecting',
       detail: 'Checking backup status…',
@@ -137,12 +137,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   onToggleOtherFolder,
   onToggleTodayFolder,
 }) => {
-  const { sync, signIn, signOut, isSignedIn, isAnonymous, isReady, user, activeUser, status: authStatus } = useBasic();
+  const { sync, signIn, signOut, isSignedIn, isAnonymous, isReady, user, handle, status: authStatus } = basic.useBasic();
   const { theme, setAccentColor, setIsDarkMode, setFontStyle } = useTheme();
   const { accentColor, isDarkMode, fontStyle } = theme;
-  const userProfile = user as { name?: string; username?: string; email?: string } | null;
   const isLocalAccount = isAnonymous || !isSignedIn;
-  const needsReauth = authStatus === "reauth_required" || sync.status === "auth_required" || sync.status === "revoked";
+  const needsReauth = authStatus === "reauth_required";
   const backup = getBackupState({
     isReady,
     isLocalAccount,
@@ -150,9 +149,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     syncStatus: sync.status,
     pendingCount: sync.pendingCount,
   });
-  const accountName = userProfile?.name || activeUser?.name || "Signed in";
-  const accountHandle = userProfile?.username || activeUser?.handle || null;
-  const accountEmail = userProfile?.email || activeUser?.email || null;
+  const accountName = user?.name || "Signed in";
+  const accountHandle = user?.handle || handle || null;
+  const accountEmail = user?.email || null;
   const accountSubtitle = accountHandle
     ? `@${accountHandle.replace(/^@/, "")}`
     : accountEmail;

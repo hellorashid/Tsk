@@ -1,9 +1,10 @@
-import { useBasic } from "@basictech/react";
 import { type Dispatch, type SetStateAction, useCallback, useEffect, useRef, useState } from "react";
-import { useBasicDbReady } from "./useBasicDbReady";
+import { basic } from "../basic";
+import { unwrapScheduleEvent, unwrapScheduleEvents, unwrapTask } from "../utils/basicRecords";
 import { Folder, FolderUpdate, Task, TaskUpdate } from "../utils/types";
 import { fetchWeatherData } from "../utils/weather";
 import { ScheduleCardData, ScheduleCardInput, ScheduleCardUpdate } from "../utils/schedule";
+import { useBasicDbReady } from "./useBasicDbReady";
 
 interface ThemeLocation {
   latitude: number;
@@ -37,11 +38,10 @@ export function useAppActions({
   setSelectedTask,
   themeLocation,
 }: UseAppActionsOptions) {
-  const { db } = useBasic();
   const isDbReady = useBasicDbReady();
-  const scheduleTable = db.table<ScheduleCardData>("schedule");
-  const tasksTable = db.table<Task>("tasks");
-  const filtersTable = db.table<Folder>("filters");
+  const scheduleTable = basic.useCollection("schedule");
+  const tasksTable = basic.useCollection("tasks");
+  const filtersTable = basic.useCollection("filters");
   const [focusedTask, setFocusedTask] = useState<Task | null>(null);
   const [focusSessionEventId, setFocusSessionEventId] = useState<string | null>(null);
   const fetchingWeatherDatesRef = useRef<Set<string>>(new Set());
@@ -116,7 +116,7 @@ export function useAppActions({
         return;
       }
 
-      const eventRecord = await scheduleTable.create({
+      const { record } = await scheduleTable.create({
         title: `${task.name} (focus session)`,
         start: {
           dateTime: now.toISOString(),
@@ -132,7 +132,7 @@ export function useAppActions({
         description: "Focus session",
       });
 
-      setFocusSessionEventId(eventRecord.id);
+      setFocusSessionEventId(unwrapScheduleEvent(record)?.id ?? null);
     },
     [isDbReady, scheduleEvents, scheduleTable, setDrawerOpen, setSelectedEvent, setSelectedTask],
   );
@@ -331,7 +331,12 @@ export function useAppActions({
         throw new Error("Basic database is not ready yet.");
       }
 
-      return scheduleTable.create(eventData);
+      const { record } = await scheduleTable.create(eventData);
+      const created = unwrapScheduleEvent(record);
+      if (!created) {
+        throw new Error("Basic create did not return a live schedule event.");
+      }
+      return created;
     },
     [isDbReady, scheduleTable],
   );
@@ -348,10 +353,11 @@ export function useAppActions({
       const todayEnd = new Date(now);
       todayEnd.setHours(23, 59, 59, 999);
 
-      const existingCompletionEvents = await scheduleTable.find((scheduleEvent) =>
+      const existingCompletionEvents = unwrapScheduleEvents(
+        (await scheduleTable.list({ where: { taskId: task.id } })).data,
+      ).filter((scheduleEvent) =>
         Boolean(
           scheduleEvent.type === "task:completed" &&
-            scheduleEvent.taskId === task.id &&
             scheduleEvent.start.dateTime &&
             new Date(scheduleEvent.start.dateTime) >= todayStart &&
             new Date(scheduleEvent.start.dateTime) <= todayEnd,
@@ -391,7 +397,7 @@ export function useAppActions({
       }
 
       if (changes.completed === true) {
-        const task = await tasksTable.get(taskId);
+        const task = unwrapTask(await tasksTable.get(taskId));
         if (task && !task.completed) {
           await createTaskCompletionEvent(task);
         }
@@ -415,10 +421,12 @@ export function useAppActions({
         return;
       }
 
-      const scheduleItems = await scheduleTable.find((item) => item.taskId === taskId);
+      const scheduleItems = unwrapScheduleEvents(
+        (await scheduleTable.list({ where: { taskId } })).data,
+      );
 
       if (scheduleItems.length > 0) {
-        const task = await tasksTable.get(taskId);
+        const task = unwrapTask(await tasksTable.get(taskId));
 
         if (task) {
           const taskSnapshot = {
@@ -463,14 +471,14 @@ export function useAppActions({
         }
       }
 
-      const result = await tasksTable.create({
+      const { record } = await tasksTable.create({
         name: taskName,
         description: "",
         completed: false,
         labels,
       });
 
-      const taskId = result.id;
+      const taskId = unwrapTask(record)?.id;
 
       if (activeFolder === "today" && taskId) {
         await handleAddToSchedule({
@@ -493,14 +501,14 @@ export function useAppActions({
         return null;
       }
 
-      const result = await tasksTable.create({
+      const { record } = await tasksTable.create({
         name: subtaskName,
         description: "",
         completed: false,
         parentTaskId,
       });
 
-      return result.id ?? null;
+      return unwrapTask(record)?.id ?? null;
     },
     [isDbReady, tasksTable],
   );

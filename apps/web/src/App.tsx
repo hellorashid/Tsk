@@ -1,5 +1,4 @@
-import { useBasic, useQuery } from "@basictech/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import bgImage from "/bg2.jpg";
 import "./App.css";
 import AboutModal from "./components/AboutModal";
@@ -18,41 +17,23 @@ import SilkTaskDrawer from "./components/SilkTaskDrawer";
 import UserAvatarButton from "./components/UserAvatarButton";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { useAppActions } from "./hooks/useAppActions";
-import { readBasicDbSafely, useBasicDbReady } from "./hooks/useBasicDbReady";
+import { useFolderRecords, useScheduleRecords, useTaskRecords } from "./hooks/useBasicData";
+import { useBasicDbReady } from "./hooks/useBasicDbReady";
 import { useHomeKeyboardShortcuts } from "./hooks/useHomeKeyboardShortcuts";
 import { useHomeUiState } from "./hooks/useHomeUiState";
 import { useTaskCollections } from "./hooks/useTaskCollections";
 import { ScheduleCardData } from "./utils/schedule";
-import { Folder, Task } from "./utils/types";
+import { Task } from "./utils/types";
 
 function Home() {
-  const { db } = useBasic();
   const isDbReady = useBasicDbReady();
   const { theme } = useTheme();
 
-  const tasksData = useQuery(
-    () => readBasicDbSafely(isDbReady, () => db.table<Task>("tasks").getAll(), Promise.resolve([] as Task[])),
-    [isDbReady],
-  );
-  const scheduleEventsData = useQuery(
-    () => readBasicDbSafely(
-      isDbReady,
-      () => db.table<ScheduleCardData>("schedule").getAll(),
-      Promise.resolve([] as ScheduleCardData[]),
-    ),
-    [isDbReady],
-  );
-  const foldersData = useQuery(
-    () => readBasicDbSafely(isDbReady, () => db.table<Folder>("filters").getAll(), Promise.resolve([] as Folder[])),
-    [isDbReady],
-  );
+  const { tasks, isLoading: tasksLoading } = useTaskRecords();
+  const { events: scheduleEvents, isLoading: scheduleLoading } = useScheduleRecords();
+  const { folders, isLoading: foldersLoading } = useFolderRecords();
 
-  const isCollectionsLoading =
-    !isDbReady || tasksData === undefined || scheduleEventsData === undefined || foldersData === undefined;
-
-  const tasks = useMemo(() => (tasksData ?? []) as Task[], [tasksData]);
-  const scheduleEvents = useMemo(() => (scheduleEventsData ?? []) as ScheduleCardData[], [scheduleEventsData]);
-  const folders = useMemo(() => (foldersData ?? []) as Folder[], [foldersData]);
+  const isCollectionsLoading = !isDbReady || tasksLoading || scheduleLoading || foldersLoading;
   const [showDelayedLoadingState, setShowDelayedLoadingState] = useState(false);
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
