@@ -8,7 +8,9 @@ function UserAvatarButton() {
   const [hasNotifications] = useState(true);
 
   const handleLogin = () => {
-    void signIn();
+    void signIn().catch((error) => {
+      console.error("Basic sign-in failed", error);
+    });
   };
 
   const handleLogout = () => {

@@ -1,0 +1,21 @@
+{
+  "client_id": "did:web:tsk.lol",
+  "client_name": "tsk",
+  "application_type": "web",
+  "token_endpoint_auth_method": "none",
+  "grant_types": [
+    "authorization_code",
+    "refresh_token"
+  ],
+  "response_types": [
+    "code"
+  ],
+  "redirect_uris": [
+    "https://tsk.lol/",
+    "https://tsk.lol",
+    "http://localhost:5173/",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173/",
+    "http://127.0.0.1:5173"
+  ]
+}
