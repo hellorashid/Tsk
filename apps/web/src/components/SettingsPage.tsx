@@ -101,7 +101,7 @@ function SharingSettings() {
       </p>
       <button
         type="button"
-        onClick={() => { window.location.assign(shares.manageUrl()); }}
+        onClick={() => { window.location.assign("https://basic.id/shares"); }}
         className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
           isDarkMode
             ? 'bg-white/15 hover:bg-white/25'

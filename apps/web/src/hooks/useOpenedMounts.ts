@@ -54,6 +54,6 @@ export function useOpenedMounts() {
     isLoading: mounts.isLoading || pendingOpen,
     error: mounts.error,
     mounts: openedMounts,
-    manageUrl: mounts.manageUrl(),
+    manageUrl: "https://basic.id/shares",
   };
 }
