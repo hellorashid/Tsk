@@ -313,38 +313,7 @@ export default function FolderSettings({
                 </h4>
                 
                 <div className="space-y-2">
-                  {/* All Folder Toggle */}
-                  <div className={`p-3 rounded-lg border flex items-center justify-between ${
-                    isDarkMode
-                      ? 'bg-white/5 border-white/10'
-                      : 'bg-gray-50 border-gray-200'
-                  }`}>
-                    <div className="flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                      </svg>
-                      <span className="font-medium">All Tasks</span>
-                    </div>
-                    <Switch.Root
-                      checked={showAllFolder}
-                      onCheckedChange={onToggleAllFolder}
-                      className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${
-                        showAllFolder 
-                          ? 'bg-white/30' 
-                          : isDarkMode ? 'bg-white/10' : 'bg-gray-300'
-                      }`}
-                    >
-                      <Switch.Thumb
-                        className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
-                          showAllFolder 
-                            ? 'translate-x-5 bg-white' 
-                            : 'translate-x-0.5 bg-gray-400'
-                        }`}
-                      />
-                    </Switch.Root>
-                  </div>
-
-                  {/* Other Folder Toggle */}
+                  {/* Tasks Folder Toggle */}
                   <div className={`p-3 rounded-lg border flex items-center justify-between ${
                     isDarkMode
                       ? 'bg-white/5 border-white/10'
@@ -355,7 +324,7 @@ export default function FolderSettings({
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                         </svg>
-                        <span className="font-medium">Other</span>
+                        <span className="font-medium">Tasks</span>
                       </div>
                       <p className={`text-xs mt-1 ml-7 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                         Tasks not in any folder
@@ -409,6 +378,37 @@ export default function FolderSettings({
                       <Switch.Thumb
                         className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
                           showTodayFolder 
+                            ? 'translate-x-5 bg-white' 
+                            : 'translate-x-0.5 bg-gray-400'
+                        }`}
+                      />
+                    </Switch.Root>
+                  </div>
+
+                  {/* All Folder Toggle */}
+                  <div className={`p-3 rounded-lg border flex items-center justify-between ${
+                    isDarkMode
+                      ? 'bg-white/5 border-white/10'
+                      : 'bg-gray-50 border-gray-200'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                      <span className="font-medium">All Tasks</span>
+                    </div>
+                    <Switch.Root
+                      checked={showAllFolder}
+                      onCheckedChange={onToggleAllFolder}
+                      className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${
+                        showAllFolder 
+                          ? 'bg-white/30' 
+                          : isDarkMode ? 'bg-white/10' : 'bg-gray-300'
+                      }`}
+                    >
+                      <Switch.Thumb
+                        className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
+                          showAllFolder 
                             ? 'translate-x-5 bg-white' 
                             : 'translate-x-0.5 bg-gray-400'
                         }`}

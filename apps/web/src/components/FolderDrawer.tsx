@@ -26,8 +26,8 @@ export default function FolderDrawer({
   activeFolder,
   onFolderSelect,
   onOpenSettings,
-  showAllFolder = true,
-  showOtherFolder = false,
+  showAllFolder = false,
+  showOtherFolder = true,
   showTodayFolder = true,
   isDarkMode,
   accentColor
@@ -115,12 +115,12 @@ export default function FolderDrawer({
               <h3 className="text-lg font-semibold mb-4">Folders</h3>
               
               <div className="space-y-2">
-                {/* All option */}
-                {showAllFolder && (
+                {/* Tasks option - unfiled tasks */}
+                {showOtherFolder && (
                   <button
-                    onClick={() => handleFolderClick('all')}
+                    onClick={() => handleFolderClick('other')}
                     className={`w-full text-left px-4 py-3 rounded-lg transition-colors duration-200 ${
-                      (activeFolder === null || activeFolder === 'all')
+                      activeFolder === 'other'
                         ? isDarkMode
                           ? 'bg-white/20'
                           : 'bg-gray-200'
@@ -141,10 +141,10 @@ export default function FolderDrawer({
                           strokeLinecap="round" 
                           strokeLinejoin="round" 
                           strokeWidth={2} 
-                          d="M4 6h16M4 12h16M4 18h16" 
+                          d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" 
                         />
                       </svg>
-                      <span className="font-medium">All Tasks</span>
+                      <span className="font-medium">Tasks</span>
                     </div>
                   </button>
                 )}
@@ -184,40 +184,6 @@ export default function FolderDrawer({
                   </button>
                 ))}
 
-                {/* Other option */}
-                {showOtherFolder && (
-                  <button
-                    onClick={() => handleFolderClick('other')}
-                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors duration-200 ${
-                      activeFolder === 'other'
-                        ? isDarkMode
-                          ? 'bg-white/20'
-                          : 'bg-gray-200'
-                        : isDarkMode
-                          ? 'bg-white/5 hover:bg-white/10'
-                          : 'bg-gray-50 hover:bg-gray-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        className="h-5 w-5" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={2} 
-                          d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" 
-                        />
-                      </svg>
-                      <span className="font-medium">Other</span>
-                    </div>
-                  </button>
-                )}
-
                 {/* Today option */}
                 {showTodayFolder && (
                   <button
@@ -248,6 +214,40 @@ export default function FolderDrawer({
                         />
                       </svg>
                       <span className="font-medium">Today</span>
+                    </div>
+                  </button>
+                )}
+
+                {/* All option */}
+                {showAllFolder && (
+                  <button
+                    onClick={() => handleFolderClick('all')}
+                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors duration-200 ${
+                      (activeFolder === null || activeFolder === 'all')
+                        ? isDarkMode
+                          ? 'bg-white/20'
+                          : 'bg-gray-200'
+                        : isDarkMode
+                          ? 'bg-white/5 hover:bg-white/10'
+                          : 'bg-gray-50 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className="h-5 w-5" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M4 6h16M4 12h16M4 18h16" 
+                        />
+                      </svg>
+                      <span className="font-medium">All Tasks</span>
                     </div>
                   </button>
                 )}

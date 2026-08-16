@@ -100,17 +100,17 @@ export function useHomeKeyboardShortcuts({
         event.preventDefault();
 
         const folderIds = [
-          ...(showAllFolder ? ["all"] : []),
-          ...folders.map((folder) => folder.id),
           ...(showOtherFolder ? ["other"] : []),
+          ...folders.map((folder) => folder.id),
           ...(showTodayFolder ? ["today"] : []),
+          ...(showAllFolder ? ["all"] : []),
         ];
 
         if (folderIds.length === 0) {
           return;
         }
 
-        const currentFolder = activeFolder || (showAllFolder ? "all" : folderIds[0]);
+        const currentFolder = activeFolder || (showOtherFolder ? "other" : folderIds[0]);
         const currentIndex = folderIds.indexOf(currentFolder);
         const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % folderIds.length : 0;
 

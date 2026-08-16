@@ -388,7 +388,6 @@ function Home() {
                       showAllFolder={showAllFolder}
                       showOtherFolder={showOtherFolder}
                       showTodayFolder={showTodayFolder}
-                      onOpenSettings={handleOpenFolderSettings}
                     />
 
                     <div
@@ -639,7 +638,6 @@ function Home() {
                   folders={folders}
                   activeFolder={activeFolder}
                   onFolderSelect={handleFolderSelect}
-                  onOpenFolderSettings={handleOpenFolderSettings}
                   showAllFolder={showAllFolder}
                   showOtherFolder={showOtherFolder}
                   showTodayFolder={showTodayFolder}
@@ -734,22 +732,24 @@ function Home() {
                 />
               )}
 
-              <FolderSettings
-                isOpen={folderSettingsOpen}
-                setIsOpen={setFolderSettingsOpen}
-                folders={folders}
-                onCreateFolder={handleCreateFolder}
-                onUpdateFolder={handleFolderUpdateRequest}
-                onDeleteFolder={handleDeleteFolder}
-                showAllFolder={showAllFolder}
-                showOtherFolder={showOtherFolder}
-                showTodayFolder={showTodayFolder}
-                onToggleAllFolder={setShowAllFolder}
-                onToggleOtherFolder={setShowOtherFolder}
-                onToggleTodayFolder={setShowTodayFolder}
-                isDarkMode={theme.isDarkMode}
-                accentColor={theme.accentColor}
-              />
+              {isMobile && (
+                <FolderSettings
+                  isOpen={folderSettingsOpen}
+                  setIsOpen={setFolderSettingsOpen}
+                  folders={folders}
+                  onCreateFolder={handleCreateFolder}
+                  onUpdateFolder={handleFolderUpdateRequest}
+                  onDeleteFolder={handleDeleteFolder}
+                  showAllFolder={showAllFolder}
+                  showOtherFolder={showOtherFolder}
+                  showTodayFolder={showTodayFolder}
+                  onToggleAllFolder={setShowAllFolder}
+                  onToggleOtherFolder={setShowOtherFolder}
+                  onToggleTodayFolder={setShowTodayFolder}
+                  isDarkMode={theme.isDarkMode}
+                  accentColor={theme.accentColor}
+                />
+              )}
             </section>
           )}
         </div>

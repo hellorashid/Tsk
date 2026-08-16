@@ -6,6 +6,35 @@ export type CurrentView = "home" | "settings";
 export type ScheduleViewMode = "timeline" | "agenda";
 export type IslandMode = "default" | "task" | "event" | "command";
 
+const FOLDER_PREF_VERSION = "v2";
+
+function readLocalStorage(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalStorage(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Throws in incognito, quota exceeded, or when storage is disabled
+  }
+}
+
+function readFolderVisibility(key: string, defaultValue: boolean): boolean {
+  const versioned = readLocalStorage(`${key}:${FOLDER_PREF_VERSION}`);
+  if (versioned === "true") {
+    return true;
+  }
+  if (versioned === "false") {
+    return false;
+  }
+  return defaultValue;
+}
+
 export function useHomeUiState() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -21,13 +50,16 @@ export function useHomeUiState() {
   const [islandMode, setIslandMode] = useState<IslandMode>("default");
   const [activeFolder, setActiveFolder] = useState<string | null>(() => {
     const saved = localStorage.getItem("tsk-active-folder");
-    return saved === "null" ? null : saved;
+    if (saved === null || saved === "null" || saved === "") {
+      return "other";
+    }
+    return saved;
   });
   const [folderDrawerOpen, setFolderDrawerOpen] = useState(false);
   const [folderSettingsOpen, setFolderSettingsOpen] = useState(false);
-  const [showAllFolder, setShowAllFolder] = useState<boolean>(() => localStorage.getItem("tsk-show-all-folder") !== "false");
-  const [showOtherFolder, setShowOtherFolder] = useState<boolean>(() => localStorage.getItem("tsk-show-other-folder") === "true");
-  const [showTodayFolder, setShowTodayFolder] = useState<boolean>(() => localStorage.getItem("tsk-show-today-folder") !== "false");
+  const [showAllFolder, setShowAllFolder] = useState<boolean>(() => readFolderVisibility("tsk-show-all-folder", false));
+  const [showOtherFolder, setShowOtherFolder] = useState<boolean>(() => readFolderVisibility("tsk-show-other-folder", true));
+  const [showTodayFolder, setShowTodayFolder] = useState<boolean>(() => readFolderVisibility("tsk-show-today-folder", true));
   const [suggestedTasksExpanded, setSuggestedTasksExpanded] = useState(false);
   const [completedTasksExpanded, setCompletedTasksExpanded] = useState(false);
   const hasSuggestedInitializedRef = useRef(false);
@@ -51,16 +83,38 @@ export function useHomeUiState() {
   }, [scheduleViewMode]);
 
   useEffect(() => {
-    localStorage.setItem("tsk-show-all-folder", showAllFolder.toString());
+    writeLocalStorage(`tsk-show-all-folder:${FOLDER_PREF_VERSION}`, showAllFolder.toString());
   }, [showAllFolder]);
 
   useEffect(() => {
-    localStorage.setItem("tsk-show-other-folder", showOtherFolder.toString());
+    writeLocalStorage(`tsk-show-other-folder:${FOLDER_PREF_VERSION}`, showOtherFolder.toString());
   }, [showOtherFolder]);
 
   useEffect(() => {
-    localStorage.setItem("tsk-show-today-folder", showTodayFolder.toString());
+    writeLocalStorage(`tsk-show-today-folder:${FOLDER_PREF_VERSION}`, showTodayFolder.toString());
   }, [showTodayFolder]);
+
+  useEffect(() => {
+    const isHiddenAll = (activeFolder === null || activeFolder === "all") && !showAllFolder;
+    const isHiddenOther = activeFolder === "other" && !showOtherFolder;
+    const isHiddenToday = activeFolder === "today" && !showTodayFolder;
+
+    if (!isHiddenAll && !isHiddenOther && !isHiddenToday) {
+      return;
+    }
+
+    if (showOtherFolder) {
+      setActiveFolder("other");
+      return;
+    }
+    if (showTodayFolder) {
+      setActiveFolder("today");
+      return;
+    }
+    if (showAllFolder) {
+      setActiveFolder("all");
+    }
+  }, [activeFolder, showAllFolder, showOtherFolder, showTodayFolder]);
 
   return {
     activeFolder,

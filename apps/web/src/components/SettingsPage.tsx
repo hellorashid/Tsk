@@ -5,6 +5,92 @@ import * as Switch from '@radix-ui/react-switch';
 import { Folder } from '../utils/types';
 
 type SettingsTab = 'general' | 'folders' | 'appearance';
+type BackupTone = 'good' | 'warn' | 'pending' | 'neutral';
+
+function getBackupState({
+  isReady,
+  isLocalAccount,
+  needsReauth,
+  syncStatus,
+  pendingCount,
+}: {
+  isReady: boolean;
+  isLocalAccount: boolean;
+  needsReauth: boolean;
+  syncStatus: string | undefined;
+  pendingCount: number;
+}): { label: string; detail: string; tone: BackupTone } {
+  if (!isReady) {
+    return {
+      label: 'Checking',
+      detail: 'Looking up this account…',
+      tone: 'pending',
+    };
+  }
+
+  if (isLocalAccount) {
+    return {
+      label: 'Not backed up',
+      detail: 'Tasks live only in this browser. Clearing site data will delete them.',
+      tone: 'neutral',
+    };
+  }
+
+  if (needsReauth) {
+    return {
+      label: 'Backup paused',
+      detail: 'Sign in again to resume sync and backup.',
+      tone: 'warn',
+    };
+  }
+
+  if (syncStatus === 'offline') {
+    return {
+      label: 'Offline',
+      detail: pendingCount > 0
+        ? `${pendingCount} ${pendingCount === 1 ? 'change is' : 'changes are'} waiting to sync.`
+        : 'Changes stay on this device until you are back online.',
+      tone: 'warn',
+    };
+  }
+
+  if (syncStatus === 'connecting' || syncStatus === 'idle' || !syncStatus) {
+    return {
+      label: 'Connecting',
+      detail: 'Checking backup status…',
+      tone: 'pending',
+    };
+  }
+
+  if (pendingCount > 0) {
+    return {
+      label: 'Backing up',
+      detail: `${pendingCount} ${pendingCount === 1 ? 'change' : 'changes'} syncing.`,
+      tone: 'pending',
+    };
+  }
+
+  if (syncStatus === 'online') {
+    return {
+      label: 'Backed up',
+      detail: 'Your tasks sync across devices.',
+      tone: 'good',
+    };
+  }
+
+  return {
+    label: 'On this device',
+    detail: 'Signed in, using the local copy of your tasks.',
+    tone: 'neutral',
+  };
+}
+
+const backupToneClass: Record<BackupTone, string> = {
+  good: 'bg-green-500',
+  warn: 'bg-yellow-500',
+  pending: 'bg-yellow-500',
+  neutral: 'bg-gray-400',
+};
 
 interface SettingsPageProps {
   onBack: () => void;
@@ -51,10 +137,25 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   onToggleOtherFolder,
   onToggleTodayFolder,
 }) => {
-  const { sync } = useBasic();
+  const { sync, signIn, signOut, isSignedIn, isAnonymous, isReady, user, activeUser, status: authStatus } = useBasic();
   const { theme, setAccentColor, setIsDarkMode, setFontStyle } = useTheme();
   const { accentColor, isDarkMode, fontStyle } = theme;
-  const syncStatusLabel = sync.status ? sync.status.replace(/_/g, " ").toUpperCase() : "CONNECTING";
+  const userProfile = user as { name?: string; username?: string; email?: string } | null;
+  const isLocalAccount = isAnonymous || !isSignedIn;
+  const needsReauth = authStatus === "reauth_required" || sync.status === "auth_required" || sync.status === "revoked";
+  const backup = getBackupState({
+    isReady,
+    isLocalAccount,
+    needsReauth,
+    syncStatus: sync.status,
+    pendingCount: sync.pendingCount,
+  });
+  const accountName = userProfile?.name || activeUser?.name || "Signed in";
+  const accountHandle = userProfile?.username || activeUser?.handle || null;
+  const accountEmail = userProfile?.email || activeUser?.email || null;
+  const accountSubtitle = accountHandle
+    ? `@${accountHandle.replace(/^@/, "")}`
+    : accountEmail;
   
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const defaultAccentColor = '#1F1B2F';
@@ -232,16 +333,84 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
           {/* General Tab */}
           {activeTab === 'general' && (
             <>
-              {/* Sync Status */}
               <section className={`rounded-xl p-4 ${isDarkMode ? 'bg-white/5' : 'bg-black/5'}`}>
-                <h2 className="text-lg font-semibold mb-3">Sync Status</h2>
-                <div className="flex items-center">
-                  <div className={`w-3 h-3 rounded-full mr-2 ${
-                    sync.status === "online" ? "bg-green-500" :
-                    sync.status === "offline" ? "bg-red-500" :
-                    sync.status === "revoked" || sync.status === "auth_required" ? "bg-red-500" : "bg-yellow-500"
-                  }`}></div>
-                  <span>{syncStatusLabel}</span>
+                <h2 className="text-lg font-semibold mb-4">Account</h2>
+
+                <div className="space-y-4">
+                  <div>
+                    <p className="font-medium">
+                      {!isReady
+                        ? 'Checking account…'
+                        : isLocalAccount
+                          ? 'Local account'
+                          : accountName}
+                    </p>
+                    <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {!isReady
+                        ? 'Hang tight while we see whether this device is signed in.'
+                        : isLocalAccount
+                          ? 'This account exists only on this device. Login is optional.'
+                          : accountSubtitle || 'Signed in with Basic. Tasks sync when you are online.'}
+                    </p>
+                  </div>
+
+                  <div className={`pt-3 border-t ${isDarkMode ? 'border-white/10' : 'border-black/10'}`}>
+                    <p className={`text-xs font-medium uppercase tracking-wider mb-2 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                      Backup
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2.5 h-2.5 rounded-full ${backupToneClass[backup.tone]}`} />
+                      <span className="font-medium">{backup.label}</span>
+                    </div>
+                    <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {backup.detail}
+                    </p>
+                  </div>
+
+                  {isReady && isLocalAccount ? (
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => { void signIn(); }}
+                        className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                          isDarkMode
+                            ? 'bg-white/15 hover:bg-white/25'
+                            : 'bg-black/10 hover:bg-black/15'
+                        }`}
+                      >
+                        Log in to enable sync
+                      </button>
+                      <p className={`text-xs mt-2 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                        Optional. Backs up your tasks and syncs them across devices. Your data stays private.
+                      </p>
+                    </div>
+                  ) : null}
+
+                  {isReady && !isLocalAccount && needsReauth ? (
+                    <button
+                      type="button"
+                      onClick={() => { void signIn(); }}
+                      className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                        isDarkMode
+                          ? 'bg-white/15 hover:bg-white/25'
+                          : 'bg-black/10 hover:bg-black/15'
+                      }`}
+                    >
+                      Sign in again
+                    </button>
+                  ) : null}
+
+                  {isReady && !isLocalAccount && !needsReauth ? (
+                    <button
+                      type="button"
+                      onClick={() => { void signOut(); }}
+                      className={`text-sm transition-colors ${
+                        isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Log out
+                    </button>
+                  ) : null}
                 </div>
               </section>
 
@@ -332,32 +501,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 <h2 className="text-lg font-semibold mb-4">Default Folders</h2>
                 
                 <div className="space-y-2">
-                  {/* All Folder Toggle */}
-                  <div className={`p-3 rounded-lg flex items-center justify-between ${
-                    isDarkMode ? 'bg-white/5' : 'bg-black/5'
-                  }`}>
-                    <div className="flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                      </svg>
-                      <span className="font-medium">All Tasks</span>
-                    </div>
-                    <Switch.Root
-                      checked={showAllFolder}
-                      onCheckedChange={onToggleAllFolder}
-                      className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${
-                        showAllFolder ? 'bg-white/30' : isDarkMode ? 'bg-white/10' : 'bg-gray-300'
-                      }`}
-                    >
-                      <Switch.Thumb
-                        className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
-                          showAllFolder ? 'translate-x-5 bg-white' : 'translate-x-0.5 bg-gray-400'
-                        }`}
-                      />
-                    </Switch.Root>
-                  </div>
-
-                  {/* Other Folder Toggle */}
+                  {/* Tasks Folder Toggle */}
                   <div className={`p-3 rounded-lg flex items-center justify-between ${
                     isDarkMode ? 'bg-white/5' : 'bg-black/5'
                   }`}>
@@ -366,7 +510,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                         </svg>
-                        <span className="font-medium">Other</span>
+                        <span className="font-medium">Tasks</span>
                       </div>
                       <p className={`text-xs mt-1 ml-7 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                         Tasks not in any folder
@@ -412,6 +556,31 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                       <Switch.Thumb
                         className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
                           showTodayFolder ? 'translate-x-5 bg-white' : 'translate-x-0.5 bg-gray-400'
+                        }`}
+                      />
+                    </Switch.Root>
+                  </div>
+
+                  {/* All Folder Toggle */}
+                  <div className={`p-3 rounded-lg flex items-center justify-between ${
+                    isDarkMode ? 'bg-white/5' : 'bg-black/5'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                      <span className="font-medium">All Tasks</span>
+                    </div>
+                    <Switch.Root
+                      checked={showAllFolder}
+                      onCheckedChange={onToggleAllFolder}
+                      className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${
+                        showAllFolder ? 'bg-white/30' : isDarkMode ? 'bg-white/10' : 'bg-gray-300'
+                      }`}
+                    >
+                      <Switch.Thumb
+                        className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
+                          showAllFolder ? 'translate-x-5 bg-white' : 'translate-x-0.5 bg-gray-400'
                         }`}
                       />
                     </Switch.Root>
