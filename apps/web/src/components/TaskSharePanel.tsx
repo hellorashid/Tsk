@@ -1,6 +1,6 @@
 import { useMemo, useState, useTransition } from "react";
 import { basic } from "../basic";
-import { isOpenShare, resolveShareRecipient, shareIncludesTask, shortDid } from "../utils/shares";
+import { isOpenShare, resolveShareRecipient, shareErrorMessage, shareIncludesTask, shortDid } from "../utils/shares";
 
 interface TaskSharePanelProps {
   taskId: string;
@@ -35,7 +35,7 @@ export default function TaskSharePanel({ taskId, taskName, compact = false }: Ta
         setHandle("");
         shares.refresh();
       } catch (shareError) {
-        setError(shareError instanceof Error ? shareError.message : "Could not share this task.");
+        setError(shareErrorMessage(shareError));
       }
     });
   };

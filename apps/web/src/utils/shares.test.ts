@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { isOpenShare, normalizeShareHandle, resolveShareRecipient, shareIncludesTask, shortDid } from "./shares";
+import { isOpenShare, normalizeShareHandle, resolveShareRecipient, shareErrorMessage, shareIncludesTask, shortDid } from "./shares";
 
 describe("normalizeShareHandle", () => {
   it("trims, lowercases, and adds .basic.id when needed", () => {
@@ -36,6 +36,14 @@ describe("shortDid", () => {
   it("shortens long DIDs", () => {
     expect(shortDid("did:web:fff.basic.id")).toBe("did:web:fff.basic.id");
     expect(shortDid("did:plc:abcdefghijklmnopqrstuvwxyz")).toBe("did:plc:ab…uvwxyz");
+  });
+});
+
+describe("shareErrorMessage", () => {
+  it("explains a non-schema origin repo", () => {
+    expect(shareErrorMessage(new Error("origin must be an active basic-schema repo"))).toMatch(
+      /older repo type/,
+    );
   });
 });
 

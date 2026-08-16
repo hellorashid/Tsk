@@ -33,6 +33,15 @@ export function shortDid(did: string) {
   return `${did.slice(0, 10)}…${did.slice(-6)}`;
 }
 
+export function shareErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : "Could not share this task.";
+  if (message.toLowerCase().includes("basic-schema")) {
+    return "Sharing needs a Basic schema library. This account’s tasks are still on the older repo type.";
+  }
+
+  return message;
+}
+
 export async function resolveShareRecipient(
   input: string,
   fetcher: typeof fetch = globalThis.fetch.bind(globalThis),
