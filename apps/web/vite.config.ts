@@ -1,9 +1,24 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import { VitePWA } from 'vite-plugin-pwa';
+import { basicPdsProxyTarget, stripBasicPdsProxyPrefix } from "./src/basicDevProxy";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  server: {
+    proxy: {
+      "/__basic-pds": {
+        target: "https://pds.basic.id",
+        changeOrigin: true,
+        secure: true,
+        ws: true,
+        router(req) {
+          return basicPdsProxyTarget(req.url ?? "");
+        },
+        rewrite: stripBasicPdsProxyPrefix,
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({

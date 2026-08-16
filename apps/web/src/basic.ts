@@ -1,10 +1,10 @@
 import { createBasic } from "@basictech/react";
 import { schema } from "../basic.config";
+import { rewriteBasicDevUrl } from "./basicDevProxy";
 
 export { schema };
 
 const DEFAULT_CLIENT_ID = "did:web:tsk.lol";
-const PUBLISHED_WELL_KNOWN_ORIGIN = "https://tsk.lol";
 
 function createBasicFetch(): typeof fetch {
   const browserFetch = globalThis.fetch.bind(globalThis);
@@ -19,12 +19,29 @@ function createBasicFetch(): typeof fetch {
       : input instanceof URL
         ? input.toString()
         : input.url;
+    const rewritten = rewriteBasicDevUrl(url, window.location.origin);
 
-    if (url.startsWith(`${PUBLISHED_WELL_KNOWN_ORIGIN}/.well-known/`)) {
-      return browserFetch(url.replace(PUBLISHED_WELL_KNOWN_ORIGIN, window.location.origin), init);
+    if (rewritten === url) {
+      return browserFetch(input, init);
     }
 
-    return browserFetch(input, init);
+    if (input instanceof Request) {
+      return browserFetch(new Request(rewritten, input), init);
+    }
+
+    return browserFetch(rewritten, init);
+  };
+}
+
+function createBasicWebSocket() {
+  if (!import.meta.env.DEV || typeof window === "undefined") {
+    return undefined;
+  }
+
+  return class BasicDevWebSocket extends WebSocket {
+    constructor(url: string | URL, protocols?: string | string[]) {
+      super(rewriteBasicDevUrl(url.toString(), window.location.origin), protocols);
+    }
   };
 }
 
@@ -34,4 +51,5 @@ export const basic = createBasic({
   debug: import.meta.env.DEV,
   allowInsecure: import.meta.env.DEV,
   fetch: createBasicFetch(),
+  WebSocketImpl: createBasicWebSocket(),
 });
