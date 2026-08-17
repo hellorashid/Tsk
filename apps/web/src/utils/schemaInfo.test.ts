@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { canShareFromRepoType, defaultRepoType, getSchemaInfoDisplay } from "./schemaInfo";
+import { canShareFromRepoType, defaultRepoType, findDefaultRepo, getSchemaInfoDisplay } from "./schemaInfo";
+
+describe("findDefaultRepo", () => {
+  it("falls back to the first repo when none is marked default", () => {
+    expect(findDefaultRepo([
+      { id: "only", schema_type: "freeform" },
+    ])?.id).toBe("only");
+  });
+});
 
 describe("defaultRepoType", () => {
   it("prefers the catalog default repo id", () => {

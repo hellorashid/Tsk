@@ -2,14 +2,13 @@ import { useState } from "react";
 import { BASIC_CLIENT_ID, basic, schema } from "../basic";
 import * as Popover from '@radix-ui/react-popover';
 import packageJson from '../../package.json';
-import { defaultRepoType, getSchemaInfoDisplay } from "../utils/schemaInfo";
+import { defaultRepoType, findDefaultRepo, getSchemaInfoDisplay } from "../utils/schemaInfo";
 import { getSyncStatusDisplay } from "../utils/syncStatus";
 
 function UserAvatarButton() {
-  const { signIn, signOut, isSignedIn, user, isReady, sync, status } = basic.useBasic();
-  const schemaStatus = basic.useSchemaStatus();
-  const { repos, defaultRepoId } = basic.useRepos();
+  const { signIn, signOut, isSignedIn, user, isReady, sync, status, repos } = basic.useBasic();
   const [hasNotifications] = useState(true);
+  const defaultRepo = findDefaultRepo(repos);
   const syncDisplay = getSyncStatusDisplay({
     isSignedIn,
     authStatus: status,
@@ -19,10 +18,10 @@ function UserAvatarButton() {
   const schemaInfo = getSchemaInfoDisplay({
     projectId: schema.project_id,
     clientId: BASIC_CLIENT_ID,
-    localVersion: schemaStatus.localVersion ?? schema.version,
-    mode: schemaStatus.mode,
-    serverVersion: schemaStatus.serverVersion,
-    defaultRepoSchemaType: defaultRepoType(repos, defaultRepoId),
+    localVersion: schema.version,
+    mode: defaultRepo?.schema_type,
+    serverVersion: defaultRepo?.schema_version,
+    defaultRepoSchemaType: defaultRepoType(repos),
   });
 
   const handleLogin = () => {

@@ -1,12 +1,20 @@
 export const SHAREABLE_REPO_TYPE = "basic-schema";
 
+export function findDefaultRepo<T extends { id: string; access?: { is_default?: boolean } }>(
+  repos: T[],
+  defaultRepoId?: string | null,
+) {
+  return repos.find((repo) => repo.id === defaultRepoId)
+    ?? repos.find((repo) => repo.access?.is_default)
+    ?? repos[0]
+    ?? null;
+}
+
 export function defaultRepoType(
   repos: Array<{ id: string; schema_type?: string; access?: { is_default?: boolean } }>,
   defaultRepoId?: string | null,
 ) {
-  const matched = repos.find((repo) => repo.id === defaultRepoId)
-    ?? repos.find((repo) => repo.access?.is_default);
-  return matched?.schema_type ?? null;
+  return findDefaultRepo(repos, defaultRepoId)?.schema_type ?? null;
 }
 
 export function canShareFromRepoType(repoType: string | null | undefined) {

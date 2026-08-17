@@ -11,10 +11,9 @@ interface TaskSharePanelProps {
 
 export default function TaskSharePanel({ taskId, taskName, compact = false }: TaskSharePanelProps) {
   const { isSignedIn, isReady, signIn } = basic.useAuth();
-  const schemaStatus = basic.useSchemaStatus();
-  const { repos, defaultRepoId } = basic.useRepos();
+  const { repos } = basic.useBasic();
   const shares = basic.useOutgoingShares();
-  const repoType = defaultRepoType(repos, defaultRepoId) ?? schemaStatus.mode;
+  const repoType = defaultRepoType(repos);
   const [handle, setHandle] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
