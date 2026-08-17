@@ -6,6 +6,8 @@ export { schema };
 
 const DEFAULT_CLIENT_ID = "did:web:tsk.lol";
 
+export const BASIC_CLIENT_ID = import.meta.env.VITE_BASIC_CLIENT_ID || DEFAULT_CLIENT_ID;
+
 function createBasicFetch(): typeof fetch {
   const browserFetch = globalThis.fetch.bind(globalThis);
 
@@ -47,7 +49,7 @@ function createBasicWebSocket() {
 
 export const basic = createBasic({
   schema,
-  clientId: import.meta.env.VITE_BASIC_CLIENT_ID || DEFAULT_CLIENT_ID,
+  clientId: BASIC_CLIENT_ID,
   debug: import.meta.env.DEV,
   allowInsecure: import.meta.env.DEV,
   fetch: createBasicFetch(),

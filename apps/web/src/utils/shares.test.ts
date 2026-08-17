@@ -45,6 +45,12 @@ describe("shareErrorMessage", () => {
       /older repo type/,
     );
   });
+
+  it("includes the live repo type when known", () => {
+    expect(shareErrorMessage(new Error("origin must be an active basic-schema repo"), "dynamic")).toMatch(
+      /dynamic repo type/,
+    );
+  });
 });
 
 describe("resolveShareRecipient", () => {

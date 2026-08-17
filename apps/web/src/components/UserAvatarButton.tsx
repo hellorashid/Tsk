@@ -1,11 +1,29 @@
 import { useState } from "react";
-import { basic } from "../basic";
+import { BASIC_CLIENT_ID, basic, schema } from "../basic";
 import * as Popover from '@radix-ui/react-popover';
 import packageJson from '../../package.json';
+import { defaultRepoType, getSchemaInfoDisplay } from "../utils/schemaInfo";
+import { getSyncStatusDisplay } from "../utils/syncStatus";
 
 function UserAvatarButton() {
   const { signIn, signOut, isSignedIn, user, isReady, sync, status } = basic.useBasic();
+  const schemaStatus = basic.useSchemaStatus();
+  const { repos, defaultRepoId } = basic.useRepos();
   const [hasNotifications] = useState(true);
+  const syncDisplay = getSyncStatusDisplay({
+    isSignedIn,
+    authStatus: status,
+    syncStatus: sync.status,
+    pendingCount: sync.pendingCount,
+  });
+  const schemaInfo = getSchemaInfoDisplay({
+    projectId: schema.project_id,
+    clientId: BASIC_CLIENT_ID,
+    localVersion: schemaStatus.localVersion ?? schema.version,
+    mode: schemaStatus.mode,
+    serverVersion: schemaStatus.serverVersion,
+    defaultRepoSchemaType: defaultRepoType(repos, defaultRepoId),
+  });
 
   const handleLogin = () => {
     void signIn().catch((error) => {
@@ -60,7 +78,7 @@ function UserAvatarButton() {
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className="shadow-lg w-64 bg-[#1F1B2F] rounded-lg"
+          className="shadow-lg w-72 bg-[#1F1B2F] rounded-lg"
           sideOffset={5}
           align="end"
         >
@@ -73,6 +91,26 @@ function UserAvatarButton() {
                 {user?.handle && (
                   <p className="text-gray-400 text-sm mt-0.5">@{user.handle}</p>
                 )}
+
+                <div className="border-t border-gray-600 my-4"></div>
+
+                <div className="text-xs text-gray-300 space-y-1">
+                  <p className="uppercase tracking-wider text-gray-400">Sync</p>
+                  <p className="text-slate-100">{syncDisplay.label}</p>
+                  <p className="text-gray-400">{syncDisplay.detail}</p>
+                </div>
+
+                <div className="border-t border-gray-600 my-4"></div>
+
+                <div className="text-xs text-gray-300 font-mono space-y-1">
+                  <p className="uppercase tracking-wider text-gray-400 font-sans">Schema</p>
+                  <div>{schemaInfo.summary}</div>
+                  <div title={schemaInfo.projectId}>project {schemaInfo.projectId}</div>
+                  <div title={schemaInfo.clientId}>client {schemaInfo.clientId}</div>
+                  {schemaInfo.shareHint ? (
+                    <p className="font-sans text-amber-200/90 pt-1">{schemaInfo.shareHint}</p>
+                  ) : null}
+                </div>
 
                 <div className="border-t border-gray-600 my-4"></div>
 
@@ -96,6 +134,12 @@ function UserAvatarButton() {
                 <p className="text-gray-200"> - backup your tasks</p>
 
                 <div className="border-t border-gray-600 my-4"></div>
+
+                <div className="text-xs text-gray-300 space-y-1 mb-4">
+                  <p className="uppercase tracking-wider text-gray-400">Sync</p>
+                  <p className="text-slate-100">{syncDisplay.label}</p>
+                  <p className="text-gray-400">{syncDisplay.detail}</p>
+                </div>
 
 
                 <button

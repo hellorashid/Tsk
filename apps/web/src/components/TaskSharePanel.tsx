@@ -1,5 +1,6 @@
 import { useMemo, useState, useTransition } from "react";
 import { basic } from "../basic";
+import { defaultRepoType } from "../utils/schemaInfo";
 import { isOpenShare, resolveShareRecipient, shareErrorMessage, shareIncludesTask, shortDid } from "../utils/shares";
 
 interface TaskSharePanelProps {
@@ -10,7 +11,10 @@ interface TaskSharePanelProps {
 
 export default function TaskSharePanel({ taskId, taskName, compact = false }: TaskSharePanelProps) {
   const { isSignedIn, isReady, signIn } = basic.useAuth();
+  const schemaStatus = basic.useSchemaStatus();
+  const { repos, defaultRepoId } = basic.useRepos();
   const shares = basic.useOutgoingShares();
+  const repoType = defaultRepoType(repos, defaultRepoId) ?? schemaStatus.mode;
   const [handle, setHandle] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -35,7 +39,7 @@ export default function TaskSharePanel({ taskId, taskName, compact = false }: Ta
         setHandle("");
         shares.refresh();
       } catch (shareError) {
-        setError(shareErrorMessage(shareError));
+        setError(shareErrorMessage(shareError, repoType));
       }
     });
   };
@@ -100,6 +104,11 @@ export default function TaskSharePanel({ taskId, taskName, compact = false }: Ta
           {isPending ? "Sharing…" : "Share"}
         </button>
       </form>
+      {repoType && repoType !== "basic-schema" && repoType !== "unknown" ? (
+        <p className="text-xs text-amber-200/90">
+          Sharing needs a Basic schema library. This account’s tasks are still on the {repoType} repo type.
+        </p>
+      ) : null}
       {error ? <p className="text-xs text-red-300">{error}</p> : null}
       {shares.error ? <p className="text-xs text-red-300">{shares.error.message}</p> : null}
 

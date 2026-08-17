@@ -33,10 +33,13 @@ export function shortDid(did: string) {
   return `${did.slice(0, 10)}…${did.slice(-6)}`;
 }
 
-export function shareErrorMessage(error: unknown) {
+export function shareErrorMessage(error: unknown, repoType?: string | null) {
   const message = error instanceof Error ? error.message : "Could not share this task.";
-  if (message.toLowerCase().includes("basic-schema")) {
-    return "Sharing needs a Basic schema library. This account’s tasks are still on the older repo type.";
+  const knownType = repoType && repoType !== "unknown" ? repoType : null;
+  if (message.toLowerCase().includes("basic-schema") || (knownType && knownType !== "basic-schema")) {
+    return knownType
+      ? `Sharing needs a Basic schema library. This account’s tasks are still on the ${knownType} repo type.`
+      : "Sharing needs a Basic schema library. This account’s tasks are still on the older repo type.";
   }
 
   return message;
