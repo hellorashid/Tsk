@@ -104,7 +104,7 @@ function UserAvatarButton() {
                 <div className="text-xs text-gray-300 font-mono space-y-1">
                   <p className="uppercase tracking-wider text-gray-400 font-sans">Schema</p>
                   <div>{schemaInfo.summary}</div>
-                  <div title={schemaInfo.projectId}>project {schemaInfo.projectId}</div>
+                  <div className="break-all" title={schemaInfo.projectId}>project {schemaInfo.projectId}</div>
                   <div title={schemaInfo.clientId}>client {schemaInfo.clientId}</div>
                   {schemaInfo.shareHint ? (
                     <p className="font-sans text-amber-200/90 pt-1">{schemaInfo.shareHint}</p>

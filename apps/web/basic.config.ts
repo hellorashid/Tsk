@@ -2,13 +2,15 @@ import { defineSchema } from "@basictech/schema/define";
 
 // Basic Project Configuration
 // see the docs for more info: https://docs.basic.tech
+export const PROJECT_ID = "did:web:api.basic.tech:projects:701b11bc59a845b581487184d7733e5b";
+
 export const config = {
 	name: "tsk.lol",
-	project_id: "701b11bc-59a8-45b5-8148-7184d7733e5b",
+	project_id: PROJECT_ID,
 };
 
 export const schema = defineSchema({
-	project_id: "701b11bc-59a8-45b5-8148-7184d7733e5b",
+	project_id: PROJECT_ID,
 	version: 6,
 	tables: {
 		tasks: {

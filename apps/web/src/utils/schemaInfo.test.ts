@@ -36,7 +36,7 @@ describe("canShareFromRepoType", () => {
 describe("getSchemaInfoDisplay", () => {
   it("summarizes local and server versions", () => {
     const info = getSchemaInfoDisplay({
-      projectId: "701b11bc-59a8-45b5-8148-7184d7733e5b",
+      projectId: "did:web:api.basic.tech:projects:701b11bc59a845b581487184d7733e5b",
       clientId: "did:web:tsk.lol",
       localVersion: 6,
       mode: "dynamic",
@@ -51,7 +51,7 @@ describe("getSchemaInfoDisplay", () => {
 
   it("marks a basic-schema repo as shareable", () => {
     const info = getSchemaInfoDisplay({
-      projectId: "701b11bc-59a8-45b5-8148-7184d7733e5b",
+      projectId: "did:web:api.basic.tech:projects:701b11bc59a845b581487184d7733e5b",
       clientId: "did:web:tsk.lol",
       localVersion: 6,
       mode: "basic-schema",
