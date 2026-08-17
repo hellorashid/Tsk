@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BASIC_CLIENT_ID, basic, schema } from "../basic";
+import { basic, schema } from "../basic";
 import * as Popover from '@radix-ui/react-popover';
 import packageJson from '../../package.json';
 import { defaultRepoType, findDefaultRepo, getSchemaInfoDisplay } from "../utils/schemaInfo";
@@ -17,7 +17,6 @@ function UserAvatarButton() {
   });
   const schemaInfo = getSchemaInfoDisplay({
     projectId: schema.project_id,
-    clientId: BASIC_CLIENT_ID,
     localVersion: schema.version,
     mode: defaultRepo?.schema_type,
     serverVersion: defaultRepo?.schema_version,
@@ -105,7 +104,6 @@ function UserAvatarButton() {
                   <p className="uppercase tracking-wider text-gray-400 font-sans">Schema</p>
                   <div>{schemaInfo.summary}</div>
                   <div className="break-all" title={schemaInfo.projectId}>project {schemaInfo.projectId}</div>
-                  <div title={schemaInfo.clientId}>client {schemaInfo.clientId}</div>
                   {schemaInfo.shareHint ? (
                     <p className="font-sans text-amber-200/90 pt-1">{schemaInfo.shareHint}</p>
                   ) : null}

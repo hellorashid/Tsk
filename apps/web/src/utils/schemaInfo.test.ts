@@ -37,7 +37,6 @@ describe("getSchemaInfoDisplay", () => {
   it("summarizes local and server versions", () => {
     const info = getSchemaInfoDisplay({
       projectId: "did:web:api.basic.tech:projects:701b11bc59a845b581487184d7733e5b",
-      clientId: "did:web:tsk.lol",
       localVersion: 6,
       mode: "dynamic",
       serverVersion: 1,
@@ -52,7 +51,6 @@ describe("getSchemaInfoDisplay", () => {
   it("marks a basic-schema repo as shareable", () => {
     const info = getSchemaInfoDisplay({
       projectId: "did:web:api.basic.tech:projects:701b11bc59a845b581487184d7733e5b",
-      clientId: "did:web:tsk.lol",
       localVersion: 6,
       mode: "basic-schema",
       serverVersion: 6,

@@ -23,14 +23,12 @@ export function canShareFromRepoType(repoType: string | null | undefined) {
 
 export function getSchemaInfoDisplay({
   projectId,
-  clientId,
   localVersion,
   mode,
   serverVersion,
   defaultRepoSchemaType,
 }: {
   projectId: string;
-  clientId: string;
   localVersion?: number;
   mode?: string;
   serverVersion?: number;
@@ -49,7 +47,6 @@ export function getSchemaInfoDisplay({
     canShare: canShareFromRepoType(repoType),
     summary: versionBits.length > 0 ? `${repoType} · ${versionBits.join(" · ")}` : repoType,
     projectId,
-    clientId,
     shareHint: canShareFromRepoType(repoType)
       ? undefined
       : "Sharing needs a basic-schema repo. This account is still on the older type.",

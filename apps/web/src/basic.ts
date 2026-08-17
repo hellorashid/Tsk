@@ -1,12 +1,10 @@
 import { createBasic } from "@basictech/react";
-import { schema } from "../basic.config";
+import { PROJECT_ID, schema } from "../basic.config";
 import { rewriteBasicDevUrl } from "./basicDevProxy";
 
-export { schema };
+export { PROJECT_ID, schema };
 
-const DEFAULT_CLIENT_ID = "did:web:tsk.lol";
-
-export const BASIC_CLIENT_ID = import.meta.env.VITE_BASIC_CLIENT_ID || DEFAULT_CLIENT_ID;
+export const BASIC_CLIENT_ID = PROJECT_ID;
 
 function createBasicFetch(): typeof fetch {
   const browserFetch = globalThis.fetch.bind(globalThis);
