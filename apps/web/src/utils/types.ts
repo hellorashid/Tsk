@@ -14,6 +14,11 @@ export type Task = {
 
 export type TaskUpdate = Partial<Pick<Task, "name" | "description" | "completed" | "parentTaskId" | "labels">>;
 
+export type TaskSource = {
+  mountId: string;
+  role: "viewer" | "editor";
+};
+
 export type Folder = {
   id: string;
   name: string;

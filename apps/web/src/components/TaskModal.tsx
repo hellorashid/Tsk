@@ -1,4 +1,4 @@
-import { Folder, Task, TaskUpdate } from "../utils/types";
+import { Folder, Task, TaskSource, TaskUpdate } from "../utils/types";
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Checkbox from './Checkbox';
@@ -11,7 +11,7 @@ import { useAutoResizeTextarea } from '../hooks/useAutoResizeTextarea';
 import { showPickerOrClick } from '../utils/showPicker';
 
 export const TaskModal = ({
-  task, updateFunction, inDrawer = false, deleteTask, new: isNew = false, onDelete, onAddToSchedule, scheduledEvents, onUpdateEvent, onDeleteEvent, onAddSubtask, onUpdateSubtask, onDeleteSubtask, onEnterFocus, folders
+  task, updateFunction, inDrawer = false, deleteTask, new: isNew = false, onDelete, onAddToSchedule, scheduledEvents, onUpdateEvent, onDeleteEvent, onAddSubtask, onUpdateSubtask, onDeleteSubtask, onEnterFocus, folders, taskSource = null
 }: {
   task: Task;
   updateFunction: (id: string, changes: TaskUpdate) => void;
@@ -28,6 +28,7 @@ export const TaskModal = ({
   onDeleteSubtask?: (id: string) => void;
   onEnterFocus?: (task: Task) => void;
   folders?: Folder[];
+  taskSource?: TaskSource | null;
 }) => {
   const { theme } = useTheme();
   const { accentColor, isDarkMode } = theme;
@@ -47,7 +48,10 @@ export const TaskModal = ({
   const nameInputRef = useRef<HTMLTextAreaElement | null>(null);
   const descTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   
-  const subtasks = useSubtaskRecords(task?.id && !task?.parentTaskId ? task.id : null);
+  const subtasks = useSubtaskRecords(
+    task?.id && !task?.parentTaskId && !taskSource ? task.id : null,
+    taskSource?.mountId,
+  );
 
   // Check if task has any scheduled events for today
   const hasScheduledEventToday = (() => {
@@ -669,7 +673,7 @@ export const TaskModal = ({
           placeholder="Some description..."
           style={{ height: 'auto' }}
         />
-        {!isNew && task?.id ? (
+        {!isNew && task?.id && !taskSource ? (
           <TaskSharePanel taskId={task.id} taskName={taskName || task.name} />
         ) : null}
         </div>{/* End scrollable content area */}

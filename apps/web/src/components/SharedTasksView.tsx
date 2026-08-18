@@ -3,16 +3,26 @@ import { basic } from "../basic";
 import { useOpenedMounts } from "../hooks/useOpenedMounts";
 import { unwrapTasks } from "../utils/basicRecords";
 import { shortDid } from "../utils/shares";
-import type { TaskUpdate } from "../utils/types";
+import type { Task, TaskSource, TaskUpdate } from "../utils/types";
 import ListItem from "./ListItem";
 
 interface SharedTasksViewProps {
   viewMode: "compact" | "cozy" | "chonky";
   isMobile: boolean;
   isDarkMode: boolean;
+  selectedTaskId?: string | null;
+  selectedMountId?: string | null;
+  onTaskSelect: (task: Task, source: TaskSource) => void;
 }
 
-export default function SharedTasksView({ viewMode, isMobile, isDarkMode }: SharedTasksViewProps) {
+export default function SharedTasksView({
+  viewMode,
+  isMobile,
+  isDarkMode,
+  selectedTaskId,
+  selectedMountId,
+  onTaskSelect,
+}: SharedTasksViewProps) {
   const { isReady, isSignedIn, isLoading, error, mounts, manageUrl } = useOpenedMounts();
   const { signIn } = basic.useAuth();
 
@@ -83,6 +93,8 @@ export default function SharedTasksView({ viewMode, isMobile, isDarkMode }: Shar
           viewMode={viewMode}
           isMobile={isMobile}
           isDarkMode={isDarkMode}
+          selectedTaskId={selectedMountId === mount.id ? selectedTaskId : null}
+          onTaskSelect={onTaskSelect}
         />
       ))}
     </div>
@@ -96,6 +108,8 @@ function SharedMountTaskList({
   viewMode,
   isMobile,
   isDarkMode,
+  selectedTaskId,
+  onTaskSelect,
 }: {
   mountId: string;
   role: "viewer" | "editor";
@@ -103,6 +117,8 @@ function SharedMountTaskList({
   viewMode: "compact" | "cozy" | "chonky";
   isMobile: boolean;
   isDarkMode: boolean;
+  selectedTaskId?: string | null;
+  onTaskSelect: (task: Task, source: TaskSource) => void;
 }) {
   const { data, isLoading, error } = basic.useQuery("tasks", undefined, { source: { mountId } });
   const tasksTable = basic.useCollection("tasks", { source: { mountId } });
@@ -127,9 +143,8 @@ function SharedMountTaskList({
     void tasksTable.delete(id);
   };
 
-  const handleTaskSelect = () => {
-    // Shared tasks stay in this list for now; opening them in the island
-    // would write back to the local repo.
+  const handleTaskSelect = (task: Task) => {
+    onTaskSelect(task, { mountId, role });
   };
 
   if (isLoading) {
@@ -153,6 +168,7 @@ function SharedMountTaskList({
             updateTask={updateTask}
             deleteTask={deleteTask}
             handleTaskSelect={handleTaskSelect}
+            isSelected={selectedTaskId === task.id}
             viewMode={viewMode}
             isMobile={isMobile}
           />

@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Folder, Task, TaskUpdate } from '../utils/types';
+import { Folder, Task, TaskSource, TaskUpdate } from '../utils/types';
 import { ScheduleCardData, ScheduleCardInput, ScheduleCardUpdate, getEventDuration, getTimeFromDateTime } from '../utils/schedule';
 import Checkbox from './Checkbox';
 import { useTheme } from '../contexts/ThemeContext';
@@ -12,6 +12,7 @@ import { useAutoResizeTextarea } from '../hooks/useAutoResizeTextarea';
 interface DynamicIslandProps {
   selectedTask: Task | null;
   selectedEvent: ScheduleCardData | null;
+  taskSource?: TaskSource | null;
   onTaskSelect: (task: Task | null) => void;
   onEventSelect: (event: ScheduleCardData | null) => void;
   onAddTask: (taskName: string) => Promise<string | null>;
@@ -40,6 +41,7 @@ interface DynamicIslandProps {
 const DynamicIsland: React.FC<DynamicIslandProps> = ({
   selectedTask,
   selectedEvent,
+  taskSource = null,
   onTaskSelect,
   onEventSelect,
   onAddTask,
@@ -114,12 +116,12 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   const isEventView = selectedEvent !== null;
   
   // Fetch scheduled events for the selected task
-  const liveTask = useTaskRecord(selectedTask?.id);
+  const liveTask = useTaskRecord(selectedTask?.id, taskSource?.mountId);
   const liveEvent = useScheduleRecord(selectedEvent?.id);
   const currentTask = liveTask || selectedTask;
   const currentEvent = liveEvent || selectedEvent;
-  const { events: scheduledEventsForTask } = useScheduleRecords(selectedTask?.id);
-  const scheduledEvents = selectedTask?.id ? scheduledEventsForTask : null;
+  const { events: scheduledEventsForTask } = useScheduleRecords(taskSource ? null : selectedTask?.id);
+  const scheduledEvents = !taskSource && selectedTask?.id ? scheduledEventsForTask : null;
 
   // Check if task has any scheduled events for today
   const hasScheduledEventToday = (() => {
@@ -156,7 +158,10 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
       : null;
   const deletedTaskSubtasksResult = useSubtaskRecords(deletedTaskParentId);
   const deletedTaskSubtasks = deletedTaskParentId ? deletedTaskSubtasksResult : null;
-  const subtasks = useSubtaskRecords(selectedTask?.id && !selectedTask?.parentTaskId ? selectedTask.id : null);
+  const subtasks = useSubtaskRecords(
+    selectedTask?.id && !selectedTask?.parentTaskId && !taskSource ? selectedTask.id : null,
+    taskSource?.mountId,
+  );
 
   // Watch for newly created task to appear in tasks list
   useEffect(() => {
@@ -1405,7 +1410,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   style={{ height: 'auto' }}
                 />
 
-                {currentTask?.id ? (
+                {currentTask?.id && !taskSource ? (
                   <TaskSharePanel
                     taskId={currentTask.id}
                     taskName={currentTask.name || title}

@@ -11,7 +11,7 @@ import { ScheduleCardData } from '../utils/schedule';
 import { useTheme } from '../contexts/ThemeContext';
 import { useScheduleRecords, useSubtaskRecords, useTaskRecords } from '../hooks/useBasicData';
 import { useModalHistory } from '../hooks/useModalHistory';
-import { Task, Folder } from '../utils/types';
+import { Task, TaskSource, Folder } from '../utils/types';
 import './SilkTaskDrawer.css';
 import './SheetWithKeyboard.css';
 
@@ -20,6 +20,7 @@ interface TaskDrawerProps {
   setIsOpen: (isOpen: boolean) => void;
   task: Task | null;
   event?: ScheduleCardData | null;
+  taskSource?: TaskSource | null;
   updateFunction: (id: string, changes: Partial<Task>) => void;
   deleteTask?: (id: string) => void;
   isNewTaskMode?: boolean;
@@ -42,6 +43,7 @@ export default function SilkTaskDrawer({
   setIsOpen,
   task, 
   event,
+  taskSource = null,
   updateFunction, 
   deleteTask,
   isNewTaskMode = false,
@@ -87,9 +89,9 @@ export default function SilkTaskDrawer({
   
   const { events: allScheduleEvents } = useScheduleRecords();
   const scheduledEvents = useMemo(() => {
-    if (!task?.id) return [];
+    if (taskSource || !task?.id) return [];
     return allScheduleEvents.filter((scheduleEvent) => scheduleEvent.taskId === task.id);
-  }, [task?.id, allScheduleEvents]);
+  }, [task?.id, allScheduleEvents, taskSource]);
 
   const deletedTaskParentId =
     event?.type === 'task' &&
@@ -681,6 +683,7 @@ export default function SilkTaskDrawer({
                     onDeleteSubtask={onDeleteSubtask}
                     onEnterFocus={onEnterFocus}
                     folders={folders}
+                    taskSource={taskSource}
                   />
                 )}
               </div>

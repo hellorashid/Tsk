@@ -25,8 +25,13 @@ export function useFolderRecords() {
   return { folders, isLoading, error };
 }
 
-export function useTaskRecord(id: string | null | undefined): Task | null {
-  const { tasks } = useTaskRecords();
+export function useTaskRecord(id: string | null | undefined, mountId?: string | null): Task | null {
+  const { data } = basic.useQuery(
+    "tasks",
+    undefined,
+    mountId ? { source: { mountId } } : undefined,
+  );
+  const tasks = useMemo(() => unwrapTasks(data), [data]);
   return useMemo(() => (id ? tasks.find((task) => task.id === id) ?? null : null), [id, tasks]);
 }
 
@@ -35,10 +40,14 @@ export function useScheduleRecord(id: string | null | undefined): ScheduleCardDa
   return useMemo(() => (id ? events.find((event) => event.id === id) ?? null : null), [events, id]);
 }
 
-export function useSubtaskRecords(parentTaskId: string | null | undefined): Task[] {
-  const { data } = basic.useQuery("tasks", {
-    where: { parentTaskId: parentTaskId ?? "" },
-  });
+export function useSubtaskRecords(parentTaskId: string | null | undefined, mountId?: string | null): Task[] {
+  const { data } = basic.useQuery(
+    "tasks",
+    {
+      where: { parentTaskId: parentTaskId ?? "" },
+    },
+    mountId ? { source: { mountId } } : undefined,
+  );
 
   return useMemo(
     () => (parentTaskId ? unwrapTasks(data) : []),

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { type Dispatch, type SetStateAction, useCallback, useEffect, useState } from "react";
 import bgImage from "/bg2.jpg";
 import "./App.css";
 import AboutModal from "./components/AboutModal";
@@ -19,12 +19,14 @@ import UserAvatarButton from "./components/UserAvatarButton";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { useAppActions } from "./hooks/useAppActions";
 import { useFolderRecords, useScheduleRecords, useTaskRecords } from "./hooks/useBasicData";
+import { useSourcedTaskMutations } from "./hooks/useSourcedTaskMutations";
+import { isSharedTaskSource } from "./utils/taskSource";
 import { useBasicDbReady } from "./hooks/useBasicDbReady";
 import { useHomeKeyboardShortcuts } from "./hooks/useHomeKeyboardShortcuts";
 import { useHomeUiState } from "./hooks/useHomeUiState";
 import { useTaskCollections } from "./hooks/useTaskCollections";
 import { ScheduleCardData } from "./utils/schedule";
-import { Task } from "./utils/types";
+import { Task, TaskSource } from "./utils/types";
 
 function Home() {
   const isDbReady = useBasicDbReady();
@@ -38,7 +40,20 @@ function Home() {
   const [showDelayedLoadingState, setShowDelayedLoadingState] = useState(false);
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedTaskSource, setSelectedTaskSource] = useState<TaskSource | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleCardData | null>(null);
+
+  const setSelectedTaskAndClearSource = useCallback<Dispatch<SetStateAction<Task | null>>>((value) => {
+    if (typeof value === "function") {
+      setSelectedTask(value);
+      return;
+    }
+
+    setSelectedTask(value);
+    if (!value) {
+      setSelectedTaskSource(null);
+    }
+  }, []);
 
   const {
     activeFolder,
@@ -133,9 +148,25 @@ function Home() {
     setDrawerOpen,
     setIsNewTaskMode,
     setSelectedEvent,
-    setSelectedTask,
+    setSelectedTask: setSelectedTaskAndClearSource,
     themeLocation: theme.location,
   });
+  const sourcedTaskMutations = useSourcedTaskMutations(selectedTaskSource);
+  const isSharedSelection = isSharedTaskSource(selectedTaskSource);
+  const selectedTaskUpdate = isSharedSelection ? sourcedTaskMutations.updateTask : updateTask;
+  const selectedTaskDelete = useCallback((taskId: string) => {
+    if (isSharedSelection) {
+      sourcedTaskMutations.deleteTask(taskId);
+      if (selectedTask?.id === taskId) {
+        setSelectedTask(null);
+        setSelectedTaskSource(null);
+        setDrawerOpen(false);
+      }
+      return;
+    }
+
+    void deleteTask(taskId);
+  }, [deleteTask, isSharedSelection, selectedTask?.id, setDrawerOpen, sourcedTaskMutations]);
 
   const handleMobileViewChange = useCallback(
     (view: "tasks" | "calendar") => {
@@ -144,6 +175,7 @@ function Home() {
         setDrawerOpen(false);
         setIsNewTaskMode(false);
         setSelectedTask(null);
+        setSelectedTaskSource(null);
         setSelectedEvent(null);
       }
     },
@@ -153,15 +185,17 @@ function Home() {
   const handleEventSelectWrapper = useCallback((event: ScheduleCardData | null) => {
     setSelectedEvent(event);
     setSelectedTask(null);
+    setSelectedTaskSource(null);
   }, []);
 
   const handleTaskSelect = useCallback(
-    (task: Task) => {
+    (task: Task, source?: TaskSource | null) => {
       if (!task.id) {
         return;
       }
 
       setSelectedTask({ ...task });
+      setSelectedTaskSource(source ?? null);
       setSelectedEvent(null);
       setCurrentView("home");
       setIsNewTaskMode(false);
@@ -176,6 +210,9 @@ function Home() {
   const handleTaskSelectWrapper = useCallback((task: Task | null) => {
     setSelectedTask(task);
     setSelectedEvent(null);
+    if (!task) {
+      setSelectedTaskSource(null);
+    }
   }, []);
 
   const handleScheduleCardClick = useCallback(
@@ -185,6 +222,7 @@ function Home() {
       if (isDeletedTask || cardData.type === "task:completed") {
         setSelectedEvent(cardData);
         setSelectedTask(null);
+        setSelectedTaskSource(null);
         setIsNewTaskMode(false);
         if (isMobile) {
           setDrawerOpen(true);
@@ -196,6 +234,7 @@ function Home() {
         const task = tasks.find((item) => item.id === cardData.taskId);
         if (task) {
           setSelectedTask(task);
+          setSelectedTaskSource(null);
           setSelectedEvent(null);
           setIsNewTaskMode(false);
           if (isMobile) {
@@ -208,6 +247,7 @@ function Home() {
       if (cardData.type === "event" || cardData.type === "other") {
         setSelectedEvent(cardData);
         setSelectedTask(null);
+        setSelectedTaskSource(null);
         setIsNewTaskMode(false);
         if (isMobile) {
           setDrawerOpen(true);
@@ -390,6 +430,9 @@ function Home() {
                               viewMode={viewMode}
                               isMobile={isMobile}
                               isDarkMode={theme.isDarkMode}
+                              selectedTaskId={selectedTask?.id}
+                              selectedMountId={selectedTaskSource?.mountId}
+                              onTaskSelect={handleTaskSelect}
                             />
                           ) : null}
 
@@ -614,17 +657,18 @@ function Home() {
                 <DynamicIsland
                   selectedTask={selectedTask}
                   selectedEvent={selectedEvent}
+                  taskSource={selectedTaskSource}
                   onTaskSelect={handleTaskSelectWrapper}
                   onEventSelect={handleEventSelectWrapper}
                   onAddTask={handleAddTask}
                   onAddEvent={handleAddEvent}
-                  onUpdateTask={updateTask}
-                  onDeleteTask={deleteTask}
+                  onUpdateTask={selectedTaskUpdate}
+                  onDeleteTask={selectedTaskDelete}
                   onUpdateEvent={updateScheduleEvent}
                   onDeleteEvent={deleteScheduleEvent}
-                  onAddToSchedule={handleAddToSchedule}
-                  onAddSubtask={handleAddSubtask}
-                  onEnterFocus={handleEnterFocus}
+                  onAddToSchedule={isSharedSelection ? undefined : handleAddToSchedule}
+                  onAddSubtask={isSharedSelection ? undefined : handleAddSubtask}
+                  onEnterFocus={isSharedSelection ? undefined : handleEnterFocus}
                   tasks={tasks}
                   folders={folders}
                   activeFolder={activeFolder}
@@ -646,20 +690,21 @@ function Home() {
                   setIsOpen={setDrawerOpen}
                   task={selectedTask}
                   event={selectedEvent}
-                  updateFunction={updateTask}
-                  deleteTask={deleteTask}
+                  taskSource={selectedTaskSource}
+                  updateFunction={selectedTaskUpdate}
+                  deleteTask={selectedTaskDelete}
                   isNewTaskMode={isNewTaskMode}
                   currentView={mobileView}
                   onAddTask={handleAddTask}
-                  onAddToSchedule={handleAddToSchedule}
+                  onAddToSchedule={isSharedSelection ? undefined : handleAddToSchedule}
                   onUpdateEvent={updateScheduleEvent}
                   onDeleteEvent={deleteScheduleEvent}
                   onAddEvent={handleAddEvent}
-                  onAddSubtask={handleAddSubtask}
-                  onUpdateSubtask={updateTask}
-                  onDeleteSubtask={deleteTask}
+                  onAddSubtask={isSharedSelection ? undefined : handleAddSubtask}
+                  onUpdateSubtask={selectedTaskUpdate}
+                  onDeleteSubtask={selectedTaskDelete}
                   onTaskSelect={handleTaskSelect}
-                  onEnterFocus={handleEnterFocus}
+                  onEnterFocus={isSharedSelection ? undefined : handleEnterFocus}
                   folders={folders}
                 />
               )}
