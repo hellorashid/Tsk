@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { basic } from "../basic";
 import { useContactHandles } from "../hooks/useContactHandles";
 import { defaultRepoType } from "../utils/schemaInfo";
@@ -27,11 +27,7 @@ export default function TaskSharePanel({ taskId, taskName, compact = false }: Ta
     () => taskShares.map((share) => share.recipientDid),
     [taskShares],
   );
-  const getContactHandle = useCallback(
-    (did: string) => shares.getContactHandle(did),
-    [shares],
-  );
-  const contactHandles = useContactHandles(recipientDids, getContactHandle);
+  const contactHandles = useContactHandles(recipientDids, shares.getContactHandle);
 
   const submitShare = () => {
     setError(null);
