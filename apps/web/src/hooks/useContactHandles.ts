@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 
 export function mergeContactHandles(
   current: Record<string, string>,
@@ -21,22 +21,22 @@ export function useContactHandles(
   getContactHandle?: ((did: string) => Promise<string | null>) | null,
 ) {
   const [handles, setHandles] = useState<Record<string, string>>({});
-  const getContactHandleRef = useRef(getContactHandle);
-  getContactHandleRef.current = getContactHandle;
   const didKey = [...new Set(dids.filter(Boolean))].toSorted().join("|");
   const hasLookup = Boolean(getContactHandle);
+  const lookupContactHandle = useEffectEvent(async (did: string) => {
+    return getContactHandle ? getContactHandle(did) : null;
+  });
 
   useEffect(() => {
     const unique = didKey ? didKey.split("|") : [];
-    const lookup = getContactHandleRef.current;
-    if (unique.length === 0 || !lookup) {
+    if (unique.length === 0 || !hasLookup) {
       return undefined;
     }
 
     let cancelled = false;
 
     void Promise.all(
-      unique.map(async (did) => [did, await lookup(did)] as const),
+      unique.map(async (did) => [did, await lookupContactHandle(did)] as const),
     ).then((entries) => {
       if (cancelled) {
         return;
