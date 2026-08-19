@@ -12,8 +12,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@basictech/react": "0.11.0-beta.1",
-    "@basictech/schema": "0.11.0-beta.1",
+    "@basictech/react": "0.11.0-beta.2",
+    "@basictech/schema": "0.11.0-beta.2",
     "@radix-ui/react-popover": "^1.1.19",
     "@radix-ui/react-switch": "^1.3.3",
     "@silk-hq/components": "^0.8.15",
