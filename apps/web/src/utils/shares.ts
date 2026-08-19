@@ -33,6 +33,28 @@ export function shortDid(did: string) {
   return `${did.slice(0, 10)}…${did.slice(-6)}`;
 }
 
+export function displayShareRecipient(did: string, handle?: string | null) {
+  if (!handle) {
+    return shortDid(did);
+  }
+
+  return handle.startsWith("@") ? handle : `@${handle}`;
+}
+
+export function shareRecipientInput(input: string) {
+  const trimmed = input.trim();
+  if (trimmed.startsWith("did:")) {
+    return { recipientDid: trimmed };
+  }
+
+  const recipientHandle = normalizeShareHandle(trimmed);
+  if (!recipientHandle) {
+    throw new Error("Enter a Basic handle.");
+  }
+
+  return { recipientHandle };
+}
+
 export function shareErrorMessage(error: unknown, repoType?: string | null) {
   const message = error instanceof Error ? error.message : "Could not share this task.";
   const knownType = repoType && repoType !== "unknown" ? repoType : null;

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { isOpenShare, normalizeShareHandle, resolveShareRecipient, shareErrorMessage, shareIncludesTask, shortDid } from "./shares";
+import { displayShareRecipient, isOpenShare, normalizeShareHandle, resolveShareRecipient, shareErrorMessage, shareIncludesTask, shareRecipientInput, shortDid } from "./shares";
 
 describe("normalizeShareHandle", () => {
   it("trims, lowercases, and adds .basic.id when needed", () => {
@@ -36,6 +36,31 @@ describe("shortDid", () => {
   it("shortens long DIDs", () => {
     expect(shortDid("did:web:fff.basic.id")).toBe("did:web:fff.basic.id");
     expect(shortDid("did:plc:abcdefghijklmnopqrstuvwxyz")).toBe("did:plc:ab…uvwxyz");
+  });
+});
+
+describe("displayShareRecipient", () => {
+  it("prefers a remembered handle", () => {
+    expect(displayShareRecipient("did:plc:abcdefghijklmnopqrstuvwxyz", "fff.basic.id")).toBe("@fff.basic.id");
+    expect(displayShareRecipient("did:plc:abcdefghijklmnopqrstuvwxyz", "@alice.basic.id")).toBe("@alice.basic.id");
+  });
+
+  it("falls back to a short DID", () => {
+    expect(displayShareRecipient("did:plc:abcdefghijklmnopqrstuvwxyz")).toBe("did:plc:ab…uvwxyz");
+  });
+});
+
+describe("shareRecipientInput", () => {
+  it("keeps a DID as recipientDid", () => {
+    expect(shareRecipientInput("did:web:fff.basic.id")).toEqual({
+      recipientDid: "did:web:fff.basic.id",
+    });
+  });
+
+  it("normalizes a handle for the SDK contact cache", () => {
+    expect(shareRecipientInput("  @FFF  ")).toEqual({
+      recipientHandle: "fff.basic.id",
+    });
   });
 });
 

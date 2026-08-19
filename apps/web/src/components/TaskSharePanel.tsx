@@ -1,7 +1,8 @@
-import { useMemo, useState, useTransition } from "react";
+import { useCallback, useMemo, useState, useTransition } from "react";
 import { basic } from "../basic";
+import { useContactHandles } from "../hooks/useContactHandles";
 import { defaultRepoType } from "../utils/schemaInfo";
-import { isOpenShare, resolveShareRecipient, shareErrorMessage, shareIncludesTask, shortDid } from "../utils/shares";
+import { displayShareRecipient, isOpenShare, shareErrorMessage, shareIncludesTask, shareRecipientInput } from "../utils/shares";
 
 interface TaskSharePanelProps {
   taskId: string;
@@ -22,15 +23,23 @@ export default function TaskSharePanel({ taskId, taskName, compact = false }: Ta
     () => shares.outgoingShares.filter((share) => isOpenShare(share) && shareIncludesTask(share, taskId)),
     [shares.outgoingShares, taskId],
   );
+  const recipientDids = useMemo(
+    () => taskShares.map((share) => share.recipientDid),
+    [taskShares],
+  );
+  const getContactHandle = useCallback(
+    (did: string) => shares.getContactHandle(did),
+    [shares],
+  );
+  const contactHandles = useContactHandles(recipientDids, getContactHandle);
 
   const submitShare = () => {
     setError(null);
     startTransition(async () => {
       try {
-        const recipientDid = await resolveShareRecipient(handle);
         await shares.create({
           repo: "default",
-          recipientDid,
+          ...shareRecipientInput(handle),
           role: "editor",
           scope: [{ table: "tasks", recordIds: [taskId] }],
           display: { shareName: taskName },
@@ -115,8 +124,8 @@ export default function TaskSharePanel({ taskId, taskName, compact = false }: Ta
         <ul className="space-y-1">
           {taskShares.map((share) => (
             <li key={share.id} className="flex items-center justify-between gap-2 text-xs opacity-80">
-              <span>
-                {shortDid(share.recipientDid)}
+              <span title={share.recipientDid}>
+                {displayShareRecipient(share.recipientDid, contactHandles[share.recipientDid])}
                 <span className="ml-2 uppercase tracking-wider opacity-60">{share.state}</span>
               </span>
               <button
