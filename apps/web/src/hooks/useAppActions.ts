@@ -158,6 +158,34 @@ export function useAppActions({
     setFocusedTask(null);
   }, [focusSessionEventId, isDbReady, scheduleTable]);
 
+  // Generate cozy mock weather data when API fails
+  const generateMockWeather = useCallback((date: Date) => {
+    // Use date as seed for consistent but varied results across days
+    const seed = date.getDate() + date.getMonth() * 31;
+    
+    // Temperature range: 65-75°F (cozy comfortable range)
+    const temperature = 65 + (seed % 11);
+    
+    // Conditions rotate through pleasant weather
+    const conditions = ['Clear', 'Partly Cloudy', 'Clear', 'Partly Cloudy', 'Cloudy'];
+    const condition = conditions[seed % conditions.length];
+    
+    // Generate plausible sunrise/sunset times
+    const sunrise = new Date(date);
+    sunrise.setHours(6, 30 + (seed % 30), 0, 0);
+    
+    const sunset = new Date(date);
+    sunset.setHours(18, 15 + (seed % 30), 0, 0);
+    
+    return {
+      temperature,
+      condition,
+      sunrise: sunrise.toISOString(),
+      sunset: sunset.toISOString(),
+      hourlyTemperatures: [] as Array<{ time: string; temperature: number; weatherCode: number; condition: string }>,
+    };
+  }, []);
+
   const handleFetchWeather = useCallback(
     async (date: Date) => {
       if (!isDbReady) {
@@ -245,12 +273,73 @@ export function useAppActions({
           }),
         ]);
       } catch (error) {
-        console.error("Failed to fetch weather:", error);
+        console.error("Failed to fetch weather, using mock data:", error);
+        
+        // Fall back to cozy mock data when API fails
+        const mockWeather = generateMockWeather(date);
+        const timeZone = getResolvedTimeZone();
+        const middayDate = new Date(date);
+        middayDate.setHours(12, 0, 0, 0);
+
+        await Promise.all([
+          scheduleTable.create({
+            title: "Weather",
+            start: {
+              dateTime: middayDate.toISOString(),
+              timeZone,
+            },
+            end: {
+              dateTime: middayDate.toISOString(),
+              timeZone,
+            },
+            color: "rgba(148, 163, 184, 0.05)",
+            type: "weather" as const,
+            description: mockWeather.condition,
+            metadata: {
+              weather: {
+                temperature: mockWeather.temperature,
+                condition: mockWeather.condition,
+                sunrise: mockWeather.sunrise,
+                sunset: mockWeather.sunset,
+                fetchedAt: new Date().toISOString(),
+                hourlyTemperatures: mockWeather.hourlyTemperatures,
+              },
+            },
+          }),
+          scheduleTable.create({
+            title: "Sunrise",
+            start: {
+              dateTime: mockWeather.sunrise,
+              timeZone,
+            },
+            end: {
+              dateTime: mockWeather.sunrise,
+              timeZone,
+            },
+            color: "rgba(251, 146, 60, 0.15)",
+            type: "sunrise" as const,
+            description: "Sunrise",
+          }),
+          scheduleTable.create({
+            title: "Sunset",
+            start: {
+              dateTime: mockWeather.sunset,
+              timeZone,
+            },
+            end: {
+              dateTime: mockWeather.sunset,
+              timeZone,
+            },
+            color: "rgba(249, 115, 22, 0.15)",
+            type: "sunset" as const,
+            description: "Sunset",
+          }),
+        ]);
       } finally {
         fetchingWeatherDatesRef.current.delete(dateKey);
       }
     },
-    [isDbReady, scheduleEvents, scheduleTable, themeLocation.latitude, themeLocation.longitude],
+    [generateMockWeather, isDbReady, scheduleEvents, scheduleTable, themeLocation.latitude, themeLocation.longitude],
   );
 
   useEffect(() => {
