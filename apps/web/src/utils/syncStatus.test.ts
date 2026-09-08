@@ -16,7 +16,7 @@ describe("getSyncStatusDisplay", () => {
   it("asks for sign-in when reauth is required", () => {
     expect(getSyncStatusDisplay({
       isSignedIn: true,
-      authStatus: "reauth_required",
+      authStatus: "expired",
       syncStatus: "error",
       pendingCount: 0,
     }).label).toBe("Needs sign-in");

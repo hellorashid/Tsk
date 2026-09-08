@@ -35,7 +35,7 @@ function UserAvatarButton() {
 
   // Determine notification dot color based on sync status
   const getNotificationColor = () => {
-    if (status === "reauth_required" || sync.status === "error") {
+    if (status === "expired" || sync.status === "error") {
       return "bg-red-500";
     }
 
