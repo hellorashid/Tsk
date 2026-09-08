@@ -170,7 +170,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   const { theme, setAccentColor, setIsDarkMode, setFontStyle } = useTheme();
   const { accentColor, isDarkMode, fontStyle } = theme;
   const isLocalAccount = isAnonymous || !isSignedIn;
-  const needsReauth = authStatus === "reauth_required";
+  const needsReauth = authStatus === "expired";
   const backup = getBackupState({
     isReady,
     isLocalAccount,

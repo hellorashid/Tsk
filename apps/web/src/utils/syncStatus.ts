@@ -38,7 +38,7 @@ export function getSyncStatusDisplay({
     };
   }
 
-  if (authStatus === "reauth_required") {
+  if (authStatus === "expired") {
     return {
       label: "Needs sign-in",
       detail: "Sign in again to resume sync.",
