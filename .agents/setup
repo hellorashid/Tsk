@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "==> Checking Node.js and npm"
+node_major="$(node --version | sed -E 's/^v([0-9]+).*/\1/')"
+npm_major="$(npm --version | sed -E 's/^([0-9]+).*/\1/')"
+
+if (( node_major < 20 )); then
+  echo "Node.js 20 or newer is required (found $(node --version))." >&2
+  exit 1
+fi
+
+if (( npm_major < 10 )); then
+  echo "npm 10 or newer is required (found $(npm --version))." >&2
+  exit 1
+fi
+
+echo "==> Installing locked workspace dependencies"
+time npm ci --no-audit --no-fund
