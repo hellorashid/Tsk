@@ -90,14 +90,14 @@ function SharingSettings() {
   const mounts = basic.useMounts();
   const { theme } = useTheme();
   const { isDarkMode } = theme;
-  const openShares = shares.outgoingShares.filter((share) => share.state === "pending" || share.state === "active");
+  const openShares = shares.data.filter((share) => share.state === "pending" || share.state === "active");
 
   return (
     <section className={`rounded-xl p-4 ${isDarkMode ? 'bg-white/5' : 'bg-black/5'}`}>
       <h2 className="text-lg font-semibold mb-2">Sharing</h2>
       <p className={`text-sm mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
         Share individual tasks from a task’s details. {openShares.length === 1 ? "1 task is" : `${openShares.length} tasks are`} shared outbound
-        {mounts.mounts.length > 0 ? `, and ${mounts.mounts.length} ${mounts.mounts.length === 1 ? "share is" : "shares are"} incoming.` : "."}
+        {mounts.data.length > 0 ? `, and ${mounts.data.length} ${mounts.data.length === 1 ? "share is" : "shares are"} incoming.` : "."}
       </p>
       <button
         type="button"

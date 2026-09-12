@@ -6,7 +6,7 @@ export function useOpenedMounts() {
   const { isReady, isSignedIn } = basic.useAuth();
   const [openedIds, setOpenedIds] = useState<string[]>([]);
   const openingRef = useRef(new Set<string>());
-  const mountKey = mounts.mounts
+  const mountKey = mounts.data
     .map((mount) => `${mount.id}:${mount.state}:${mount.originState}`)
     .join("|");
 
@@ -17,7 +17,7 @@ export function useOpenedMounts() {
       return;
     }
 
-    const eligible = mounts.mounts.filter(
+    const eligible = mounts.data.filter(
       (mount) => mount.state === "active" && mount.originState !== "ended",
     );
 
@@ -41,8 +41,8 @@ export function useOpenedMounts() {
     }
   }, [isReady, isSignedIn, mountKey, mounts]);
 
-  const openedMounts = mounts.mounts.filter((mount) => openedIds.includes(mount.id));
-  const pendingOpen = isSignedIn && mounts.mounts.some((mount) => (
+  const openedMounts = mounts.data.filter((mount) => openedIds.includes(mount.id));
+  const pendingOpen = isSignedIn && mounts.data.some((mount) => (
     mount.state === "active"
     && mount.originState !== "ended"
     && !openedIds.includes(mount.id)
