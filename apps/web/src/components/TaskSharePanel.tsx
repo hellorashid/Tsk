@@ -20,8 +20,8 @@ export default function TaskSharePanel({ taskId, taskName, compact = false }: Ta
   const [isPending, startTransition] = useTransition();
 
   const taskShares = useMemo(
-    () => shares.outgoingShares.filter((share) => isOpenShare(share) && shareIncludesTask(share, taskId)),
-    [shares.outgoingShares, taskId],
+    () => shares.data.filter((share) => isOpenShare(share) && shareIncludesTask(share, taskId)),
+    [shares.data, taskId],
   );
   const recipientDids = useMemo(
     () => taskShares.map((share) => share.recipientDid),
