@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import UserAvatarButton from './UserAvatarButton';
+import { UserButton } from '@basictech/react';
 
 interface IconSidebarProps {
   onOpenSettings: () => void;
@@ -78,7 +78,7 @@ const IconSidebar: React.FC<IconSidebarProps> = ({
           </button>
 
           {/* User Avatar */}
-          <UserAvatarButton />
+          <UserButton showSyncBadge allowAddAccount />
         </div>
       </div>
     </div>
