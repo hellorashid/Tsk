@@ -5,6 +5,7 @@ import "./index.css";
 import "@basictech/react/styles.css";
 
 import { basic } from "./basic";
+import { BasicUIProvider } from "@basictech/react";
 import './registerSW';
 
 // Fix for mobile Chrome address bar collapsing issue
@@ -30,7 +31,16 @@ if (typeof CSS === 'undefined' || !CSS.supports('height', '100dvh')) {
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <basic.Provider renderWhileLoading>
-      <App />
+      <BasicUIProvider 
+        appearance={{
+          theme: 'dark',
+          base: '#1F1B2F',
+          accent: '#DA8DF7',
+          radius: '10px'
+        }}
+      >
+        <App />
+      </BasicUIProvider>
     </basic.Provider>
   </React.StrictMode>
 );
