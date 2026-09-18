@@ -14,25 +14,25 @@ interface MobileNavBarProps {
 }
 
 const TasksIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
   </svg>
 );
 
 const CalendarIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
   </svg>
 );
 
 const PlusIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 4v16m8-8H4" />
   </svg>
 );
 
 const MenuTriggerIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
     <rect x="4.5" y="8.5" width="11" height="11" rx="2.25" strokeWidth={1.75} />
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M11 6h7v7M18 6l-7 7" />
   </svg>
@@ -79,9 +79,7 @@ const NavIconButton = ({ label, isActive = false, isDarkMode, onClick, children 
   <button
     type="button"
     onClick={onClick}
-    className={`flex items-center justify-center h-11 rounded-full transition-colors duration-150 ${
-      isActive ? "w-14" : "w-11"
-    } ${
+    className={`flex flex-1 items-center justify-center h-12 max-w-[4.5rem] rounded-full transition-colors duration-150 ${
       isActive
         ? isDarkMode
           ? "bg-white/20 text-white"
@@ -213,106 +211,107 @@ function MobileNavBar({
   };
 
   return (
-    <div
-      className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
-      style={{
-        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)",
-      }}
-    >
-      {menuOpen ? (
-        <div
-          ref={menuPanelRef}
-          id={menuId}
-          role="menu"
-          aria-label="More"
-          className="absolute left-4 right-16 rounded-[28px] border backdrop-blur-3xl px-3 pt-3 pb-3"
-          style={{
-            ...glassStyle,
-            bottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)",
-          }}
-        >
-          <div className="flex justify-center pb-2">
-            <div className={`w-8 h-1 rounded-full ${isDarkMode ? "bg-white/25" : "bg-black/15"}`} />
-          </div>
-
+    <div className="fixed inset-x-0 bottom-0 z-50 md:hidden pointer-events-none">
+      <div
+        className="pointer-events-auto px-5"
+        style={{
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)",
+        }}
+      >
+        {menuOpen ? (
           <div
-            className={`flex items-center gap-3 px-2 py-2 mb-2 border-b ${
-              isDarkMode ? "border-white/10" : "border-black/10"
-            }`}
+            ref={menuPanelRef}
+            id={menuId}
+            role="menu"
+            aria-label="More"
+            className="mb-3 mr-[68px] rounded-[28px] border backdrop-blur-3xl px-3 pt-3 pb-3"
+            style={glassStyle}
           >
-            <UserMenu trigger="avatar" showSyncBadge allowAddAccount menuItems={userMenuItems} />
-            <div className="min-w-0 flex-1">
-              <p className={`text-[15px] font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                {accountName}
-              </p>
-              <p className={`text-xs truncate ${isDarkMode ? "text-white/50" : "text-gray-500"}`}>
-                {accountSubtitle}
-              </p>
+            <div className="flex justify-center pb-2">
+              <div className={`w-8 h-1 rounded-full ${isDarkMode ? "bg-white/25" : "bg-black/15"}`} />
+            </div>
+
+            <div
+              className={`flex items-center gap-3 px-2 py-2 mb-2 border-b ${
+                isDarkMode ? "border-white/10" : "border-black/10"
+              }`}
+            >
+              <UserMenu trigger="avatar" showSyncBadge allowAddAccount menuItems={userMenuItems} />
+              <div className="min-w-0 flex-1">
+                <p className={`text-[15px] font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                  {accountName}
+                </p>
+                <p className={`text-xs truncate ${isDarkMode ? "text-white/50" : "text-gray-500"}`}>
+                  {accountSubtitle}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-0.5">
+              <MenuRow label="Settings" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenSettings)}>
+                <SettingsIcon />
+              </MenuRow>
+              <MenuRow label="About tsk" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenAbout)}>
+                <AboutIcon />
+              </MenuRow>
+              <MenuRow label="Folders" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenFolders)}>
+                <FoldersIcon />
+              </MenuRow>
             </div>
           </div>
+        ) : null}
 
-          <div className="flex flex-col gap-0.5">
-            <MenuRow label="Settings" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenSettings)}>
-              <SettingsIcon />
-            </MenuRow>
-            <MenuRow label="About tsk" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenAbout)}>
-              <AboutIcon />
-            </MenuRow>
-            <MenuRow label="Folders" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenFolders)}>
-              <FoldersIcon />
-            </MenuRow>
-          </div>
-        </div>
-      ) : null}
+        <div className="flex items-center gap-3">
+          {menuOpen ? (
+            <div className="flex-1" />
+          ) : (
+            <div
+              className="flex flex-1 items-center justify-evenly h-14 px-2 rounded-full border backdrop-blur-3xl"
+              style={glassStyle}
+              role="navigation"
+              aria-label="Primary"
+            >
+              <NavIconButton
+                label="Tasks"
+                isActive={currentView === "tasks"}
+                isDarkMode={isDarkMode}
+                onClick={() => onViewChange("tasks")}
+              >
+                <TasksIcon />
+              </NavIconButton>
+              <NavIconButton
+                label="Calendar"
+                isActive={currentView === "calendar"}
+                isDarkMode={isDarkMode}
+                onClick={() => onViewChange("calendar")}
+              >
+                <CalendarIcon />
+              </NavIconButton>
+              <NavIconButton
+                label="Create new"
+                isDarkMode={isDarkMode}
+                onClick={onCreateNew}
+              >
+                <PlusIcon />
+              </NavIconButton>
+            </div>
+          )}
 
-      <div className={`relative flex items-end px-4 ${menuOpen ? "justify-end" : "justify-between"}`}>
-        {menuOpen ? null : (
-          <div
-            className="flex items-center gap-0.5 px-1.5 py-1 rounded-full border backdrop-blur-3xl"
+          <button
+            ref={menuButtonRef}
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            className={`flex items-center justify-center w-14 h-14 shrink-0 rounded-full border backdrop-blur-3xl transition-colors duration-150 ${
+              isDarkMode ? "text-white/90 hover:bg-white/10" : "text-gray-700 hover:bg-black/5"
+            }`}
             style={glassStyle}
-            role="navigation"
-            aria-label="Primary"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            aria-controls={menuId}
           >
-            <NavIconButton
-              label="Tasks"
-              isActive={currentView === "tasks"}
-              isDarkMode={isDarkMode}
-              onClick={() => onViewChange("tasks")}
-            >
-              <TasksIcon />
-            </NavIconButton>
-            <NavIconButton
-              label="Calendar"
-              isActive={currentView === "calendar"}
-              isDarkMode={isDarkMode}
-              onClick={() => onViewChange("calendar")}
-            >
-              <CalendarIcon />
-            </NavIconButton>
-            <NavIconButton
-              label="Create new"
-              isDarkMode={isDarkMode}
-              onClick={onCreateNew}
-            >
-              <PlusIcon />
-            </NavIconButton>
-          </div>
-        )}
-
-        <button
-          ref={menuButtonRef}
-          type="button"
-          onClick={() => setMenuOpen((open) => !open)}
-          className={`flex items-center justify-center w-[52px] h-[52px] rounded-full border backdrop-blur-3xl transition-colors duration-150 ${
-            isDarkMode ? "text-white/90 hover:bg-white/10" : "text-gray-700 hover:bg-black/5"
-          }`}
-          style={glassStyle}
-          aria-label={menuOpen ? "Close menu" : "Open menu"}
-          aria-expanded={menuOpen}
-          aria-controls={menuId}
-        >
-          <MenuTriggerIcon />
-        </button>
+            <MenuTriggerIcon />
+          </button>
+        </div>
       </div>
     </div>
   );
