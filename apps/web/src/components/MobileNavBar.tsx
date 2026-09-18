@@ -33,8 +33,7 @@ const PlusIcon = () => (
 
 const MenuTriggerIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <rect x="4.5" y="8.5" width="11" height="11" rx="2.25" strokeWidth={1.75} />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M11 6h7v7M18 6l-7 7" />
+    <path strokeLinecap="round" strokeWidth={1.75} d="M5 7h14M5 12h14M5 17h14" />
   </svg>
 );
 
