@@ -79,10 +79,12 @@ const NavIconButton = ({ label, isActive = false, isDarkMode, onClick, children 
   <button
     type="button"
     onClick={onClick}
-    className={`flex items-center justify-center w-11 h-11 rounded-full transition-colors duration-150 ${
+    className={`flex items-center justify-center h-11 rounded-full transition-colors duration-150 ${
+      isActive ? "w-14" : "w-11"
+    } ${
       isActive
         ? isDarkMode
-          ? "bg-white/15 text-white"
+          ? "bg-white/20 text-white"
           : "bg-black/10 text-gray-900"
         : isDarkMode
           ? "text-white/80 hover:bg-white/10"
@@ -223,7 +225,7 @@ function MobileNavBar({
           id={menuId}
           role="menu"
           aria-label="More"
-          className="absolute left-4 right-4 rounded-[28px] border backdrop-blur-3xl px-3 pt-3 pb-3"
+          className="absolute left-4 right-16 rounded-[28px] border backdrop-blur-3xl px-3 pt-3 pb-3"
           style={{
             ...glassStyle,
             bottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)",
@@ -234,11 +236,12 @@ function MobileNavBar({
           </div>
 
           <div
-            className={`flex items-center justify-between gap-3 px-2 py-2 mb-2 border-b ${
+            className={`flex items-center gap-3 px-2 py-2 mb-2 border-b ${
               isDarkMode ? "border-white/10" : "border-black/10"
             }`}
           >
-            <div className="min-w-0">
+            <UserMenu trigger="avatar" showSyncBadge allowAddAccount menuItems={userMenuItems} />
+            <div className="min-w-0 flex-1">
               <p className={`text-[15px] font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>
                 {accountName}
               </p>
@@ -246,7 +249,6 @@ function MobileNavBar({
                 {accountSubtitle}
               </p>
             </div>
-            <UserMenu trigger="avatar" showSyncBadge allowAddAccount menuItems={userMenuItems} />
           </div>
 
           <div className="flex flex-col gap-0.5">
