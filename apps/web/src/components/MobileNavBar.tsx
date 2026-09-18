@@ -15,25 +15,25 @@ interface MobileNavBarProps {
 
 const TasksIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
   </svg>
 );
 
 const CalendarIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
   </svg>
 );
 
 const PlusIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 4v16m8-8H4" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
   </svg>
 );
 
 const MenuTriggerIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeWidth={1.75} d="M5 7h14M5 12h14M5 17h14" />
+    <path strokeLinecap="round" strokeWidth={2} d="M5 7h14M5 12h14M5 17h14" />
   </svg>
 );
 
@@ -56,13 +56,11 @@ const FoldersIcon = () => (
   </svg>
 );
 
-function getGlassStyle(isDarkMode: boolean) {
+function getGlassStyle(accentColor: string, isDarkMode: boolean) {
   return {
-    backgroundColor: isDarkMode ? "rgba(22, 22, 24, 0.88)" : "rgba(255, 255, 255, 0.9)",
-    borderColor: isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)",
-    boxShadow: isDarkMode
-      ? "0 10px 40px rgba(0, 0, 0, 0.45)"
-      : "0 10px 40px rgba(0, 0, 0, 0.12)",
+    backgroundColor: `${accentColor}E6`,
+    borderColor: isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
+    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
   };
 }
 
@@ -78,14 +76,14 @@ const NavIconButton = ({ label, isActive = false, isDarkMode, onClick, children 
   <button
     type="button"
     onClick={onClick}
-    className={`flex flex-1 items-center justify-center h-12 max-w-[4.5rem] rounded-full transition-colors duration-150 ${
+    className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-200 ${
       isActive
         ? isDarkMode
           ? "bg-white/20 text-white"
-          : "bg-black/10 text-gray-900"
+          : "bg-gray-800 text-white"
         : isDarkMode
-          ? "text-white/80 hover:bg-white/10"
-          : "text-gray-600 hover:bg-black/5"
+          ? "text-gray-300 hover:bg-white/10"
+          : "text-gray-600 hover:bg-gray-100"
     }`}
     aria-label={label}
     aria-current={isActive ? "page" : undefined}
@@ -126,13 +124,13 @@ function MobileNavBar({
   onOpenFolders,
 }: MobileNavBarProps) {
   const { theme } = useTheme();
-  const { isDarkMode } = theme;
+  const { accentColor, isDarkMode } = theme;
   const { isSignedIn, isAnonymous, isReady, user, handle } = basic.useBasic();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuId = useId();
   const menuPanelRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const glassStyle = getGlassStyle(isDarkMode);
+  const glassStyle = getGlassStyle(accentColor, isDarkMode);
   const isLocalAccount = isAnonymous || !isSignedIn;
   const accountName = !isReady
     ? "Account"
@@ -210,62 +208,60 @@ function MobileNavBar({
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 md:hidden pointer-events-none">
-      <div
-        className="pointer-events-auto px-5"
-        style={{
-          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)",
-        }}
-      >
-        {menuOpen ? (
+    <div
+      className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
+      style={{
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)",
+      }}
+    >
+      {menuOpen ? (
+        <div
+          ref={menuPanelRef}
+          id={menuId}
+          role="menu"
+          aria-label="More"
+          className="absolute left-4 right-20 bottom-full mb-2 rounded-[28px] border backdrop-blur-3xl shadow-lg px-3 pt-3 pb-3"
+          style={glassStyle}
+        >
+          <div className="flex justify-center pb-2">
+            <div className={`w-8 h-1 rounded-full ${isDarkMode ? "bg-white/25" : "bg-black/15"}`} />
+          </div>
+
           <div
-            ref={menuPanelRef}
-            id={menuId}
-            role="menu"
-            aria-label="More"
-            className="mb-3 mr-[68px] rounded-[28px] border backdrop-blur-3xl px-3 pt-3 pb-3"
-            style={glassStyle}
+            className={`flex items-center gap-3 px-2 py-2 mb-2 border-b ${
+              isDarkMode ? "border-white/10" : "border-black/10"
+            }`}
           >
-            <div className="flex justify-center pb-2">
-              <div className={`w-8 h-1 rounded-full ${isDarkMode ? "bg-white/25" : "bg-black/15"}`} />
-            </div>
-
-            <div
-              className={`flex items-center gap-3 px-2 py-2 mb-2 border-b ${
-                isDarkMode ? "border-white/10" : "border-black/10"
-              }`}
-            >
-              <UserMenu trigger="avatar" showSyncBadge allowAddAccount menuItems={userMenuItems} />
-              <div className="min-w-0 flex-1">
-                <p className={`text-[15px] font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                  {accountName}
-                </p>
-                <p className={`text-xs truncate ${isDarkMode ? "text-white/50" : "text-gray-500"}`}>
-                  {accountSubtitle}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-0.5">
-              <MenuRow label="Settings" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenSettings)}>
-                <SettingsIcon />
-              </MenuRow>
-              <MenuRow label="About tsk" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenAbout)}>
-                <AboutIcon />
-              </MenuRow>
-              <MenuRow label="Folders" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenFolders)}>
-                <FoldersIcon />
-              </MenuRow>
+            <UserMenu trigger="avatar" showSyncBadge allowAddAccount menuItems={userMenuItems} />
+            <div className="min-w-0 flex-1">
+              <p className={`text-[15px] font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                {accountName}
+              </p>
+              <p className={`text-xs truncate ${isDarkMode ? "text-white/50" : "text-gray-500"}`}>
+                {accountSubtitle}
+              </p>
             </div>
           </div>
-        ) : null}
 
-        <div className="flex items-center gap-3">
-          {menuOpen ? (
-            <div className="flex-1" />
-          ) : (
+          <div className="flex flex-col gap-0.5">
+            <MenuRow label="Settings" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenSettings)}>
+              <SettingsIcon />
+            </MenuRow>
+            <MenuRow label="About tsk" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenAbout)}>
+              <AboutIcon />
+            </MenuRow>
+            <MenuRow label="Folders" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenFolders)}>
+              <FoldersIcon />
+            </MenuRow>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="relative mb-2 min-h-16">
+        {menuOpen ? null : (
+          <div className="flex justify-center px-4">
             <div
-              className="flex flex-1 items-center justify-evenly h-14 px-2 rounded-full border backdrop-blur-3xl"
+              className="flex items-center justify-center gap-5 px-2 py-2 rounded-full backdrop-blur-3xl shadow-lg border"
               style={glassStyle}
               role="navigation"
               aria-label="Primary"
@@ -294,22 +290,28 @@ function MobileNavBar({
                 <PlusIcon />
               </NavIconButton>
             </div>
-          )}
+          </div>
+        )}
 
-          <button
-            ref={menuButtonRef}
-            type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-            className={`flex items-center justify-center w-14 h-14 shrink-0 rounded-full border backdrop-blur-3xl transition-colors duration-150 ${
-              isDarkMode ? "text-white/90 hover:bg-white/10" : "text-gray-700 hover:bg-black/5"
-            }`}
+        <div className="absolute right-0 top-0 flex px-6">
+          <div
+            className="flex items-center justify-center px-2 py-2 rounded-full backdrop-blur-3xl shadow-lg border"
             style={glassStyle}
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={menuOpen}
-            aria-controls={menuId}
           >
-            <MenuTriggerIcon />
-          </button>
+            <button
+              ref={menuButtonRef}
+              type="button"
+              onClick={() => setMenuOpen((open) => !open)}
+              className={`flex items-center justify-center w-12 h-12 rounded-full transition-colors duration-200 ${
+                isDarkMode ? "text-gray-300 hover:bg-white/10" : "text-gray-600 hover:bg-gray-100"
+              }`}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+              aria-controls={menuId}
+            >
+              <MenuTriggerIcon />
+            </button>
+          </div>
         </div>
       </div>
     </div>
