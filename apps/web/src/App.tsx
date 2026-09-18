@@ -1,4 +1,4 @@
-import { type Dispatch, type SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
+import { type Dispatch, type SetStateAction, useCallback, useEffect, useState } from "react";
 import bgImage from "/bg2.jpg";
 import "./App.css";
 import AboutModal from "./components/AboutModal";
@@ -15,7 +15,6 @@ import ScheduleSidebar from "./components/ScheduleSidebar";
 import SettingsPage from "./components/SettingsPage";
 import SharedTasksView from "./components/SharedTasksView";
 import SilkTaskDrawer from "./components/SilkTaskDrawer";
-import { UserMenu, type UserMenuItem } from "@basictech/react";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { useAppActions } from "./hooks/useAppActions";
 import { useFolderRecords, useScheduleRecords, useTaskRecords } from "./hooks/useBasicData";
@@ -271,29 +270,6 @@ function Home() {
     [handleUpdateFolder],
   );
 
-  const userMenuItems = useMemo<UserMenuItem[]>(() => [
-    {
-      id: "settings",
-      label: "Settings",
-      onClick: handleOpenSettings,
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: "1em", height: "1em" }}>
-          <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-        </svg>
-      ),
-    },
-    {
-      id: "about",
-      label: "About tsk",
-      onClick: handleOpenAbout,
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: "1em", height: "1em" }}>
-          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-        </svg>
-      ),
-    },
-  ], [handleOpenSettings, handleOpenAbout]);
-
   useHomeKeyboardShortcuts({
     activeFolder,
     filteredTasks,
@@ -396,34 +372,7 @@ function Home() {
               className={`flex-1 task-home w-full relative overflow-hidden ${theme.isDarkMode ? "text-gray-100" : "text-gray-900"} ${isMobile && drawerOpen ? "drawer-open-scale" : ""}`}
               style={{ paddingBottom: "env(safe-area-inset-bottom, 20px)" }}
             >
-              {isMobile && (
-                <div className="h-12 rounded-b-md flex justify-between items-center sticky top-0 z-100" style={{ backgroundColor: "transparent" }}>
-                  <div>
-                    <button
-                      onClick={handleOpenAbout}
-                      className="group ml-1 px-2 py-2 rounded-lg bg-transparent hover:bg-white/10 transition-colors duration-200 text-md flex items-center cursor-pointer"
-                    >
-                      <img className="w-6 h-6 mr-2" src="tsk-logo.png" />
-                      <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">tsk.</span>
-                    </button>
-                  </div>
-
-                  <div className="flex-none flex items-center pr-2 gap-2">
-                    <button
-                      onClick={handleOpenSettings}
-                      className="opacity-60 hover:opacity-100 focus:outline-none bg-transparent"
-                      aria-label="Settings"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                    <UserMenu trigger="avatar" showSyncBadge allowAddAccount menuItems={userMenuItems} />
-                  </div>
-                </div>
-              )}
-
-              <div className="flex flex-1" style={{ height: isMobile ? "calc(100% - 48px)" : "100%" }}>
+              <div className="flex flex-1" style={{ height: "100%" }}>
                 {(!isMobile || mobileView === "tasks") && (
                   <div className="flex-1 flex flex-col relative">
                     <FoldersBar
@@ -740,39 +689,14 @@ function Home() {
               />
 
               {isMobile && (
-                <>
-                  <MobileNavBar currentView={mobileView} onViewChange={handleMobileViewChange} onCreateNew={openNewTaskDrawer} />
-
-                  {mobileView === "tasks" && (
-                    <div
-                      className="fixed bottom-0 left-0 z-50 md:hidden"
-                      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)" }}
-                    >
-                      <div className="flex px-6 mb-2">
-                        <div
-                          className="flex items-center justify-center px-2 py-2 rounded-full backdrop-blur-3xl shadow-lg border"
-                          style={{
-                            backgroundColor: `${theme.accentColor}E6`,
-                            borderColor: theme.isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
-                            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
-                          }}
-                        >
-                          <button
-                            onClick={() => setFolderDrawerOpen(true)}
-                            className={`flex items-center justify-center w-12 h-12 rounded-full transition-colors duration-200 ${
-                              theme.isDarkMode ? "text-gray-300 hover:bg-white/10" : "text-gray-600 hover:bg-gray-100"
-                            }`}
-                            aria-label="Folders"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </>
+                <MobileNavBar
+                  currentView={mobileView}
+                  onViewChange={handleMobileViewChange}
+                  onCreateNew={openNewTaskDrawer}
+                  onOpenSettings={handleOpenSettings}
+                  onOpenAbout={handleOpenAbout}
+                  onOpenFolders={() => setFolderDrawerOpen(true)}
+                />
               )}
 
               {isMobile && (
