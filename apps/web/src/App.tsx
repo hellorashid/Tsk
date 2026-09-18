@@ -372,19 +372,7 @@ function Home() {
               className={`flex-1 task-home w-full relative overflow-hidden ${theme.isDarkMode ? "text-gray-100" : "text-gray-900"} ${isMobile && drawerOpen ? "drawer-open-scale" : ""}`}
               style={{ paddingBottom: "env(safe-area-inset-bottom, 20px)" }}
             >
-              {isMobile && (
-                <div className="h-12 rounded-b-md flex items-center sticky top-0 z-100" style={{ backgroundColor: "transparent" }}>
-                  <button
-                    onClick={handleOpenAbout}
-                    className="group ml-1 px-2 py-2 rounded-lg bg-transparent hover:bg-white/10 transition-colors duration-200 text-md flex items-center cursor-pointer"
-                  >
-                    <img className="w-6 h-6 mr-2" src="tsk-logo.png" />
-                    <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">tsk.</span>
-                  </button>
-                </div>
-              )}
-
-              <div className="flex flex-1" style={{ height: isMobile ? "calc(100% - 48px)" : "100%" }}>
+              <div className="flex flex-1" style={{ height: "100%" }}>
                 {(!isMobile || mobileView === "tasks") && (
                   <div className="flex-1 flex flex-col relative">
                     <FoldersBar
