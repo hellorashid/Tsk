@@ -586,7 +586,7 @@ function Home() {
                 )}
 
                 {isMobile && mobileView === "calendar" && (
-                  <div className="flex-1 h-full overflow-hidden px-2 pt-2 relative">
+                  <div className="flex-1 h-full overflow-hidden px-2 pt-3 relative">
                     {scheduleViewMode === "timeline" ? (
                       <ScheduleSidebar
                         onCardClick={handleScheduleCardClick}
