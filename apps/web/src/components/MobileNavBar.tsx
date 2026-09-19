@@ -142,6 +142,7 @@ function MobileNavBar({
   const menuPanelRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const glassStyle = getGlassStyle(accentColor, isDarkMode);
+  const rightInset = "max(2.75rem, calc(env(safe-area-inset-right, 0px) + 2rem))";
   const isLocalAccount = isAnonymous || !isSignedIn;
   const accountName = !isReady
     ? "Account"
@@ -233,9 +234,7 @@ function MobileNavBar({
     >
       <div
         className="relative pl-5 mb-2"
-        style={{
-          paddingRight: "max(2.75rem, calc(env(safe-area-inset-right, 0px) + 2rem))",
-        }}
+        style={{ paddingRight: rightInset }}
       >
         <AnimatePresence>
           {menuOpen && !isCloseMode ? (
@@ -248,8 +247,8 @@ function MobileNavBar({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 6 }}
               transition={{ duration: 0.08, ease: [0.32, 0.72, 0, 1] }}
-              className="absolute right-0 bottom-full mb-2 w-[min(18.5rem,calc(100vw-5.5rem))] origin-bottom-right rounded-[28px] border backdrop-blur-3xl shadow-lg px-3 pt-3 pb-3"
-              style={glassStyle}
+              className="absolute bottom-full mb-2 w-[min(18.5rem,calc(100vw-5.5rem))] origin-bottom-right rounded-[28px] border backdrop-blur-3xl shadow-lg px-3 pt-3 pb-3"
+              style={{ ...glassStyle, right: rightInset }}
             >
               <div className="flex justify-center pb-2">
                 <div className={`w-8 h-1 rounded-full ${isDarkMode ? "bg-white/25" : "bg-black/15"}`} />
