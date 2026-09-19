@@ -12,6 +12,8 @@ interface MobileNavBarProps {
   onOpenSettings: () => void;
   onOpenAbout: () => void;
   onOpenFolders: () => void;
+  isCloseMode?: boolean;
+  onClose?: () => void;
 }
 
 const TasksIcon = () => (
@@ -35,6 +37,12 @@ const PlusIcon = () => (
 const MenuTriggerIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
     <path strokeLinecap="round" strokeWidth={2} d="M5 7h14M5 12h14M5 17h14" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeWidth={2} d="M6 6l12 12M18 6L6 18" />
   </svg>
 );
 
@@ -123,6 +131,8 @@ function MobileNavBar({
   onOpenSettings,
   onOpenAbout,
   onOpenFolders,
+  isCloseMode = false,
+  onClose,
 }: MobileNavBarProps) {
   const { theme } = useTheme();
   const { accentColor, isDarkMode } = theme;
@@ -171,6 +181,12 @@ function MobileNavBar({
   ], [onOpenAbout, onOpenSettings]);
 
   useEffect(() => {
+    if (isCloseMode && menuOpen) {
+      setMenuOpen(false);
+    }
+  }, [isCloseMode, menuOpen]);
+
+  useEffect(() => {
     if (!menuOpen) {
       return;
     }
@@ -215,19 +231,24 @@ function MobileNavBar({
         paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)",
       }}
     >
-      <div className="relative px-6 mb-2">
+      <div
+        className="relative pl-5 mb-2"
+        style={{
+          paddingRight: "max(2rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))",
+        }}
+      >
         <AnimatePresence>
-          {menuOpen ? (
+          {menuOpen && !isCloseMode ? (
             <motion.div
               ref={menuPanelRef}
               id={menuId}
               role="menu"
               aria-label="More"
-              initial={{ opacity: 0, scale: 0.94, y: 10 }}
+              initial={{ opacity: 0, scale: 0.96, y: 6 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, y: 10 }}
-              transition={{ duration: 0.14, ease: [0.32, 0.72, 0, 1] }}
-              className="absolute right-0 bottom-full mb-2 w-[min(20rem,calc(100vw-3rem))] origin-bottom-right rounded-[28px] border backdrop-blur-3xl shadow-lg px-3 pt-3 pb-3"
+              exit={{ opacity: 0, scale: 0.96, y: 6 }}
+              transition={{ duration: 0.08, ease: [0.32, 0.72, 0, 1] }}
+              className="absolute right-0 bottom-full mb-2 w-[min(20rem,calc(100vw-4rem))] origin-bottom-right rounded-[28px] border backdrop-blur-3xl shadow-lg px-3 pt-3 pb-3"
               style={glassStyle}
             >
               <div className="flex justify-center pb-2">
@@ -304,15 +325,32 @@ function MobileNavBar({
             <button
               ref={menuButtonRef}
               type="button"
-              onClick={() => setMenuOpen((open) => !open)}
+              onClick={() => {
+                if (isCloseMode) {
+                  onClose?.();
+                  return;
+                }
+                setMenuOpen((open) => !open);
+              }}
               className={`flex items-center justify-center w-12 h-12 rounded-full transition-colors duration-200 ${
                 isDarkMode ? "text-gray-300 hover:bg-white/10" : "text-gray-600 hover:bg-gray-100"
               }`}
-              aria-label={menuOpen ? "Close menu" : "Open menu"}
-              aria-expanded={menuOpen}
-              aria-controls={menuId}
+              aria-label={isCloseMode ? "Close settings" : menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isCloseMode ? undefined : menuOpen}
+              aria-controls={isCloseMode ? undefined : menuId}
             >
-              <MenuTriggerIcon />
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={isCloseMode ? "close" : "menu"}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.08 }}
+                  className="flex"
+                >
+                  {isCloseMode ? <CloseIcon /> : <MenuTriggerIcon />}
+                </motion.span>
+              </AnimatePresence>
             </button>
           </div>
         </div>

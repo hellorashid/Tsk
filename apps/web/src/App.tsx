@@ -170,6 +170,10 @@ function Home() {
   const handleMobileViewChange = useCallback(
     (view: "tasks" | "calendar") => {
       setMobileView(view);
+      setCurrentView("home");
+      if (folderSettingsOpen) {
+        setFolderSettingsOpen(false);
+      }
       if (drawerOpen) {
         setDrawerOpen(false);
         setIsNewTaskMode(false);
@@ -178,8 +182,24 @@ function Home() {
         setSelectedEvent(null);
       }
     },
-    [drawerOpen, setDrawerOpen, setIsNewTaskMode, setMobileView],
+    [drawerOpen, folderSettingsOpen, setCurrentView, setDrawerOpen, setFolderSettingsOpen, setIsNewTaskMode, setMobileView],
   );
+
+  const handleMobileCreateNew = useCallback(() => {
+    setCurrentView("home");
+    if (folderSettingsOpen) {
+      setFolderSettingsOpen(false);
+    }
+    openNewTaskDrawer();
+  }, [folderSettingsOpen, openNewTaskDrawer, setCurrentView, setFolderSettingsOpen]);
+
+  const handleCloseSettingsScreen = useCallback(() => {
+    if (folderSettingsOpen) {
+      setFolderSettingsOpen(false);
+      return;
+    }
+    setCurrentView("home");
+  }, [folderSettingsOpen, setCurrentView, setFolderSettingsOpen]);
 
   const handleEventSelectWrapper = useCallback((event: ScheduleCardData | null) => {
     setSelectedEvent(event);
@@ -350,21 +370,23 @@ function Home() {
 
         <div className="flex-1 flex flex-col overflow-hidden">
           {currentView === "settings" && (
-            <SettingsPage
-              onBack={() => setCurrentView("home")}
-              onViewModeChange={setViewMode}
-              currentViewMode={viewMode}
-              folders={folders}
-              onCreateFolder={handleCreateFolder}
-              onUpdateFolder={handleFolderUpdateRequest}
-              onDeleteFolder={handleDeleteFolder}
-              showAllFolder={showAllFolder}
-              showOtherFolder={showOtherFolder}
-              showTodayFolder={showTodayFolder}
-              onToggleAllFolder={setShowAllFolder}
-              onToggleOtherFolder={setShowOtherFolder}
-              onToggleTodayFolder={setShowTodayFolder}
-            />
+            <div className="flex-1 overflow-hidden">
+              <SettingsPage
+                onBack={() => setCurrentView("home")}
+                onViewModeChange={setViewMode}
+                currentViewMode={viewMode}
+                folders={folders}
+                onCreateFolder={handleCreateFolder}
+                onUpdateFolder={handleFolderUpdateRequest}
+                onDeleteFolder={handleDeleteFolder}
+                showAllFolder={showAllFolder}
+                showOtherFolder={showOtherFolder}
+                showTodayFolder={showTodayFolder}
+                onToggleAllFolder={setShowAllFolder}
+                onToggleOtherFolder={setShowOtherFolder}
+                onToggleTodayFolder={setShowTodayFolder}
+              />
+            </div>
           )}
 
           {currentView === "home" && (
@@ -383,10 +405,11 @@ function Home() {
                       showOtherFolder={showOtherFolder}
                       showTodayFolder={showTodayFolder}
                       showSharedFolder
+                      isDarkMode={theme.isDarkMode}
                     />
 
                     <div
-                      className="flex-1 overflow-y-auto px-1 md:px-4 relative tasks-scroll-container"
+                      className="flex-1 overflow-y-auto px-4 relative tasks-scroll-container"
                       style={{
                         paddingBottom: isMobile
                           ? "8rem"
@@ -395,7 +418,7 @@ function Home() {
                             : "calc(var(--vh, 1vh) * 50)",
                       }}
                     >
-                      <div className="mt-10 flex justify-center">
+                      <div className="mt-4 md:mt-10 flex justify-center">
                         <div className="w-full max-w-2xl relative">
                           {activeFolder === "shared" ? (
                             <SharedTasksView
@@ -563,7 +586,7 @@ function Home() {
                 )}
 
                 {isMobile && mobileView === "calendar" && (
-                  <div className="flex-1 h-full overflow-hidden px-1 relative">
+                  <div className="flex-1 h-full overflow-hidden px-2 pt-2 relative">
                     {scheduleViewMode === "timeline" ? (
                       <ScheduleSidebar
                         onCardClick={handleScheduleCardClick}
@@ -689,17 +712,6 @@ function Home() {
               />
 
               {isMobile && (
-                <MobileNavBar
-                  currentView={mobileView}
-                  onViewChange={handleMobileViewChange}
-                  onCreateNew={openNewTaskDrawer}
-                  onOpenSettings={handleOpenSettings}
-                  onOpenAbout={handleOpenAbout}
-                  onOpenFolders={() => setFolderDrawerOpen(true)}
-                />
-              )}
-
-              {isMobile && (
                 <FolderDrawer
                   isOpen={folderDrawerOpen}
                   setIsOpen={setFolderDrawerOpen}
@@ -734,6 +746,22 @@ function Home() {
                 />
               )}
             </section>
+          )}
+
+          {isMobile && (
+            <MobileNavBar
+              currentView={mobileView}
+              onViewChange={handleMobileViewChange}
+              onCreateNew={handleMobileCreateNew}
+              onOpenSettings={handleOpenSettings}
+              onOpenAbout={handleOpenAbout}
+              onOpenFolders={() => {
+                setCurrentView("home");
+                setFolderDrawerOpen(true);
+              }}
+              isCloseMode={currentView === "settings" || folderSettingsOpen}
+              onClose={handleCloseSettingsScreen}
+            />
           )}
         </div>
       </div>

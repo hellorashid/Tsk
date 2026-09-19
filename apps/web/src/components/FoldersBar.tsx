@@ -66,11 +66,14 @@ const FoldersBar: React.FC<FoldersBarProps> = ({
   return (
     <div 
       className="z-30 flex-shrink-0 group"
+      style={{
+        paddingTop: 'max(0.25rem, env(safe-area-inset-top, 0px))',
+      }}
     >
       <div className="mx-auto max-w-2xl">
         <div 
           ref={scrollContainerRef}
-          className="flex items-center gap-1 px-4 py-3 overflow-x-auto scrollbar-hide"
+          className="flex items-center gap-1.5 px-5 md:px-4 py-3 overflow-x-auto scrollbar-hide"
           style={{
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',

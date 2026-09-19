@@ -111,7 +111,7 @@ export default function FolderDrawer({
             
             <div className="mx-auto w-12 h-1.5 bg-gray-400 dark:bg-gray-600 rounded-full my-4 flex-shrink-0" />
             
-            <div className={`w-full px-4 pb-8 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+            <div className={`w-full px-5 pb-10 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
               <h3 className="text-lg font-semibold mb-4">Folders</h3>
               
               <div className="space-y-2">

@@ -316,8 +316,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       }}
     >
       {/* Header with back button and tabs */}
-      <div className="flex-shrink-0 sticky top-0 z-10 backdrop-blur-xl" style={{ backgroundColor: `${accentColor}E6` }}>
-        <div className="max-w-2xl mx-auto px-4">
+      <div
+        className="flex-shrink-0 sticky top-0 z-10 backdrop-blur-xl"
+        style={{
+          backgroundColor: `${accentColor}E6`,
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+        }}
+      >
+        <div className="max-w-2xl mx-auto px-5 md:px-4">
           {/* Title row */}
           <div className="py-4 flex items-center gap-4">
             <button
@@ -335,12 +341,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
           </div>
 
           {/* Tab navigation */}
-          <div className="flex gap-1 pb-2">
+          <div className="flex gap-1 pb-2 overflow-x-auto scrollbar-hide">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all flex-shrink-0 whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-white/20'
                     : `${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-black/10'} opacity-60 hover:opacity-100`
@@ -356,7 +362,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-4 py-6 space-y-6 pb-20">
+        <div className="max-w-2xl mx-auto px-5 md:px-4 py-6 space-y-6 pb-32 md:pb-20">
           
           {/* General Tab */}
           {activeTab === 'general' && (
