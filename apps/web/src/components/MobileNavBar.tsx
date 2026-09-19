@@ -234,7 +234,7 @@ function MobileNavBar({
       <div
         className="relative pl-5 mb-2"
         style={{
-          paddingRight: "max(2rem, calc(env(safe-area-inset-right, 0px) + 1.5rem))",
+          paddingRight: "max(2.75rem, calc(env(safe-area-inset-right, 0px) + 2rem))",
         }}
       >
         <AnimatePresence>
@@ -248,7 +248,7 @@ function MobileNavBar({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 6 }}
               transition={{ duration: 0.08, ease: [0.32, 0.72, 0, 1] }}
-              className="absolute right-0 bottom-full mb-2 w-[min(20rem,calc(100vw-4rem))] origin-bottom-right rounded-[28px] border backdrop-blur-3xl shadow-lg px-3 pt-3 pb-3"
+              className="absolute right-0 bottom-full mb-2 w-[min(18.5rem,calc(100vw-5.5rem))] origin-bottom-right rounded-[28px] border backdrop-blur-3xl shadow-lg px-3 pt-3 pb-3"
               style={glassStyle}
             >
               <div className="flex justify-center pb-2">
