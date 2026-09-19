@@ -1,4 +1,5 @@
 import { UserMenu, type UserMenuItem } from "@basictech/react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { basic } from "../basic";
 import { useTheme } from "../contexts/ThemeContext";
@@ -214,86 +215,88 @@ function MobileNavBar({
         paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)",
       }}
     >
-      {menuOpen ? (
-        <div
-          ref={menuPanelRef}
-          id={menuId}
-          role="menu"
-          aria-label="More"
-          className="absolute left-4 right-20 bottom-full mb-2 rounded-[28px] border backdrop-blur-3xl shadow-lg px-3 pt-3 pb-3"
-          style={glassStyle}
-        >
-          <div className="flex justify-center pb-2">
-            <div className={`w-8 h-1 rounded-full ${isDarkMode ? "bg-white/25" : "bg-black/15"}`} />
-          </div>
-
-          <div
-            className={`flex items-center gap-3 px-2 py-2 mb-2 border-b ${
-              isDarkMode ? "border-white/10" : "border-black/10"
-            }`}
-          >
-            <UserMenu trigger="avatar" showSyncBadge allowAddAccount menuItems={userMenuItems} />
-            <div className="min-w-0 flex-1">
-              <p className={`text-[15px] font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                {accountName}
-              </p>
-              <p className={`text-xs truncate ${isDarkMode ? "text-white/50" : "text-gray-500"}`}>
-                {accountSubtitle}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-0.5">
-            <MenuRow label="Settings" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenSettings)}>
-              <SettingsIcon />
-            </MenuRow>
-            <MenuRow label="About tsk" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenAbout)}>
-              <AboutIcon />
-            </MenuRow>
-            <MenuRow label="Folders" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenFolders)}>
-              <FoldersIcon />
-            </MenuRow>
-          </div>
-        </div>
-      ) : null}
-
-      <div className="relative mb-2 min-h-16">
-        {menuOpen ? null : (
-          <div className="flex justify-center px-4">
-            <div
-              className="flex items-center justify-center gap-5 px-2 py-2 rounded-full backdrop-blur-3xl shadow-lg border"
+      <div className="relative px-6 mb-2">
+        <AnimatePresence>
+          {menuOpen ? (
+            <motion.div
+              ref={menuPanelRef}
+              id={menuId}
+              role="menu"
+              aria-label="More"
+              initial={{ opacity: 0, scale: 0.94, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 10 }}
+              transition={{ duration: 0.14, ease: [0.32, 0.72, 0, 1] }}
+              className="absolute right-0 bottom-full mb-2 w-[min(20rem,calc(100vw-3rem))] origin-bottom-right rounded-[28px] border backdrop-blur-3xl shadow-lg px-3 pt-3 pb-3"
               style={glassStyle}
-              role="navigation"
-              aria-label="Primary"
             >
-              <NavIconButton
-                label="Tasks"
-                isActive={currentView === "tasks"}
-                isDarkMode={isDarkMode}
-                onClick={() => onViewChange("tasks")}
-              >
-                <TasksIcon />
-              </NavIconButton>
-              <NavIconButton
-                label="Calendar"
-                isActive={currentView === "calendar"}
-                isDarkMode={isDarkMode}
-                onClick={() => onViewChange("calendar")}
-              >
-                <CalendarIcon />
-              </NavIconButton>
-              <NavIconButton
-                label="Create new"
-                isDarkMode={isDarkMode}
-                onClick={onCreateNew}
-              >
-                <PlusIcon />
-              </NavIconButton>
-            </div>
-          </div>
-        )}
+              <div className="flex justify-center pb-2">
+                <div className={`w-8 h-1 rounded-full ${isDarkMode ? "bg-white/25" : "bg-black/15"}`} />
+              </div>
 
-        <div className="absolute right-0 top-0 flex px-6">
+              <div
+                className={`flex items-center gap-3 px-2 py-2 mb-2 border-b ${
+                  isDarkMode ? "border-white/10" : "border-black/10"
+                }`}
+              >
+                <UserMenu trigger="avatar" showSyncBadge allowAddAccount menuItems={userMenuItems} />
+                <div className="min-w-0 flex-1">
+                  <p className={`text-[15px] font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                    {accountName}
+                  </p>
+                  <p className={`text-xs truncate ${isDarkMode ? "text-white/50" : "text-gray-500"}`}>
+                    {accountSubtitle}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-0.5">
+                <MenuRow label="Settings" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenSettings)}>
+                  <SettingsIcon />
+                </MenuRow>
+                <MenuRow label="About tsk" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenAbout)}>
+                  <AboutIcon />
+                </MenuRow>
+                <MenuRow label="Folders" isDarkMode={isDarkMode} onClick={() => runAndClose(onOpenFolders)}>
+                  <FoldersIcon />
+                </MenuRow>
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+
+        <div className="flex items-center justify-between">
+          <div
+            className="flex items-center justify-center gap-5 px-2 py-2 rounded-full backdrop-blur-3xl shadow-lg border"
+            style={glassStyle}
+            role="navigation"
+            aria-label="Primary"
+          >
+            <NavIconButton
+              label="Tasks"
+              isActive={currentView === "tasks"}
+              isDarkMode={isDarkMode}
+              onClick={() => onViewChange("tasks")}
+            >
+              <TasksIcon />
+            </NavIconButton>
+            <NavIconButton
+              label="Calendar"
+              isActive={currentView === "calendar"}
+              isDarkMode={isDarkMode}
+              onClick={() => onViewChange("calendar")}
+            >
+              <CalendarIcon />
+            </NavIconButton>
+            <NavIconButton
+              label="Create new"
+              isDarkMode={isDarkMode}
+              onClick={onCreateNew}
+            >
+              <PlusIcon />
+            </NavIconButton>
+          </div>
+
           <div
             className="flex items-center justify-center px-2 py-2 rounded-full backdrop-blur-3xl shadow-lg border"
             style={glassStyle}
