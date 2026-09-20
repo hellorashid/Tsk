@@ -8,7 +8,6 @@ import { useScheduleRecord, useScheduleRecords, useSubtaskRecords, useTaskRecord
 import SubtasksList from './SubtasksList';
 import TaskSharePanel from './TaskSharePanel';
 import { useAutoResizeTextarea } from '../hooks/useAutoResizeTextarea';
-import { basic } from '../basic';
 
 interface DynamicIslandProps {
   selectedTask: Task | null;
@@ -68,7 +67,6 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
 }) => {
   const { theme } = useTheme();
   const { accentColor, isDarkMode } = theme;
-  const { isSignedIn, isReady, signIn } = basic.useAuth();
   
   const [inputValue, setInputValue] = useState('');
   const [title, setTitle] = useState('');
@@ -1661,7 +1659,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
               })()}
               </div>
 
-              {showSharePanel && currentTask?.id && !taskSource && isSignedIn ? (
+              {showSharePanel && currentTask?.id && !taskSource ? (
                 <div className="shrink-0 px-0 pb-2">
                   <TaskSharePanel
                     taskId={currentTask.id}
@@ -1691,35 +1689,6 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                       <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
                   </button>
-
-                  {currentTask?.id && !taskSource ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!isReady) return;
-                        if (!isSignedIn) {
-                          void signIn();
-                          return;
-                        }
-                        setShowSharePanel((open) => !open);
-                      }}
-                      className={`p-2 rounded-lg bg-transparent transition-colors ${
-                        showSharePanel
-                          ? isDarkMode
-                            ? 'bg-white/10 text-gray-100'
-                            : 'bg-gray-200 text-gray-900'
-                          : isDarkMode
-                            ? 'text-gray-400 hover:text-gray-100 hover:bg-white/10'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                      aria-label="Share task"
-                      aria-pressed={showSharePanel}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-                      </svg>
-                    </button>
-                  ) : null}
 
                   {/* Folder Dropdown */}
                   {folders && folders.length > 0 && (
@@ -1841,6 +1810,30 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                       Add to Today
                     </button>
                   )}
+
+                  {currentTask?.id && !taskSource ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSharePanel((open) => !open);
+                      }}
+                      className={`p-2 rounded-lg bg-transparent transition-colors ${
+                        showSharePanel
+                          ? isDarkMode
+                            ? 'bg-white/10 text-gray-100'
+                            : 'bg-gray-200 text-gray-900'
+                          : isDarkMode
+                            ? 'text-gray-400 hover:text-gray-100 hover:bg-white/10'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      }`}
+                      aria-label="Share task"
+                      aria-pressed={showSharePanel}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                      </svg>
+                    </button>
+                  ) : null}
                   
                   {/* Focus button - positioned on the right */}
                   {onEnterFocus && currentTask && (
