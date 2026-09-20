@@ -170,8 +170,16 @@ function Home() {
   }, [deleteTask, isSharedSelection, selectedTask?.id, setDrawerOpen, sourcedTaskMutations]);
 
   const handleMobileViewChange = useCallback(
-    (view: "tasks" | "calendar") => {
-      setMobileView(view);
+    (view: "tasks" | "agenda" | "calendar") => {
+      if (view === "tasks") {
+        setMobileView("tasks");
+      } else if (view === "agenda") {
+        setMobileView("calendar");
+        setScheduleViewMode("agenda");
+      } else {
+        setMobileView("calendar");
+        setScheduleViewMode("timeline");
+      }
       setCurrentView("home");
       if (folderSettingsOpen) {
         setFolderSettingsOpen(false);
@@ -184,7 +192,7 @@ function Home() {
         setSelectedEvent(null);
       }
     },
-    [drawerOpen, folderSettingsOpen, setCurrentView, setDrawerOpen, setFolderSettingsOpen, setIsNewTaskMode, setMobileView],
+    [drawerOpen, folderSettingsOpen, setCurrentView, setDrawerOpen, setFolderSettingsOpen, setIsNewTaskMode, setMobileView, setScheduleViewMode],
   );
 
   const handleMobileCreateNew = useCallback(() => {
@@ -799,14 +807,11 @@ function Home() {
           {isMobile && (
             <MobileNavBar
               currentView={mobileView}
+              scheduleViewMode={scheduleViewMode}
               onViewChange={handleMobileViewChange}
               onCreateNew={handleMobileCreateNew}
               onOpenSettings={handleOpenSettings}
               onOpenAbout={handleOpenAbout}
-              onOpenFolders={() => {
-                setCurrentView("home");
-                setFolderDrawerOpen(true);
-              }}
               isCloseMode={currentView === "settings" || folderSettingsOpen}
               onClose={handleCloseSettingsScreen}
             />

@@ -93,14 +93,14 @@ const FoldersBar: React.FC<FoldersBarProps> = ({
         ref={isActive ? activeChipRef : undefined}
         type="button"
         onClick={() => onFolderSelect(folderId)}
-        className={`pressable shrink-0 px-3 py-1.5 rounded-full text-[15px] tracking-wide transition-[color,background-color] duration-150 whitespace-nowrap ${
+        className={`pressable shrink-0 px-3 py-1.5 rounded-full text-[15px] tracking-wide transition-[color,background-color,box-shadow] duration-150 whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-inset ${
           isActive
             ? isDarkMode
-              ? 'text-white bg-white/12'
-              : 'text-gray-900 bg-white/80 shadow-sm'
+              ? 'text-white bg-white/12 focus-visible:ring-white/35'
+              : 'text-gray-900 bg-white/80 shadow-sm focus-visible:ring-black/25'
             : isDarkMode
-              ? 'text-white/45 hover:text-white/75 hover:bg-white/5'
-              : 'text-black/65 hover:text-black/90 hover:bg-white/50'
+              ? 'text-white/45 hover:text-white/75 hover:bg-white/5 focus-visible:ring-white/25'
+              : 'text-black/65 hover:text-black/90 hover:bg-white/50 focus-visible:ring-black/20'
         }`}
         style={{ fontWeight: isActive ? 600 : 500 }}
       >
