@@ -125,6 +125,8 @@ interface SettingsPageProps {
   onBack: () => void;
   onViewModeChange: (mode: 'compact' | 'cozy' | 'chonky') => void;
   currentViewMode: 'compact' | 'cozy' | 'chonky';
+  /** Render inside DesktopSidePanel glass shell (no outer surface fill). */
+  embedded?: boolean;
   // Folder props
   folders: Folder[];
   onCreateFolder: (name: string, labels?: string, color?: string) => Promise<void>;
@@ -155,6 +157,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   onBack,
   onViewModeChange,
   currentViewMode,
+  embedded = false,
   folders,
   onCreateFolder,
   onUpdateFolder,
@@ -311,7 +314,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   return (
     <div 
       className={`w-full h-full flex flex-col ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}
-      style={{ 
+      style={embedded ? undefined : { 
         backgroundColor: getAppSurface(accentColor, isDarkMode),
       }}
     >
@@ -323,20 +326,22 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
           paddingTop: 'env(safe-area-inset-top, 0px)',
         }}
       >
-        <div className="max-w-2xl mx-auto px-5 md:px-4">
+        <div className={`mx-auto px-5 md:px-4 ${embedded ? 'max-w-3xl' : 'max-w-2xl'}`}>
           {/* Title row */}
           <div className="py-4 flex items-center gap-4">
-            <button
-              onClick={onBack}
-              className={`p-2 rounded-lg transition-colors ${
-                isDarkMode ? 'hover:bg-white/10' : 'hover:bg-black/10'
-              }`}
-              aria-label="Back to home"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-            </button>
+            {!embedded ? (
+              <button
+                onClick={onBack}
+                className={`p-2 rounded-lg transition-colors ${
+                  isDarkMode ? 'hover:bg-white/10' : 'hover:bg-black/10'
+                }`}
+                aria-label="Back to home"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              </button>
+            ) : null}
             <h1 className="text-2xl font-bold">Settings</h1>
           </div>
 
@@ -366,7 +371,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-5 md:px-4 py-6 space-y-6 pb-32 md:pb-20">
+        <div className={`mx-auto px-5 md:px-4 py-6 space-y-6 pb-32 md:pb-20 ${embedded ? 'max-w-3xl' : 'max-w-2xl'}`}>
           
           {/* General Tab */}
           {activeTab === 'general' && (

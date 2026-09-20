@@ -8,6 +8,8 @@ import { useScheduleRecord, useScheduleRecords, useSubtaskRecords, useTaskRecord
 import SubtasksList from './SubtasksList';
 import TaskSharePanel from './TaskSharePanel';
 import { useAutoResizeTextarea } from '../hooks/useAutoResizeTextarea';
+import { TransientTip, useTransientTip } from './TransientTip';
+import { basic } from '../basic';
 
 interface DynamicIslandProps {
   selectedTask: Task | null;
@@ -67,6 +69,8 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
 }) => {
   const { theme } = useTheme();
   const { accentColor, isDarkMode } = theme;
+  const { isSignedIn, isReady } = basic.useAuth();
+  const shareLoginTip = useTransientTip(2200);
   
   const [inputValue, setInputValue] = useState('');
   const [title, setTitle] = useState('');
@@ -863,25 +867,20 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   const COLLAPSED_H = 56;
   const EXPANDED_MAX_H = 'min(70vh, 56.25rem)'; // matches task panel max-h-[70vh]
 
+  // Fill the tasks column; parent constrains width. Cap at max-w-2xl to match the list.
   return (
-    <div 
-      className="fixed bottom-4 z-50 max-w-4xl px-4"
-      style={{
-        left: '50%',
-        transform: 'translateX(calc(-50% - 240px))', // Center in left column (schedule is ~480px, so shift left by half)
-        width: 'calc(50% - 240px - 2rem)', // Constrain to tasks column width
-        minWidth: '500px', // Ensure minimum width
-      }}
-    >
+    <div className="w-full max-w-2xl mx-auto">
       <div
-        className={`overflow-hidden backdrop-blur-3xl ${
+        className={`w-full overflow-hidden backdrop-blur-3xl ${
           isDarkMode ? 'text-gray-100' : 'text-gray-900'
         }`}
         style={{
           maxHeight: isExpanded ? EXPANDED_MAX_H : COLLAPSED_H,
           borderRadius: isExpanded ? 16 : 32,
           backgroundColor: getBackgroundColor(),
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+          boxShadow: isDarkMode
+            ? '0 8px 32px rgba(0, 0, 0, 0.3)'
+            : '0 8px 28px rgba(0, 0, 0, 0.12)',
           transition:
             'max-height 200ms cubic-bezier(0.32, 0.72, 0, 1), border-radius 200ms cubic-bezier(0.32, 0.72, 0, 1)',
         }}
@@ -890,7 +889,9 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
              <div
               className="flex flex-col-reverse max-h-[300px]"
             >
-              <div className="flex items-center h-14 px-4 gap-3 border-t border-white/10">
+              <div className={`flex items-center h-14 px-4 gap-3 border-t ${
+                isDarkMode ? 'border-white/10' : 'border-black/10'
+              }`}>
                 <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                 </svg>
@@ -924,7 +925,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                       className={`w-full px-4 py-2 flex items-center gap-3 text-left transition-colors ${
                         index === selectedActionIndex
                           ? isDarkMode ? 'bg-white/10' : 'bg-gray-100'
-                          : 'hover:bg-white/5'
+                          : isDarkMode ? 'hover:bg-white/5' : 'hover:bg-black/5'
                       } ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}
                     >
                       <div className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -1081,7 +1082,9 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 </div>
 
                 {/* Actions Footer */}
-                <div className="flex justify-start gap-2 pt-2 border-t border-white/10">
+                <div className={`flex justify-start gap-2 pt-2 border-t ${
+                  isDarkMode ? 'border-white/10' : 'border-black/10'
+                }`}>
                   <button
                     onClick={handleEventDelete}
                     className={`p-2 rounded-lg bg-transparent transition-colors ${
@@ -1194,7 +1197,9 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 </div>
 
                 {/* Actions Footer - matching regular task layout */}
-                <div className="flex justify-start gap-2 pt-2 border-t border-white/10">
+                <div className={`flex justify-start gap-2 pt-2 border-t ${
+                  isDarkMode ? 'border-white/10' : 'border-black/10'
+                }`}>
                   <button
                     onClick={handleEventDelete}
                     className={`p-2 rounded-lg bg-transparent transition-colors ${
@@ -1281,7 +1286,9 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 />
 
                 {/* Actions */}
-                <div className="flex justify-start gap-2 pt-2 border-t border-white/10">
+                <div className={`flex justify-start gap-2 pt-2 border-t ${
+                  isDarkMode ? 'border-white/10' : 'border-black/10'
+                }`}>
                   <button
                     onClick={handleEventDelete}
                     className={`p-2 rounded-lg bg-transparent transition-colors ${
@@ -1340,7 +1347,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
 
               {/* Scrollable content area - subtasks, description, and activity */}
               <div 
-                className="flex-1 overflow-y-auto min-h-0 space-y-4 -mr-4 pr-4"
+                className="flex-1 overflow-y-auto min-h-0 space-y-4 -mx-4 px-4"
                 style={{
                   scrollbarWidth: 'thin',
                   scrollbarColor: isDarkMode ? 'rgba(255,255,255,0.2) transparent' : 'rgba(0,0,0,0.2) transparent',
@@ -1355,16 +1362,14 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                     onAddSubtask={onAddSubtask}
                     onUpdateSubtask={onUpdateTask}
                     onDeleteSubtask={onDeleteTask}
-                    showHeader={true}
                   />
                 )}
 
                 {/* Description Section */}
                 <div
-                  className={`-ml-4 border-t px-4 pt-4 ${
+                  className={`-mx-4 px-4 pt-4 border-t ${
                     isDarkMode ? 'border-white/5' : 'border-black/5'
                   }`}
-                  style={{ width: 'calc(100% + 1rem)' }}
                 >
                   <textarea
                     ref={descTextareaRef}
@@ -1382,7 +1387,6 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
 
               {/* Activity Section - show scheduled events if any exist */}
               {scheduledEvents && scheduledEvents.length > 0 && (() => {
-                // Calculate total duration across all activities
                 const totalDurationMinutes = scheduledEvents.reduce((total, event) => {
                   if (!event.start.dateTime || !event.end.dateTime) return total;
                   const start = new Date(event.start.dateTime);
@@ -1390,8 +1394,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   const durationMs = end.getTime() - start.getTime();
                   return total + Math.max(0, durationMs / (1000 * 60));
                 }, 0);
-                
-                // Format total duration
+
                 const formatDuration = (minutes: number): string => {
                   if (minutes < 60) return `${Math.round(minutes)}m`;
                   const hours = Math.floor(minutes / 60);
@@ -1399,267 +1402,248 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
                 };
 
-                // Sort events chronologically (oldest to newest, top to bottom)
                 const sortedEvents = [...scheduledEvents].sort((a, b) => {
                   const dateA = a.start.dateTime ? new Date(a.start.dateTime).getTime() : 0;
                   const dateB = b.start.dateTime ? new Date(b.start.dateTime).getTime() : 0;
-                  return dateA - dateB; // Oldest first (chronological)
+                  return dateA - dateB;
                 });
-                // When collapsed, show only the latest (last) activity
-                const displayedEvents = isActivityExpanded ? sortedEvents : sortedEvents.slice(-1);
+                // Newest last when collapsed; newest first when expanded so the
+                // front card stays put and earlier items grow downward.
+                const displayedEvents = isActivityExpanded
+                  ? [...sortedEvents].reverse()
+                  : sortedEvents.slice(-1);
                 const hiddenCount = scheduledEvents.length - 1;
-                
-                return (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className={`text-xs font-semibold uppercase tracking-wider ${
-                      isDarkMode ? 'text-gray-500' : 'text-gray-500'
-                    }`}>
-                      Activity
-                    </h4>
-                    {totalDurationMinutes > 0 && (
-                      <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        Total: {formatDuration(totalDurationMinutes)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    {/* Show "Show more" button above when collapsed */}
-                    {!isActivityExpanded && hiddenCount > 0 && (
-                      <button
-                        onClick={() => setIsActivityExpanded(true)}
-                        className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
-                          isDarkMode 
-                            ? 'text-gray-400 hover:text-gray-300 hover:bg-white/5' 
-                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        Show {hiddenCount} earlier {hiddenCount === 1 ? 'activity' : 'activities'}...
-                      </button>
-                    )}
-                    
-                    {displayedEvents.map((event) => {
-                      const isCompletion = event.type === 'task:completed';
-                      const isTask = event.type === 'task';
-                      const isEditing = editingActivityId === event.id;
-                      
-                      // Calculate duration for this event
-                      let eventDurationMinutes = 0;
-                      if (event.start.dateTime && event.end.dateTime) {
-                        const start = new Date(event.start.dateTime);
-                        const end = new Date(event.end.dateTime);
-                        eventDurationMinutes = Math.max(0, (end.getTime() - start.getTime()) / (1000 * 60));
-                      }
-                      
-                      // Format text for completion events
-                      let displayText = '';
-                      if (isCompletion) {
-                        const completedDate = event.start.dateTime ? new Date(event.start.dateTime) : new Date();
-                        const today = new Date();
-                        const dateStr = completedDate.toDateString() === today.toDateString() 
-                          ? 'Today' 
-                          : completedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                        const timeStr = completedDate.toLocaleTimeString('en-US', { 
-                          hour: 'numeric', 
-                          minute: '2-digit',
-                          hour12: true 
-                        });
-                        displayText = `completed ${dateStr} at ${timeStr}`;
-                      } else {
-                        displayText = formatScheduledTime(event);
-                      }
-                      
-                      return (
-                        <div
-                          key={event.id}
-                          className={`relative rounded-lg ${
-                            isDarkMode ? 'bg-white/5' : 'bg-gray-100'
-                          }`}
-                        >
-                          {/* Main activity row */}
-                          <div className="flex items-center justify-between gap-2 px-3 py-2">
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                              {isCompletion ? (
-                                <svg className={`h-4 w-4 shrink-0 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                </svg>
-                              ) : isTask ? (
-                                <svg className={`h-4 w-4 shrink-0 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} viewBox="0 0 20 20" fill="currentColor">
-                                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                                </svg>
-                              ) : (
-                                <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                                </svg>
-                              )}
-                              <span className={`text-sm truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                {displayText}
-                              </span>
-                              {eventDurationMinutes > 0 && (
-                                <span className={`text-xs shrink-0 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                                  ({formatDuration(eventDurationMinutes)})
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              {/* Edit button - only show for non-completion events */}
-                              {!isCompletion && (
-                                <button
-                                  onClick={() => handleOpenActivityEdit(event)}
-                                  className={`p-1 rounded bg-transparent transition-colors ${
-                                    isDarkMode 
-                                      ? 'text-gray-400 hover:text-blue-400 hover:bg-blue-400/10' 
-                                      : 'text-gray-500 hover:text-blue-600 hover:bg-blue-100'
-                                  }`}
-                                  aria-label="Edit schedule"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                  </svg>
-                                </button>
-                              )}
-                              {/* Delete button */}
-                              <button
-                                onClick={() => {
-                                  if (onDeleteEvent) {
-                                    onDeleteEvent(event.id);
-                                  }
-                                }}
-                                className={`p-1 rounded bg-transparent transition-colors ${
-                                  isDarkMode 
-                                    ? 'text-gray-400 hover:text-red-400 hover:bg-red-400/10' 
-                                    : 'text-gray-500 hover:text-red-600 hover:bg-red-100'
-                                }`}
-                                aria-label="Remove from schedule"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                </svg>
-                              </button>
-                            </div>
-                          </div>
-                          
-                          {/* Edit popover - inline expansion */}
-                          <AnimatePresence>
-                            {isEditing && (
-                              <motion.div
-                                initial={{ opacity: 0, y: -4 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -4 }}
-                                transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
-                              >
-                                <div className={`px-3 pb-3 pt-1 border-t ${
-                                  isDarkMode ? 'border-white/10' : 'border-gray-200'
-                                }`}>
-                                  <div className="space-y-2">
-                                    {/* Date input */}
-                                    <div>
-                                      <label className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Date</label>
-                                      <input
-                                        type="date"
-                                        value={editActivityDate}
-                                        onChange={(e) => setEditActivityDate(e.target.value)}
-                                        className={`w-full mt-1 px-2 py-1.5 text-sm rounded border focus:outline-hidden focus:ring-2 ${
-                                          isDarkMode 
-                                            ? 'bg-white/5 border-white/10 text-gray-100 focus:ring-white/30' 
-                                            : 'bg-white border-gray-200 text-gray-900 focus:ring-gray-300'
-                                        }`}
-                                      />
-                                    </div>
-                                    
-                                    {/* Time inputs */}
-                                    <div className="flex gap-2">
-                                      <div className="flex-1">
-                                        <label className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Start</label>
-                                        <input
-                                          type="time"
-                                          value={editActivityStartTime}
-                                          onChange={(e) => { setEditActivityStartTime(e.target.value); setActivityEditError(null); }}
-                                          className={`w-full mt-1 px-2 py-1.5 text-sm rounded border focus:outline-hidden focus:ring-2 ${
-                                            isDarkMode 
-                                              ? 'bg-white/5 border-white/10 text-gray-100 focus:ring-white/30' 
-                                              : 'bg-white border-gray-200 text-gray-900 focus:ring-gray-300'
-                                          }`}
-                                        />
-                                      </div>
-                                      <div className="flex-1">
-                                        <label className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>End</label>
-                                        <input
-                                          type="time"
-                                          value={editActivityEndTime}
-                                          onChange={(e) => { setEditActivityEndTime(e.target.value); setActivityEditError(null); }}
-                                          className={`w-full mt-1 px-2 py-1.5 text-sm rounded border focus:outline-hidden focus:ring-2 ${
-                                            isDarkMode 
-                                              ? 'bg-white/5 border-white/10 text-gray-100 focus:ring-white/30' 
-                                              : 'bg-white border-gray-200 text-gray-900 focus:ring-gray-300'
-                                          }`}
-                                        />
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Validation error message */}
-                                    {activityEditError && (
-                                      <div className={`text-xs px-2 py-1.5 rounded ${
-                                        isDarkMode 
-                                          ? 'bg-red-500/20 text-red-300' 
-                                          : 'bg-red-100 text-red-600'
-                                      }`}>
-                                        {activityEditError}
-                                      </div>
-                                    )}
-                                    
-                                    {/* Action buttons */}
-                                    <div className="flex justify-end gap-2 pt-1">
-                                      <button
-                                        onClick={handleCancelActivityEdit}
-                                        className={`px-3 py-1 text-xs rounded transition-colors ${
-                                          isDarkMode 
-                                            ? 'text-gray-400 hover:bg-white/10' 
-                                            : 'text-gray-600 hover:bg-gray-100'
-                                        }`}
-                                      >
-                                        Cancel
-                                      </button>
-                                      <button
-                                        onClick={() => handleSaveActivityEdit(event.id)}
-                                        className={`px-3 py-1 text-xs rounded transition-colors ${
-                                          isDarkMode 
-                                            ? 'bg-white/20 text-white hover:bg-white/30' 
-                                            : 'bg-gray-800 text-white hover:bg-gray-700'
-                                        }`}
-                                      >
-                                        Save
-                                      </button>
-                                    </div>
+                const showPeek = !isActivityExpanded && hiddenCount > 0;
+
+                const renderActivityCard = (event: (typeof sortedEvents)[number]) => {
+                  const isCompletion = event.type === 'task:completed';
+                  const isTask = event.type === 'task';
+                  const isEditing = editingActivityId === event.id;
+
+                  let eventDurationMinutes = 0;
+                  if (event.start.dateTime && event.end.dateTime) {
+                    const start = new Date(event.start.dateTime);
+                    const end = new Date(event.end.dateTime);
+                    eventDurationMinutes = Math.max(0, (end.getTime() - start.getTime()) / (1000 * 60));
+                  }
+
+                  let displayText = '';
+                  if (isCompletion) {
+                    const completedDate = event.start.dateTime ? new Date(event.start.dateTime) : new Date();
+                    const today = new Date();
+                    const dateStr = completedDate.toDateString() === today.toDateString()
+                      ? 'Today'
+                      : completedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const timeStr = completedDate.toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true,
+                    });
+                    displayText = `completed ${dateStr} at ${timeStr}`;
+                  } else {
+                    displayText = formatScheduledTime(event);
+                  }
+
+                  return (
+                    <div
+                      key={event.id}
+                      className="relative rounded-lg"
+                      style={{ backgroundColor: accentColor }}
+                    >
+                      <div className="flex items-center justify-between gap-2 px-3 py-2">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {isCompletion ? (
+                            <svg className="h-4 w-4 shrink-0 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          ) : isTask ? (
+                            <svg className="h-4 w-4 shrink-0 text-purple-300" viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0 text-white/50" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                          <span className="text-sm truncate text-white/85">
+                            {displayText}
+                          </span>
+                          {eventDurationMinutes > 0 && (
+                            <span className="text-xs shrink-0 text-white/45">
+                              ({formatDuration(eventDurationMinutes)})
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {!isCompletion && (
+                            <button
+                              onClick={() => handleOpenActivityEdit(event)}
+                              className="p-1 rounded bg-transparent transition-colors text-white/45 hover:text-blue-300 hover:bg-white/10"
+                              aria-label="Edit schedule"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                              </svg>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              if (onDeleteEvent) {
+                                onDeleteEvent(event.id);
+                              }
+                            }}
+                            className="p-1 rounded bg-transparent transition-colors text-white/45 hover:text-red-300 hover:bg-white/10"
+                            aria-label="Remove from schedule"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      <AnimatePresence>
+                        {isEditing && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -4 }}
+                            transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
+                          >
+                            <div className={`px-3 pb-3 pt-1 border-t ${
+                              isDarkMode ? 'border-white/10' : 'border-gray-200'
+                            }`}>
+                              <div className="space-y-2">
+                                <div>
+                                  <label className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Date</label>
+                                  <input
+                                    type="date"
+                                    value={editActivityDate}
+                                    onChange={(e) => setEditActivityDate(e.target.value)}
+                                    className={`w-full mt-1 px-2 py-1.5 text-sm rounded border focus:outline-hidden focus:ring-2 ${
+                                      isDarkMode
+                                        ? 'bg-white/5 border-white/10 text-gray-100 focus:ring-white/30'
+                                        : 'bg-white border-gray-200 text-gray-900 focus:ring-gray-300'
+                                    }`}
+                                  />
+                                </div>
+
+                                <div className="flex gap-2">
+                                  <div className="flex-1">
+                                    <label className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Start</label>
+                                    <input
+                                      type="time"
+                                      value={editActivityStartTime}
+                                      onChange={(e) => { setEditActivityStartTime(e.target.value); setActivityEditError(null); }}
+                                      className={`w-full mt-1 px-2 py-1.5 text-sm rounded border focus:outline-hidden focus:ring-2 ${
+                                        isDarkMode
+                                          ? 'bg-white/5 border-white/10 text-gray-100 focus:ring-white/30'
+                                          : 'bg-white border-gray-200 text-gray-900 focus:ring-gray-300'
+                                      }`}
+                                    />
+                                  </div>
+                                  <div className="flex-1">
+                                    <label className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>End</label>
+                                    <input
+                                      type="time"
+                                      value={editActivityEndTime}
+                                      onChange={(e) => { setEditActivityEndTime(e.target.value); setActivityEditError(null); }}
+                                      className={`w-full mt-1 px-2 py-1.5 text-sm rounded border focus:outline-hidden focus:ring-2 ${
+                                        isDarkMode
+                                          ? 'bg-white/5 border-white/10 text-gray-100 focus:ring-white/30'
+                                          : 'bg-white border-gray-200 text-gray-900 focus:ring-gray-300'
+                                      }`}
+                                    />
                                   </div>
                                 </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      );
-                    })}
-                    
-                    {/* Show "Show less" button at bottom when expanded */}
-                    {isActivityExpanded && hiddenCount > 0 && (
+
+                                {activityEditError && (
+                                  <div className={`text-xs px-2 py-1.5 rounded ${
+                                    isDarkMode
+                                      ? 'bg-red-500/20 text-red-300'
+                                      : 'bg-red-100 text-red-600'
+                                  }`}>
+                                    {activityEditError}
+                                  </div>
+                                )}
+
+                                <div className="flex justify-end gap-2 pt-1">
+                                  <button
+                                    onClick={handleCancelActivityEdit}
+                                    className={`px-3 py-1 text-xs rounded transition-colors ${
+                                      isDarkMode
+                                        ? 'text-gray-400 hover:bg-white/10'
+                                        : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={() => handleSaveActivityEdit(event.id)}
+                                    className={`px-3 py-1 text-xs rounded transition-colors ${
+                                      isDarkMode
+                                        ? 'bg-white/20 text-white hover:bg-white/30'
+                                        : 'bg-gray-800 text-white hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    Save
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                };
+
+                return (
+                  <div
+                    className={`relative ${
+                      showPeek
+                        ? 'group/stack pt-2.5 transition-[padding] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] hover:pt-5 focus-within:pt-5'
+                        : ''
+                    }`}
+                  >
+                    {isActivityExpanded && hiddenCount > 0 ? (
                       <button
+                        type="button"
                         onClick={() => setIsActivityExpanded(false)}
-                        className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
-                          isDarkMode 
-                            ? 'text-gray-400 hover:text-gray-300 hover:bg-white/5' 
-                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                        className={`mb-1 w-full rounded-lg px-3 py-1.5 text-center text-xs transition-colors ${
+                          isDarkMode
+                            ? 'text-gray-500 hover:bg-white/5 hover:text-gray-300'
+                            : 'text-gray-500 hover:bg-black/5 hover:text-gray-700'
                         }`}
                       >
                         Show less
                       </button>
-                    )}
+                    ) : null}
+
+                    {showPeek ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsActivityExpanded(true)}
+                        className="absolute left-2.5 right-2.5 top-0 z-0 flex h-7 items-start justify-center overflow-hidden rounded-lg pt-1 text-white/70 transition-[height,transform,padding] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/stack:h-10 group-hover/stack:-translate-y-0.5 group-hover/stack:pt-1.5 group-focus-within/stack:h-10 group-focus-within/stack:-translate-y-0.5 group-focus-within/stack:pt-1.5"
+                        style={{ backgroundColor: `${accentColor}B3` }}
+                        aria-label={`Show ${hiddenCount} earlier ${hiddenCount === 1 ? 'activity' : 'activities'}`}
+                      >
+                        <span className="text-[11px] font-medium tracking-wide opacity-0 transition-opacity duration-150 group-hover/stack:opacity-100 group-focus-within/stack:opacity-100">
+                          {hiddenCount} earlier
+                          {totalDurationMinutes > 0 ? ` · ${formatDuration(totalDurationMinutes)}` : ''}
+                        </span>
+                      </button>
+                    ) : null}
+
+                    <div className="relative z-10 space-y-1">
+                      {displayedEvents.map(renderActivityCard)}
+                    </div>
                   </div>
-                </div>
                 );
               })()}
               </div>
 
-              {showSharePanel && currentTask?.id && !taskSource ? (
+              {showSharePanel && currentTask?.id && !taskSource && isSignedIn ? (
                 <div className="shrink-0 px-0 pb-2">
                   <TaskSharePanel
                     taskId={currentTask.id}
@@ -1812,27 +1796,38 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   )}
 
                   {currentTask?.id && !taskSource ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowSharePanel((open) => !open);
-                      }}
-                      className={`p-2 rounded-lg bg-transparent transition-colors ${
-                        showSharePanel
-                          ? isDarkMode
-                            ? 'bg-white/10 text-gray-100'
-                            : 'bg-gray-200 text-gray-900'
-                          : isDarkMode
-                            ? 'text-gray-400 hover:text-gray-100 hover:bg-white/10'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                      aria-label="Share task"
-                      aria-pressed={showSharePanel}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-                      </svg>
-                    </button>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!isReady) return;
+                          if (!isSignedIn) {
+                            setShowSharePanel(false);
+                            shareLoginTip.show();
+                            return;
+                          }
+                          setShowSharePanel((open) => !open);
+                        }}
+                        className={`p-2 rounded-lg bg-transparent transition-colors ${
+                          showSharePanel
+                            ? isDarkMode
+                              ? 'bg-white/10 text-gray-100'
+                              : 'bg-gray-200 text-gray-900'
+                            : isDarkMode
+                              ? 'text-gray-400 hover:text-gray-100 hover:bg-white/10'
+                              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                        }`}
+                        aria-label="Share task"
+                        aria-pressed={showSharePanel}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                        </svg>
+                      </button>
+                      <TransientTip visible={shareLoginTip.visible} isDarkMode={isDarkMode}>
+                        Sign in to share
+                      </TransientTip>
+                    </div>
                   ) : null}
                   
                   {/* Focus button - positioned on the right */}

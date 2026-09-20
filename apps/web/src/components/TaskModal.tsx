@@ -10,6 +10,8 @@ import TaskSharePanel from './TaskSharePanel';
 import { useAutoResizeTextarea } from '../hooks/useAutoResizeTextarea';
 import { showPickerOrClick } from '../utils/showPicker';
 import { AppDrawer } from './AppDrawer';
+import { TransientTip, useTransientTip } from './TransientTip';
+import { basic } from '../basic';
 
 export const TaskModal = ({
   task, updateFunction, inDrawer = false, deleteTask, new: isNew = false, onDelete, onAddToSchedule, scheduledEvents, onUpdateEvent, onDeleteEvent, onAddSubtask, onUpdateSubtask, onDeleteSubtask, onEnterFocus, folders, taskSource = null
@@ -33,8 +35,10 @@ export const TaskModal = ({
 }) => {
   const { theme } = useTheme();
   const { accentColor, isDarkMode } = theme;
+  const { isSignedIn, isReady } = basic.useAuth();
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
   const [shareDrawerOpen, setShareDrawerOpen] = useState(false);
+  const shareLoginTip = useTransientTip(2200);
   
   // Local state for folder label to ensure immediate UI updates
   const [localFolderLabel, setLocalFolderLabel] = useState<string | null>(() => {
@@ -835,32 +839,42 @@ export const TaskModal = ({
             {/* Share + Focus - right */}
             <div className="flex items-center gap-2">
               {task?.id && !taskSource ? (
-                <motion.button
-                  initial={{ opacity: 0, y: 12, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.42 }}
-                  whileTap={{ scale: 0.9 }}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShareDrawerOpen(true);
-                  }}
-                  className={`p-4 rounded-full transition-colors shadow-lg ${
-                    shareDrawerOpen
-                      ? isDarkMode
-                        ? 'bg-white/20 text-gray-100'
-                        : 'bg-gray-800 text-white'
-                      : isDarkMode
-                        ? 'bg-white/10 text-gray-400 hover:text-gray-100 hover:bg-white/20'
-                        : 'bg-gray-100 text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-                  }`}
-                  aria-label="Share task"
-                  aria-pressed={shareDrawerOpen}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-                  </svg>
-                </motion.button>
+                <div className="relative">
+                  <motion.button
+                    initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.42 }}
+                    whileTap={{ scale: 0.9 }}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isReady) return;
+                      if (!isSignedIn) {
+                        shareLoginTip.show();
+                        return;
+                      }
+                      setShareDrawerOpen(true);
+                    }}
+                    className={`p-4 rounded-full transition-colors shadow-lg ${
+                      shareDrawerOpen
+                        ? isDarkMode
+                          ? 'bg-white/20 text-gray-100'
+                          : 'bg-gray-800 text-white'
+                        : isDarkMode
+                          ? 'bg-white/10 text-gray-400 hover:text-gray-100 hover:bg-white/20'
+                          : 'bg-gray-100 text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                    }`}
+                    aria-label="Share task"
+                    aria-pressed={shareDrawerOpen}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                    </svg>
+                  </motion.button>
+                  <TransientTip visible={shareLoginTip.visible} isDarkMode={isDarkMode}>
+                    Sign in to share
+                  </TransientTip>
+                </div>
               ) : null}
 
               {onEnterFocus && (

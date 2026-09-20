@@ -101,13 +101,14 @@ export function getAppSurface(accentColor: string, isDarkMode: boolean) {
 
 /** Frosted panels (drawers, islands, sidebars) — dark uses accent tint; light uses white glass. */
 export function getGlassSurface(accentColor: string, isDarkMode: boolean) {
-  return isDarkMode ? `${accentColor}E6` : 'rgba(255, 255, 255, 0.9)';
+  return isDarkMode ? `${accentColor}E6` : 'rgba(255, 255, 255, 0.72)';
 }
 
 export function getPhotoOverlay(isDarkMode: boolean) {
+  // Dark mode keeps a soft vignette; light mode shows the wallpaper unfiltered.
   return isDarkMode
     ? 'linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4))'
-    : 'linear-gradient(rgba(242, 243, 245, 0.72), rgba(242, 243, 245, 0.88))';
+    : 'none';
 }
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {

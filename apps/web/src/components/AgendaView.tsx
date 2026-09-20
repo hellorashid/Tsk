@@ -337,6 +337,8 @@ interface AgendaViewProps {
   location?: { latitude: number; longitude: number; name: string };
   onFetchWeather?: (date: Date) => Promise<void>;
   folders?: Folder[];
+  /** When false, skip outer glass/rounding (parent panel provides chrome). */
+  framed?: boolean;
 }
 
 const AgendaView: React.FC<AgendaViewProps> = ({
@@ -345,6 +347,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
   accentColor = '#1F1B2F',
   isDarkMode = true,
   onViewModeChange,
+  framed = true,
 }) => {
   // Track selected date (defaults to today)
   const [selectedDate, setSelectedDate] = useState<Date>(getStartOfDay(new Date()));
@@ -437,11 +440,11 @@ const AgendaView: React.FC<AgendaViewProps> = ({
   // Widget-based Agenda View
   return (
     <div
-      className={`w-full h-full overflow-y-auto backdrop-blur-3xl flex flex-col rounded-2xl ${
-        isDarkMode ? 'text-gray-100' : 'text-gray-900'
-      }`}
+      className={`w-full h-full overflow-y-auto flex flex-col ${
+        framed ? 'backdrop-blur-3xl rounded-2xl' : ''
+      } ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}
         style={{ 
-        backgroundColor: getGlassSurface(accentColor, isDarkMode),
+        backgroundColor: framed ? getGlassSurface(accentColor, isDarkMode) : 'transparent',
         scrollbarWidth: 'none',
         msOverflowStyle: 'none',
       }}
@@ -468,6 +471,8 @@ const AgendaView: React.FC<AgendaViewProps> = ({
             <div className="flex items-center gap-0.5">
             <button
               onClick={goToPreviousDay}
+              aria-label="Previous day"
+              title="Previous day"
                 className={`p-2 rounded-xl transition-colors ${
                 isDarkMode 
                   ? 'hover:bg-white/10 text-gray-300' 
@@ -480,6 +485,8 @@ const AgendaView: React.FC<AgendaViewProps> = ({
             </button>
             <button
               onClick={goToToday}
+              aria-label="Go to today"
+              title="Today"
                 className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${
                 isDarkMode 
                   ? 'hover:bg-white/10 text-gray-300' 
@@ -490,6 +497,8 @@ const AgendaView: React.FC<AgendaViewProps> = ({
             </button>
             <button
               onClick={goToNextDay}
+              aria-label="Next day"
+              title="Next day"
                 className={`p-2 rounded-xl transition-colors ${
                 isDarkMode 
                   ? 'hover:bg-white/10 text-gray-300' 
@@ -502,11 +511,24 @@ const AgendaView: React.FC<AgendaViewProps> = ({
             </button>
           </div>
 
-            {/* View mode toggle */}
-          {onViewModeChange && (
+            {/* View mode toggle — desktop uses the left rail; keep for mobile */}
+          {framed && onViewModeChange && (
               <div className={`flex items-center rounded-xl p-0.5 ${
               isDarkMode ? 'bg-white/10' : 'bg-gray-200'
             }`}>
+              <button
+                onClick={() => onViewModeChange('agenda')}
+                  className={`p-2 rounded-lg transition-colors ${
+                    isDarkMode
+                      ? 'bg-white/20 text-white'
+                      : 'bg-white text-gray-900 shadow-sm'
+                }`}
+                  title="Agenda view"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              </button>
               <button
                 onClick={() => onViewModeChange('timeline')}
                   className={`p-2 rounded-lg transition-colors ${
@@ -518,19 +540,6 @@ const AgendaView: React.FC<AgendaViewProps> = ({
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                </svg>
-              </button>
-              <button
-                onClick={() => onViewModeChange('agenda')}
-                  className={`p-2 rounded-lg transition-colors ${
-                    isDarkMode
-                      ? 'bg-white/20 text-white'
-                      : 'bg-white text-gray-900 shadow-sm'
-                }`}
-                  title="Widget view"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                 </svg>
               </button>
             </div>

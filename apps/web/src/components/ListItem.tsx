@@ -101,16 +101,24 @@ const ListItem: React.FC<ListItemProps> = ({
   const folderLabel = task.labels?.split(',').find(l => l.trim().startsWith('folder:'));
   const folderName = folderLabel?.replace('folder:', '').trim();
 
-  // Calculate background colors based on accent color
+  // Soft tint only — no per-row backdrop-blur.
   const getBackgroundColor = () => {
     if (!isDarkMode) {
-      return isSelected && !isMobile ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.72)';
+      return isSelected && !isMobile ? 'rgba(255, 255, 255, 0.92)' : 'rgba(255, 255, 255, 0.68)';
     }
     if (isSelected && !isMobile) {
-      return accentColor;
+      return `${accentColor}B8`;
     }
-    return `${accentColor}70`;
+    return `${accentColor}40`;
   };
+
+  const getHoverBackgroundColor = () => {
+    if (isSelected && !isMobile) return undefined;
+    if (!isDarkMode) return 'rgba(255, 255, 255, 0.82)';
+    return `${accentColor}55`;
+  };
+
+  const actionHoverClass = isDarkMode ? 'hover:bg-white/10' : 'hover:bg-black/10';
 
   const handleContainerClick = () => {
     // Don't open task if we're editing
@@ -121,18 +129,25 @@ const ListItem: React.FC<ListItemProps> = ({
   return (
     <div
       className={`group px-3 md:px-2 relative ${styles.container} ${viewMode === 'compact' ? '' : 'rounded-lg'
-        } transition-colors duration-200 backdrop-blur-sm hover:bg-opacity-80 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'
+        } transition-colors duration-150 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'
         } cursor-pointer`}
       style={{
         backgroundColor: getBackgroundColor(),
       }}
+      onMouseEnter={(e) => {
+        const hover = getHoverBackgroundColor();
+        if (hover) e.currentTarget.style.backgroundColor = hover;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = getBackgroundColor();
+      }}
       onClick={handleContainerClick}
       onDoubleClick={() => setIsEditing(true)}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center flex-1">
+      <div className="flex items-center justify-between gap-2 min-w-0">
+        <div className="flex items-center flex-1 min-w-0">
 
-          <div onClick={(e) => e.stopPropagation()} className="md:mr-0 mr-2">
+          <div onClick={(e) => e.stopPropagation()} className="shrink-0 md:mr-0 mr-2">
             <Checkbox
               id={task.id}
               size="md"
@@ -140,8 +155,7 @@ const ListItem: React.FC<ListItemProps> = ({
               onChange={handleCheckboxChange}
             />
           </div>
-          <div className="flex-1"
-          >
+          <div className="flex-1 min-w-0">
 
             {isEditing ? (
               <input
@@ -151,22 +165,25 @@ const ListItem: React.FC<ListItemProps> = ({
                 onBlur={handleTitleBlur}
                 onKeyDown={handleKeyDown}
                 onClick={(e) => e.stopPropagation()}
-                className={`px-2 py-1 text-sm w-full bg-transparent border border-white/20 rounded focus:outline-hidden focus:ring-2 focus:ring-white/30 ${styles.title} ${isDarkMode ? 'text-gray-100' : 'text-gray-900'
-                  }`}
+                className={`px-2 py-1 text-sm w-full min-w-0 bg-transparent border rounded focus:outline-hidden focus:ring-2 ${styles.title} ${
+                  isDarkMode
+                    ? 'border-white/20 focus:ring-white/30 text-gray-100'
+                    : 'border-black/15 focus:ring-black/20 text-gray-900'
+                }`}
                 autoFocus
                 autoComplete="off"
                 inputMode="text"
               />
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <span
-                  className={`pl-2 ${styles.title} ${optimisticCompleted ? (isDarkMode ? "text-gray-400 line-through" : "text-gray-500 line-through") : ""
+                  className={`pl-2 truncate min-w-0 ${styles.title} ${optimisticCompleted ? (isDarkMode ? "text-gray-400 line-through" : "text-gray-500 line-through") : ""
                     }`}
                 >
                   {task.name}
                 </span>
                 {folderName && (
-                  <span className={`px-1.5 py-0.5 text-xs rounded capitalize ${
+                  <span className={`shrink-0 px-1.5 py-0.5 text-xs rounded capitalize ${
                     isDarkMode ? 'bg-white/10 text-gray-400' : 'bg-black/10 text-gray-600'
                   }`}>
                     {folderName}
@@ -178,12 +195,13 @@ const ListItem: React.FC<ListItemProps> = ({
         </div>
 
         {!isMobile && (
-          <div className="flex gap-1">
+          <div className="flex gap-1 shrink-0">
             {optimisticCompleted && (
               <button
                 onClick={handleDelete}
-                className={`w-8 h-8 rounded-full bg-transparent hover:bg-white/10 flex items-center justify-center transition-opacity duration-200 ${isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-70'
-                  }`}
+                className={`w-8 h-8 rounded-full bg-transparent ${actionHoverClass} flex items-center justify-center ${
+                  isSelected ? 'opacity-70' : 'opacity-0 group-hover:opacity-70'
+                }`}
                 aria-label="Delete task"
                 title="Delete task"
               >
@@ -198,8 +216,8 @@ const ListItem: React.FC<ListItemProps> = ({
                   e.stopPropagation();
                   onAddToSchedule(task);
                 }}
-                className={`${isSuggested ? 'px-3 py-1.5 rounded-md' : 'w-8 h-8 rounded-full'} bg-transparent hover:bg-white/10 flex items-center justify-center gap-2 transition-opacity duration-200 ${
-                  isSuggested ? 'opacity-70' : (isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-70')
+                className={`${isSuggested ? 'px-3 py-1.5 rounded-md' : 'w-8 h-8 rounded-full'} bg-transparent ${actionHoverClass} flex items-center justify-center gap-2 ${
+                  isSuggested || isSelected ? 'opacity-70' : 'opacity-0 group-hover:opacity-70'
                 }`}
                 aria-label="Add to Today"
                 title="Add to Today"
@@ -216,8 +234,9 @@ const ListItem: React.FC<ListItemProps> = ({
                   e.stopPropagation();
                   onEnterFocus(task);
                 }}
-            className={`w-8 h-8 rounded-full bg-transparent hover:bg-white/10 flex items-center justify-center transition-opacity duration-200 ${isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-70'
-              }`}
+            className={`w-8 h-8 rounded-full bg-transparent ${actionHoverClass} flex items-center justify-center ${
+              isSelected ? 'opacity-70' : 'opacity-0 group-hover:opacity-70'
+            }`}
                 aria-label="Enter focus mode"
                 title="Focus mode"
           >

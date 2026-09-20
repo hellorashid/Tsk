@@ -1,5 +1,6 @@
 import { useState, InputHTMLAttributes, ChangeEvent, CSSProperties } from "react";
 import { motion } from "motion/react";
+import { useTheme } from "../contexts/ThemeContext";
 
 const tickVariants = {
   checked: {
@@ -37,6 +38,8 @@ export default function Checkbox({
   size = "sm", // Use size, default to "sm"
   ...restInputProps
 }: CheckboxProps) {
+  const { theme } = useTheme();
+  const isDarkMode = theme.isDarkMode;
   const [internalIsChecked, setInternalIsChecked] = useState(defaultChecked ?? false);
 
   const isControlled = checked !== undefined;
@@ -60,12 +63,13 @@ export default function Checkbox({
   // Determine classes based on size
   const inputSizeClass = size === "md" ? "h-6 w-6" : "h-5 w-5";
   const tickSizeClass = size === "md" ? "h-4.5 w-4.5" : "h-3.5 w-3.5";
+  const uncheckedBorder = isDarkMode ? "border-white/25" : "border-black/30";
 
   return (
     <label className="relative flex items-center" htmlFor={id}>
       <input
         type="checkbox"
-        className={`border-blue-gray-200 relative appearance-none rounded-md border transition-[background-color,border-color] duration-150 ${inputSizeClass} ${restInputProps.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+        className={`${uncheckedBorder} relative appearance-none rounded-md border transition-[background-color,border-color] duration-150 ${inputSizeClass} ${restInputProps.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
         id={id}
         checked={displayChecked}
         onChange={handleChange}

@@ -1,4 +1,5 @@
 import { type Dispatch, type SetStateAction, useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import bgImage from "/bg2.jpg";
 import "./App.css";
 import AboutModal from "./components/AboutModal";
@@ -8,7 +9,7 @@ import FolderDrawer from "./components/FolderDrawer";
 import FolderSettings from "./components/FolderSettings";
 import FocusView from "./components/FocusView";
 import FoldersBar from "./components/FoldersBar";
-import IconSidebar from "./components/IconSidebar";
+import DesktopSidePanel from "./components/DesktopSidePanel";
 import ListItem from "./components/ListItem";
 import MobileNavBar from "./components/MobileNavBar";
 import ScheduleSidebar from "./components/ScheduleSidebar";
@@ -30,6 +31,7 @@ import { Task, TaskSource } from "./utils/types";
 function Home() {
   const isDbReady = useBasicDbReady();
   const { theme } = useTheme();
+  const reduceMotion = useReducedMotion();
 
   const { tasks, isLoading: tasksLoading } = useTaskRecords();
   const { events: scheduleEvents, isLoading: scheduleLoading } = useScheduleRecords();
@@ -354,22 +356,16 @@ function Home() {
               ? "100dvh"
               : "calc(var(--vh, 1vh) * 100)",
           backgroundColor: getAppSurface(theme.accentColor, theme.isDarkMode),
-          backgroundImage: `${getPhotoOverlay(theme.isDarkMode)}, url(${bgImage})`,
+          backgroundImage: theme.isDarkMode
+            ? `${getPhotoOverlay(true)}, url(${bgImage})`
+            : `url(${bgImage})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
         }}
       >
-        {!isMobile && (
-          <IconSidebar
-            onOpenSettings={handleOpenSettings}
-            onOpenAbout={handleOpenAbout}
-            currentView={currentView}
-          />
-        )}
-
         <div className="flex-1 flex flex-col overflow-hidden">
-          {currentView === "settings" && (
+          {isMobile && currentView === "settings" && (
             <div className="flex-1 overflow-hidden">
               <SettingsPage
                 onBack={() => setCurrentView("home")}
@@ -389,14 +385,87 @@ function Home() {
             </div>
           )}
 
-          {currentView === "home" && (
+          {(currentView === "home" || (!isMobile && currentView === "settings")) && (
             <section
               className={`flex-1 task-home w-full relative overflow-hidden ${theme.isDarkMode ? "text-gray-100" : "text-gray-900"} ${isMobile && drawerOpen ? "drawer-open-scale" : ""}`}
               style={{ paddingBottom: "env(safe-area-inset-bottom, 20px)" }}
             >
               <div className="flex flex-1" style={{ height: "100%" }}>
-                {(!isMobile || mobileView === "tasks") && (
-                  <div className="flex-1 flex flex-col relative">
+                {!isMobile && (
+                  <DesktopSidePanel
+                    onOpenSettings={handleOpenSettings}
+                    onOpenAbout={handleOpenAbout}
+                    onBack={() => setCurrentView("home")}
+                    viewMode={scheduleViewMode}
+                    onViewModeChange={setScheduleViewMode}
+                    expanded={currentView === "settings"}
+                  >
+                    {currentView === "settings" ? (
+                      <SettingsPage
+                        embedded
+                        onBack={() => setCurrentView("home")}
+                        onViewModeChange={setViewMode}
+                        currentViewMode={viewMode}
+                        folders={folders}
+                        onCreateFolder={handleCreateFolder}
+                        onUpdateFolder={handleFolderUpdateRequest}
+                        onDeleteFolder={handleDeleteFolder}
+                        showAllFolder={showAllFolder}
+                        showOtherFolder={showOtherFolder}
+                        showTodayFolder={showTodayFolder}
+                        onToggleAllFolder={setShowAllFolder}
+                        onToggleOtherFolder={setShowOtherFolder}
+                        onToggleTodayFolder={setShowTodayFolder}
+                      />
+                    ) : scheduleViewMode === "timeline" ? (
+                      <ScheduleSidebar
+                        onCardClick={handleScheduleCardClick}
+                        events={scheduleEvents}
+                        onUpdateEvent={updateScheduleEvent}
+                        onDeleteEvent={deleteScheduleEvent}
+                        onTaskToggle={handleTaskToggle}
+                        onAddEvent={handleAddEvent}
+                        accentColor={theme.accentColor}
+                        isDarkMode={theme.isDarkMode}
+                        viewMode={scheduleViewMode}
+                        onViewModeChange={setScheduleViewMode}
+                        location={theme.location}
+                        onFetchWeather={handleFetchWeather}
+                        folders={folders}
+                        framed={false}
+                      />
+                    ) : (
+                      <AgendaView
+                        onCardClick={handleScheduleCardClick}
+                        events={scheduleEvents}
+                        onTaskToggle={handleTaskToggle}
+                        accentColor={theme.accentColor}
+                        isDarkMode={theme.isDarkMode}
+                        viewMode={scheduleViewMode}
+                        onViewModeChange={setScheduleViewMode}
+                        location={theme.location}
+                        onFetchWeather={handleFetchWeather}
+                        folders={folders}
+                        framed={false}
+                      />
+                    )}
+                  </DesktopSidePanel>
+                )}
+
+                <AnimatePresence initial={false} mode="popLayout">
+                {currentView === "home" && (!isMobile || mobileView === "tasks") && (
+                  <motion.div
+                    key="tasks-column"
+                    className="flex-1 flex flex-col relative min-w-0"
+                    initial={reduceMotion ? false : { opacity: 0, transform: "translateX(12px)" }}
+                    animate={{ opacity: 1, transform: "translateX(0px)" }}
+                    exit={
+                      reduceMotion
+                        ? undefined
+                        : { opacity: 0, transform: "translateX(16px)" }
+                    }
+                    transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                  >
                     <FoldersBar
                       folders={folders}
                       activeFolder={activeFolder}
@@ -409,7 +478,7 @@ function Home() {
                     />
 
                     <div
-                      className="flex-1 overflow-y-auto px-4 relative tasks-scroll-container"
+                      className="flex-1 overflow-y-auto overflow-x-hidden px-4 relative tasks-scroll-container min-w-0"
                       style={{
                         paddingBottom: isMobile
                           ? "8rem"
@@ -418,8 +487,8 @@ function Home() {
                             : "calc(var(--vh, 1vh) * 50)",
                       }}
                     >
-                      <div className="mt-4 md:mt-10 flex justify-center">
-                        <div className="w-full max-w-2xl relative">
+                      <div className="mt-4 md:mt-10 flex justify-center min-w-0">
+                        <div className="w-full max-w-2xl relative min-w-0">
                           {activeFolder === "shared" ? (
                             <SharedTasksView
                               viewMode={viewMode}
@@ -464,9 +533,9 @@ function Home() {
                             </div>
                           )}
 
-                          <div className={`flex flex-col ${viewMode === "compact" ? "space-y-0" : viewMode === "cozy" ? "space-y-1" : "space-y-2"}`}>
+                          <div className={`flex flex-col min-w-0 ${viewMode === "compact" ? "space-y-0" : viewMode === "cozy" ? "space-y-1" : "space-y-2"}`}>
                             {activeFolder !== "shared" && filteredTasks.map((task) => (
-                              <div key={task.id} className="w-full">
+                              <div key={task.id} className="w-full min-w-0">
                                 <ListItem
                                   task={task}
                                   deleteTask={deleteTask}
@@ -539,9 +608,9 @@ function Home() {
                               </div>
 
                               {activeFolder === "today" && suggestedTasks.length > 0 && suggestedTasksExpanded && (
-                                <div className={`flex flex-col mb-4 ${viewMode === "compact" ? "space-y-0" : viewMode === "cozy" ? "space-y-1" : "space-y-2"}`}>
+                                <div className={`flex flex-col mb-4 min-w-0 ${viewMode === "compact" ? "space-y-0" : viewMode === "cozy" ? "space-y-1" : "space-y-2"}`}>
                                   {suggestedTasks.map((task) => (
-                                    <div key={task.id} className="w-full" onClick={() => handleTaskSelect(task)}>
+                                    <div key={task.id} className="w-full min-w-0">
                                       <ListItem
                                         task={task}
                                         deleteTask={deleteTask}
@@ -560,9 +629,9 @@ function Home() {
                               )}
 
                               {completedTasksExpanded && (
-                                <div className={`flex flex-col ${viewMode === "compact" ? "space-y-0" : viewMode === "cozy" ? "space-y-1" : "space-y-2"}`}>
+                                <div className={`flex flex-col min-w-0 ${viewMode === "compact" ? "space-y-0" : viewMode === "cozy" ? "space-y-1" : "space-y-2"}`}>
                                   {completedTasks.map((task) => (
-                                    <div key={task.id} className="w-full" onClick={() => handleTaskSelect(task)}>
+                                    <div key={task.id} className="w-full min-w-0">
                                       <ListItem
                                         task={task}
                                         deleteTask={deleteTask}
@@ -572,6 +641,7 @@ function Home() {
                                         handleTaskSelect={handleTaskSelect}
                                         onEnterFocus={handleEnterFocus}
                                         onAddToSchedule={handleAddToSchedule}
+                                        isMobile={isMobile}
                                       />
                                     </div>
                                   ))}
@@ -582,8 +652,44 @@ function Home() {
                         </div>
                       </div>
                     </div>
-                  </div>
+
+                    {!isMobile && (
+                      <div className="absolute bottom-4 inset-x-4 z-50 flex justify-center pointer-events-none">
+                        <div className="w-full max-w-2xl pointer-events-auto">
+                          <DynamicIsland
+                            selectedTask={selectedTask}
+                            selectedEvent={selectedEvent}
+                            taskSource={selectedTaskSource}
+                            onTaskSelect={handleTaskSelectWrapper}
+                            onEventSelect={handleEventSelectWrapper}
+                            onAddTask={handleAddTask}
+                            onAddEvent={handleAddEvent}
+                            onUpdateTask={selectedTaskUpdate}
+                            onDeleteTask={selectedTaskDelete}
+                            onUpdateEvent={updateScheduleEvent}
+                            onDeleteEvent={deleteScheduleEvent}
+                            onAddToSchedule={isSharedSelection ? undefined : handleAddToSchedule}
+                            onAddSubtask={isSharedSelection ? undefined : handleAddSubtask}
+                            onEnterFocus={isSharedSelection ? undefined : handleEnterFocus}
+                            tasks={tasks}
+                            folders={folders}
+                            activeFolder={activeFolder}
+                            onFolderSelect={handleFolderSelect}
+                            showAllFolder={showAllFolder}
+                            showOtherFolder={showOtherFolder}
+                            showTodayFolder={showTodayFolder}
+                            mode={islandMode}
+                            onModeChange={setIslandMode}
+                            onOpenSettings={handleOpenSettings}
+                            onToggleView={() => setScheduleViewMode((current) => (current === "agenda" ? "timeline" : "agenda"))}
+                            currentView={scheduleViewMode}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
                 )}
+                </AnimatePresence>
 
                 {isMobile && mobileView === "calendar" && (
                   <div className="flex-1 h-full overflow-hidden px-2 pt-3 relative">
@@ -619,73 +725,7 @@ function Home() {
                     )}
                   </div>
                 )}
-
-                {!isMobile && (
-                  <div className="hidden md:block md:pl-4 w-[480px] p-2">
-                    {scheduleViewMode === "timeline" ? (
-                      <ScheduleSidebar
-                        onCardClick={handleScheduleCardClick}
-                        events={scheduleEvents}
-                        onUpdateEvent={updateScheduleEvent}
-                        onDeleteEvent={deleteScheduleEvent}
-                        onTaskToggle={handleTaskToggle}
-                        onAddEvent={handleAddEvent}
-                        accentColor={theme.accentColor}
-                        isDarkMode={theme.isDarkMode}
-                        viewMode={scheduleViewMode}
-                        onViewModeChange={setScheduleViewMode}
-                        location={theme.location}
-                        onFetchWeather={handleFetchWeather}
-                        folders={folders}
-                      />
-                    ) : (
-                      <AgendaView
-                        onCardClick={handleScheduleCardClick}
-                        events={scheduleEvents}
-                        onTaskToggle={handleTaskToggle}
-                        accentColor={theme.accentColor}
-                        isDarkMode={theme.isDarkMode}
-                        viewMode={scheduleViewMode}
-                        onViewModeChange={setScheduleViewMode}
-                        location={theme.location}
-                        onFetchWeather={handleFetchWeather}
-                        folders={folders}
-                      />
-                    )}
-                  </div>
-                )}
               </div>
-
-              {!isMobile && (
-                <DynamicIsland
-                  selectedTask={selectedTask}
-                  selectedEvent={selectedEvent}
-                  taskSource={selectedTaskSource}
-                  onTaskSelect={handleTaskSelectWrapper}
-                  onEventSelect={handleEventSelectWrapper}
-                  onAddTask={handleAddTask}
-                  onAddEvent={handleAddEvent}
-                  onUpdateTask={selectedTaskUpdate}
-                  onDeleteTask={selectedTaskDelete}
-                  onUpdateEvent={updateScheduleEvent}
-                  onDeleteEvent={deleteScheduleEvent}
-                  onAddToSchedule={isSharedSelection ? undefined : handleAddToSchedule}
-                  onAddSubtask={isSharedSelection ? undefined : handleAddSubtask}
-                  onEnterFocus={isSharedSelection ? undefined : handleEnterFocus}
-                  tasks={tasks}
-                  folders={folders}
-                  activeFolder={activeFolder}
-                  onFolderSelect={handleFolderSelect}
-                  showAllFolder={showAllFolder}
-                  showOtherFolder={showOtherFolder}
-                  showTodayFolder={showTodayFolder}
-                  mode={islandMode}
-                  onModeChange={setIslandMode}
-                  onOpenSettings={handleOpenSettings}
-                  onToggleView={() => setScheduleViewMode((current) => (current === "agenda" ? "timeline" : "agenda"))}
-                  currentView={scheduleViewMode}
-                />
-              )}
 
               {isMobile && (
                 <SilkTaskDrawer

@@ -1,6 +1,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { basic } from "../basic";
 import { useContactHandles } from "../hooks/useContactHandles";
+import { useTheme } from "../contexts/ThemeContext";
 import { defaultRepoType } from "../utils/schemaInfo";
 import { displayShareRecipient, isOpenShare, shareErrorMessage, shareIncludesTask, shareRecipientInput } from "../utils/shares";
 
@@ -11,8 +12,10 @@ interface TaskSharePanelProps {
 }
 
 export default function TaskSharePanel({ taskId, taskName, compact = false }: TaskSharePanelProps) {
-  const { isSignedIn, isReady, signIn } = basic.useAuth();
+  const { isSignedIn, isReady } = basic.useAuth();
   const { repos } = basic.useBasic();
+  const { theme } = useTheme();
+  const { isDarkMode } = theme;
   const shares = basic.useOutgoingShares();
   const repoType = defaultRepoType(repos);
   const [handle, setHandle] = useState("");
@@ -63,23 +66,8 @@ export default function TaskSharePanel({ taskId, taskName, compact = false }: Ta
     });
   };
 
-  if (!isReady) {
+  if (!isReady || !isSignedIn) {
     return null;
-  }
-
-  if (!isSignedIn) {
-    return (
-      <div className={compact ? "pt-3" : "pt-4"}>
-        <p className="text-xs opacity-70 mb-2">Sign in to share this task with a friend.</p>
-        <button
-          type="button"
-          onClick={() => { void signIn(); }}
-          className="text-xs underline opacity-80 hover:opacity-100"
-        >
-          Login with Basic
-        </button>
-      </div>
-    );
   }
 
   return (
@@ -98,23 +86,31 @@ export default function TaskSharePanel({ taskId, taskName, compact = false }: Ta
           onChange={(event) => setHandle(event.target.value)}
           placeholder="friend.basic.id"
           autoComplete="off"
-          className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm outline-hidden focus:ring-2 focus:ring-white/20"
+          className={`flex-1 min-w-0 rounded-lg px-3 py-1.5 text-sm outline-hidden focus:ring-2 border ${
+            isDarkMode
+              ? 'bg-white/5 border-white/10 focus:ring-white/20'
+              : 'bg-black/5 border-black/10 text-gray-900 focus:ring-black/15'
+          }`}
         />
         <button
           type="submit"
           disabled={isPending || !handle.trim()}
-          className="px-3 py-1.5 rounded-lg text-sm bg-white/10 hover:bg-white/20 disabled:opacity-40"
+          className={`px-3 py-1.5 rounded-lg text-sm disabled:opacity-40 ${
+            isDarkMode
+              ? 'bg-white/10 hover:bg-white/20'
+              : 'bg-black/10 hover:bg-black/15 text-gray-900'
+          }`}
         >
           {isPending ? "Sharing…" : "Share"}
         </button>
       </form>
       {repoType && repoType !== "basic-schema" && repoType !== "unknown" ? (
-        <p className="text-xs text-amber-200/90">
+        <p className={`text-xs ${isDarkMode ? 'text-amber-200/90' : 'text-amber-700'}`}>
           Sharing needs a Basic schema library. This account’s tasks are still on the {repoType} repo type.
         </p>
       ) : null}
-      {error ? <p className="text-xs text-red-300">{error}</p> : null}
-      {shares.error ? <p className="text-xs text-red-300">{shares.error.message}</p> : null}
+      {error ? <p className={`text-xs ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>{error}</p> : null}
+      {shares.error ? <p className={`text-xs ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>{shares.error.message}</p> : null}
 
       {taskShares.length > 0 ? (
         <ul className="space-y-1">

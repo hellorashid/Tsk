@@ -113,22 +113,24 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
 
   const completedCount = subtasks.filter(s => s.completed).length;
 
+  const shellBg = isDarkMode ? hexToRgba(accentColor, 0.3) : 'rgba(0, 0, 0, 0.04)';
+  const addRowBg = isDarkMode ? hexToRgba(accentColor, 0.6) : 'rgba(0, 0, 0, 0.06)';
+  const addRowHoverBg = isDarkMode ? hexToRgba(accentColor, 0.8) : 'rgba(0, 0, 0, 0.09)';
+
   return (
     <div className="mt-4">
       <div 
         className="rounded-lg flex flex-col" 
-        style={{ 
-          backgroundColor: hexToRgba(accentColor, 0.3),
-        }}
+        style={{ backgroundColor: shellBg }}
       >
         {/* Sticky Header */}
         {showHeader && (
           <div 
             className={`sticky top-0 z-10 px-4 py-2 rounded-t-lg ${
-              isDarkMode ? 'text-gray-500' : 'text-gray-500'
+              isDarkMode ? 'text-gray-400' : 'text-gray-600'
             }`}
             style={{ 
-              backgroundColor: accentColor,
+              backgroundColor: isDarkMode ? accentColor : 'rgba(0, 0, 0, 0.08)',
             }}
           >
             <h3 className="text-xs font-semibold uppercase tracking-wider">
@@ -143,7 +145,7 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
             {subtasks.map((subtask, index) => (
             <div
               key={subtask.id}
-              className={`group pl-4 pr-2 py-1.5 transition-colors duration-200 ${
+              className={`group px-2 py-1.5 transition-colors duration-200 ${
                 isDarkMode ? 'text-gray-100' : 'text-gray-900'
               } ${!showHeader && index === 0 ? 'rounded-t-lg' : ''}`}
               onDoubleClick={() => handleEditStart(subtask)}
@@ -167,8 +169,10 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
                         onBlur={() => handleEditSave(subtask.id)}
                         onKeyDown={(e) => handleEditKeyDown(e, subtask.id)}
                         onClick={(e) => e.stopPropagation()}
-                        className={`px-2 py-0.5 text-sm w-full bg-transparent border border-white/20 rounded focus:outline-hidden focus:ring-2 focus:ring-white/30 ${
-                          isDarkMode ? 'text-gray-100' : 'text-gray-900'
+                        className={`px-2 py-0.5 text-sm w-full bg-transparent border rounded focus:outline-hidden focus:ring-2 ${
+                          isDarkMode
+                            ? 'border-white/20 focus:ring-white/30 text-gray-100'
+                            : 'border-black/15 focus:ring-black/20 text-gray-900'
                         }`}
                       />
                     ) : (
@@ -188,8 +192,10 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
                 </div>
                 <button
                   onClick={(e) => handleDelete(subtask.id, e)}
-                  className={`w-6 h-6 rounded-full bg-transparent hover:bg-white/10 flex items-center justify-center transition-opacity duration-200 opacity-0 group-hover:opacity-70 ${
-                    isDarkMode ? 'text-gray-400 hover:text-red-400' : 'text-gray-600 hover:text-red-600'
+                  className={`w-6 h-6 rounded-full bg-transparent flex items-center justify-center transition-opacity duration-200 opacity-0 group-hover:opacity-70 ${
+                    isDarkMode
+                      ? 'hover:bg-white/10 text-gray-400 hover:text-red-400'
+                      : 'hover:bg-black/10 text-gray-600 hover:text-red-600'
                   }`}
                   aria-label="Delete subtask"
                 >
@@ -206,20 +212,18 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
         {/* Footer - Add subtask input using React 19 form actions */}
         <form action={submitAction}>
           <div
-            className={`pl-4 pr-2 py-2.5 md:py-1.5 transition-colors duration-200 group ${
+            className={`px-2 py-1.5 transition-colors duration-200 group ${
               isDarkMode ? 'text-gray-100' : 'text-gray-900'
             } ${subtasks.length === 0 && !showHeader ? 'rounded-lg' : 'rounded-b-lg'}`}
-            style={{ 
-              backgroundColor: hexToRgba(accentColor, 0.6),
-            }}
+            style={{ backgroundColor: addRowBg }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = hexToRgba(accentColor, 0.8);
+              e.currentTarget.style.backgroundColor = addRowHoverBg;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = hexToRgba(accentColor, 0.6);
+              e.currentTarget.style.backgroundColor = addRowBg;
             }}
           >
-          <div className="flex items-center">
+          <div className="flex items-center min-h-7">
             <div className="shrink-0 relative opacity-30">
               <Checkbox
                 id={`subtask-add-${parentTaskId}`}
@@ -253,22 +257,23 @@ const SubtasksList: React.FC<SubtasksListProps> = ({
               inputMode="text"
               disabled={isPending}
             />
-            {newSubtaskName.trim() ? (
-              <button
-                type="submit"
-                disabled={isPending}
-                className={`shrink-0 w-7 h-7 ml-1 rounded-full flex items-center justify-center transition-colors ${
-                  isDarkMode
-                    ? 'text-gray-300 hover:text-white hover:bg-white/10'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-black/5'
-                } disabled:opacity-40`}
-                aria-label="Add subtask"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
-              </button>
-            ) : null}
+            <button
+              type="submit"
+              disabled={isPending || !newSubtaskName.trim()}
+              className={`shrink-0 w-7 h-7 ml-1 rounded-full flex items-center justify-center transition-[colors,opacity] ${
+                isDarkMode
+                  ? 'text-gray-300 hover:text-white hover:bg-white/10'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-black/5'
+              } disabled:opacity-40 ${
+                newSubtaskName.trim() ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
+              aria-label="Add subtask"
+              tabIndex={newSubtaskName.trim() ? 0 : -1}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+            </button>
           </div>
         </div>
       </form>
