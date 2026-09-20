@@ -207,7 +207,7 @@ export const EventModal = ({
 
   return (
     <>
-      <div className="flex flex-col h-full overflow-y-auto relative">
+      <div className="flex flex-col h-full overflow-y-auto overflow-x-hidden relative">
         <div className="flex items-start w-full mb-4 gap-3">
           {/* Invisible checkbox to catch auto-focus from Sheet component */}
           <div className="sr-only">

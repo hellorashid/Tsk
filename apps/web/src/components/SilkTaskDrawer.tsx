@@ -460,7 +460,7 @@ export default function SilkTaskDrawer({
                   event.type === 'task' && (!event.taskId || event.taskId === '') && event.metadata?.taskSnapshot ? (
                     // Read-only view for deleted task - matching TaskModal layout
                     <div className="flex flex-col h-full">
-                          <div className="flex-1 overflow-y-auto styled-scrollbar">
+                          <div className="flex-1 overflow-y-auto overflow-x-hidden styled-scrollbar">
                             {/* Header with checkbox and title - matching TaskModal layout */}
                             <div className="flex items-start w-full mb-4 gap-3">
                               <div className="mt-2">

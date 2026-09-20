@@ -24,7 +24,6 @@ interface ScheduleSidebarProps {
   accentColor?: string;
   isDarkMode?: boolean;
   viewMode?: 'timeline' | 'agenda';
-  onViewModeChange?: (mode: 'timeline' | 'agenda') => void;
   location?: { latitude: number; longitude: number; name: string };
   onFetchWeather?: (date: Date) => Promise<void>;
   folders?: Folder[];
@@ -42,7 +41,6 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   accentColor = '#1F1B2F',
   isDarkMode = true,
   viewMode = 'agenda',
-  onViewModeChange,
   folders,
   framed = true,
 }) => {
@@ -410,9 +408,8 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
           </div>
         </div>
         
-        {/* Right side - Navigation & Toggle */}
+        {/* Right side - Date navigation */}
         <div className="flex items-center gap-2">
-          {/* Date navigation */}
           <div className="flex items-center gap-0.5">
             <button
               onClick={goToPreviousDay}
@@ -440,40 +437,6 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
               </svg>
             </button>
           </div>
-
-          {/* View mode toggle — desktop uses the left rail; keep for mobile */}
-          {framed && onViewModeChange && (
-            <div className={`flex items-center rounded-xl p-0.5 ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}>
-              <button
-                onClick={() => onViewModeChange('agenda')}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === 'agenda'
-                    ? isDarkMode ? 'bg-white/20 text-white' : 'bg-white text-gray-900 shadow-sm'
-                    : isDarkMode ? 'bg-transparent text-gray-400 hover:text-gray-200' : 'bg-transparent text-gray-500 hover:text-gray-800'
-                }`}
-                aria-label="Agenda view"
-                title="Agenda view"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                </svg>
-              </button>
-              <button
-                onClick={() => onViewModeChange('timeline')}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === 'timeline'
-                    ? isDarkMode ? 'bg-white/20 text-white' : 'bg-white text-gray-900 shadow-sm'
-                    : isDarkMode ? 'bg-transparent text-gray-400 hover:text-gray-200' : 'bg-transparent text-gray-500 hover:text-gray-800'
-                }`}
-                aria-label="Timeline view"
-                title="Timeline view"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>

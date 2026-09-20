@@ -333,7 +333,7 @@ export const TaskModal = ({
   return (
     <>
       <div
-        className={`${inDrawer ? "flex flex-col h-full relative" : "bg-black rounded-lg shadow-xl max-w-2xl w-full mx-4 p-4"}`}
+        className={`${inDrawer ? "flex flex-col h-full relative overflow-x-hidden" : "bg-black rounded-lg shadow-xl max-w-2xl w-full mx-4 p-4"}`}
         style={inDrawer ? { backgroundColor: getBackgroundColor() } : {}}
       >
         {/* Header - Title with checkbox (sticky, outside scroll) */}
@@ -376,7 +376,7 @@ export const TaskModal = ({
 
         {/* Scrollable content area */}
         <div 
-          className={inDrawer ? "flex-1 overflow-y-auto min-h-0" : ""}
+          className={inDrawer ? "flex-1 overflow-y-auto overflow-x-hidden min-h-0" : ""}
           style={inDrawer ? {
             scrollbarWidth: 'thin',
             scrollbarColor: isDarkMode ? 'rgba(255,255,255,0.2) transparent' : 'rgba(0,0,0,0.2) transparent',

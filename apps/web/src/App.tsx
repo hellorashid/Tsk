@@ -436,7 +436,6 @@ function Home() {
                         accentColor={theme.accentColor}
                         isDarkMode={theme.isDarkMode}
                         viewMode={scheduleViewMode}
-                        onViewModeChange={setScheduleViewMode}
                         location={theme.location}
                         onFetchWeather={handleFetchWeather}
                         folders={folders}
@@ -450,7 +449,6 @@ function Home() {
                         accentColor={theme.accentColor}
                         isDarkMode={theme.isDarkMode}
                         viewMode={scheduleViewMode}
-                        onViewModeChange={setScheduleViewMode}
                         location={theme.location}
                         onFetchWeather={handleFetchWeather}
                         folders={folders}
@@ -712,7 +710,6 @@ function Home() {
                         accentColor={theme.accentColor}
                         isDarkMode={theme.isDarkMode}
                         viewMode={scheduleViewMode}
-                        onViewModeChange={setScheduleViewMode}
                         location={theme.location}
                         onFetchWeather={handleFetchWeather}
                         folders={folders}
@@ -725,7 +722,6 @@ function Home() {
                         accentColor={theme.accentColor}
                         isDarkMode={theme.isDarkMode}
                         viewMode={scheduleViewMode}
-                        onViewModeChange={setScheduleViewMode}
                         location={theme.location}
                         onFetchWeather={handleFetchWeather}
                         folders={folders}
