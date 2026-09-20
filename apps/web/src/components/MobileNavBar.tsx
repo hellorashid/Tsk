@@ -23,7 +23,7 @@ const TasksIcon = () => (
 );
 
 const AgendaIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
     <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
   </svg>
 );
@@ -79,7 +79,7 @@ const NavIconButton = ({ label, isActive = false, isDarkMode, onClick, children 
   <button
     type="button"
     onClick={onClick}
-    className={`pressable flex items-center justify-center w-11 h-11 rounded-full transition-colors duration-200 ${
+    className={`pressable flex items-center justify-center w-12 h-12 rounded-full transition-colors duration-200 ${
       isActive
         ? isDarkMode
           ? "bg-white/20 text-white"
@@ -143,12 +143,12 @@ function MobileNavBar({
       >
         <div className="flex items-center justify-between gap-3">
           <div
-            className="flex items-center justify-center gap-1 px-1.5 py-1.5 rounded-full backdrop-blur-3xl shadow-lg border min-w-0"
+            className="flex items-center justify-center gap-1 px-2 py-2 rounded-full backdrop-blur-3xl shadow-lg border min-w-0"
             style={glassStyle}
             role="navigation"
             aria-label="Primary"
           >
-            <div className="flex items-center justify-center w-11 h-11 shrink-0">
+            <div className="flex items-center justify-center w-12 h-12 shrink-0">
               <UserMenu trigger="avatar" showSyncBadge allowAddAccount menuItems={userMenuItems} />
             </div>
 
@@ -181,7 +181,7 @@ function MobileNavBar({
           </div>
 
           <div
-            className="flex items-center justify-center px-1.5 py-1.5 rounded-full backdrop-blur-3xl shadow-lg border shrink-0"
+            className="flex items-center justify-center px-2 py-2 rounded-full backdrop-blur-3xl shadow-lg border shrink-0"
             style={glassStyle}
           >
             <button
@@ -193,7 +193,7 @@ function MobileNavBar({
                 }
                 onCreateNew();
               }}
-              className={`pressable flex items-center justify-center w-11 h-11 rounded-full transition-colors duration-200 ${
+              className={`pressable flex items-center justify-center w-12 h-12 rounded-full transition-colors duration-200 ${
                 isDarkMode ? "text-gray-300 hover:bg-white/10" : "text-gray-600 hover:bg-gray-100"
               }`}
               aria-label={isCloseMode ? "Close settings" : "Create new"}
