@@ -1,8 +1,8 @@
 import { UserMenu, type UserMenuItem } from "@basictech/react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { basic } from "../basic";
-import { useTheme } from "../contexts/ThemeContext";
+import { useTheme, getGlassSurface } from "../contexts/ThemeContext";
 import { useModalHistory } from "../hooks/useModalHistory";
 
 interface MobileNavBarProps {
@@ -67,9 +67,9 @@ const FoldersIcon = () => (
 
 function getGlassStyle(accentColor: string, isDarkMode: boolean) {
   return {
-    backgroundColor: `${accentColor}E6`,
+    backgroundColor: getGlassSurface(accentColor, isDarkMode),
     borderColor: isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
-    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+    boxShadow: isDarkMode ? "0 8px 32px rgba(0, 0, 0, 0.3)" : "0 8px 32px rgba(0, 0, 0, 0.12)",
   };
 }
 
@@ -85,7 +85,7 @@ const NavIconButton = ({ label, isActive = false, isDarkMode, onClick, children 
   <button
     type="button"
     onClick={onClick}
-    className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-200 ${
+    className={`pressable flex items-center justify-center w-12 h-12 rounded-full transition-colors duration-200 ${
       isActive
         ? isDarkMode
           ? "bg-white/20 text-white"
@@ -113,7 +113,7 @@ const MenuRow = ({ label, isDarkMode, onClick, children }: MenuRowProps) => (
     type="button"
     role="menuitem"
     onClick={onClick}
-    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-[15px] font-medium text-left transition-colors duration-150 ${
+    className={`pressable w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-[15px] font-medium text-left transition-colors duration-150 ${
       isDarkMode
         ? "text-white/90 hover:bg-white/10"
         : "text-gray-800 hover:bg-black/5"
@@ -332,7 +332,7 @@ function MobileNavBar({
                 }
                 setMenuOpen((open) => !open);
               }}
-              className={`flex items-center justify-center w-12 h-12 rounded-full transition-colors duration-200 ${
+              className={`pressable flex items-center justify-center w-12 h-12 rounded-full transition-colors duration-200 ${
                 isDarkMode ? "text-gray-300 hover:bg-white/10" : "text-gray-600 hover:bg-gray-100"
               }`}
               aria-label={isCloseMode ? "Close settings" : menuOpen ? "Close menu" : "Open menu"}
@@ -342,9 +342,9 @@ function MobileNavBar({
               <AnimatePresence mode="wait" initial={false}>
                 <motion.span
                   key={isCloseMode ? "close" : "menu"}
-                  initial={{ opacity: 0, scale: 0.8 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.08 }}
                   className="flex"
                 >

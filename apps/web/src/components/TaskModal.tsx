@@ -1,14 +1,16 @@
 import { Folder, Task, TaskSource, TaskUpdate } from "../utils/types";
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import Checkbox from './Checkbox';
 import { ScheduleCardData, getTimeFromDateTime, getEventDuration } from '../utils/schedule';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme, getAppSurface } from '../contexts/ThemeContext';
 import { useSubtaskRecords } from '../hooks/useBasicData';
 import SubtasksList from './SubtasksList';
 import TaskSharePanel from './TaskSharePanel';
 import { useAutoResizeTextarea } from '../hooks/useAutoResizeTextarea';
 import { showPickerOrClick } from '../utils/showPicker';
+import { AppDrawer } from './AppDrawer';
+import { basic } from '../basic';
 
 export const TaskModal = ({
   task, updateFunction, inDrawer = false, deleteTask, new: isNew = false, onDelete, onAddToSchedule, scheduledEvents, onUpdateEvent, onDeleteEvent, onAddSubtask, onUpdateSubtask, onDeleteSubtask, onEnterFocus, folders, taskSource = null
@@ -32,7 +34,9 @@ export const TaskModal = ({
 }) => {
   const { theme } = useTheme();
   const { accentColor, isDarkMode } = theme;
+  const { isSignedIn, isReady, signIn } = basic.useAuth();
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
+  const [shareDrawerOpen, setShareDrawerOpen] = useState(false);
   
   // Local state for folder label to ensure immediate UI updates
   const [localFolderLabel, setLocalFolderLabel] = useState<string | null>(() => {
@@ -115,6 +119,7 @@ export const TaskModal = ({
     setTaskCompleted(task?.completed || false);
     setTaskName(task?.name || '');
     setTaskDescription(task?.description || '');
+    setShareDrawerOpen(false);
     
     // Update folder label
     const taskLabels = task?.labels?.split(',').map(l => l.trim()) || [];
@@ -330,7 +335,7 @@ export const TaskModal = ({
         style={inDrawer ? { backgroundColor: getBackgroundColor() } : {}}
       >
         {/* Header - Title with checkbox (sticky, outside scroll) */}
-        <div className={`flex items-start w-full ${inDrawer ? 'mb-4 flex-shrink-0' : 'my-4'} gap-3`}>
+        <div className={`flex items-start w-full ${inDrawer ? 'mb-4 shrink-0' : 'my-4'} gap-3`}>
           <div className="mt-2">
             <Checkbox
               id={task?.id}
@@ -354,7 +359,7 @@ export const TaskModal = ({
             onChange={handleTitleChange}
             onBlur={handleTitleBlur}
             onKeyDown={(e) => handleKeyDown(e, 'title')}
-            className="task-title flex-1 text-start text-xl text-bold py-1 px-2 text-white bg-transparent resize-none overflow-hidden min-h-[2rem] focus:outline-none"
+            className="task-title flex-1 text-start text-xl text-bold py-1 px-2 text-white bg-transparent resize-none overflow-hidden min-h-[2rem] focus:outline-hidden"
             placeholder={isNew ? "Enter task name..." : ""}
             rows={1}
             style={{ height: 'auto' }}
@@ -447,7 +452,7 @@ export const TaskModal = ({
                   onClick={(e) => e.stopPropagation()}
                   className={`flex items-center gap-2 pl-3 pr-2 py-2 rounded-lg h-[36px] ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'}`}
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                     </svg>
                     
@@ -478,7 +483,7 @@ export const TaskModal = ({
                           isDarkMode 
                             ? 'bg-white/10 text-white border border-white/20' 
                             : 'bg-white text-gray-900 border border-gray-300'
-                        } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        } focus:outline-hidden focus:ring-2 focus:ring-blue-500`}
                       />
                     ) : (
                       <div
@@ -520,7 +525,7 @@ export const TaskModal = ({
                           isDarkMode 
                             ? 'bg-white/10 text-white border border-white/20' 
                             : 'bg-white text-gray-900 border border-gray-300'
-                        } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        } focus:outline-hidden focus:ring-2 focus:ring-blue-500`}
                       />
                     ) : (
                       <div
@@ -565,7 +570,7 @@ export const TaskModal = ({
                           isDarkMode 
                             ? 'bg-white/10 text-white border border-white/20' 
                             : 'bg-white text-gray-900 border border-gray-300'
-                        } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        } focus:outline-hidden focus:ring-2 focus:ring-blue-500`}
                       />
                     ) : (
                       <div
@@ -582,7 +587,7 @@ export const TaskModal = ({
                     
                     {/* Duration */}
                     {eventDurationMinutes > 0 && (
-                      <span className={`text-xs flex-shrink-0 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                      <span className={`text-xs shrink-0 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                         ({formatDuration(eventDurationMinutes)})
                       </span>
                     )}
@@ -593,7 +598,7 @@ export const TaskModal = ({
                         e.stopPropagation();
                         handleDeleteEvent(event.id, e);
                       }}
-                      className={`p-1 rounded transition-colors flex-shrink-0 ${
+                      className={`p-1 rounded transition-colors shrink-0 ${
                         isDarkMode 
                           ? 'text-gray-400 hover:text-red-400 hover:bg-red-400/10' 
                           : 'text-gray-500 hover:text-red-600 hover:bg-red-100'
@@ -643,7 +648,7 @@ export const TaskModal = ({
                   : 'opacity-50 cursor-not-allowed'
               }`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className={`${inDrawer ? 'h-5 w-5' : 'h-4 w-4'} flex-shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} viewBox="0 0 20 20" fill="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className={`${inDrawer ? 'h-5 w-5' : 'h-4 w-4'} shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
               </svg>
               <span className={inDrawer ? 'text-base' : 'text-sm'}>Add to Today</span>
@@ -663,54 +668,96 @@ export const TaskModal = ({
         )}
 
         {/* Description Section - auto-expands to fit content */}
-        <textarea
-          ref={descTextareaRef}
-          value={taskDescription || ""}
-          onChange={handleDescriptionChange}
-          onBlur={handleDescriptionBlur}
-          onKeyDown={(e) => handleKeyDown(e, 'description')}
-          className={`task-description opacity-70 text-left py-1 px-2 text-white bg-transparent resize-none overflow-hidden min-h-[100px] focus:outline-none ${inDrawer ? 'mt-6 mb-4' : 'mt-4'}`}
-          placeholder="Some description..."
-          style={{ height: 'auto' }}
-        />
-        {!isNew && task?.id && !taskSource ? (
-          <TaskSharePanel taskId={task.id} taskName={taskName || task.name} />
-        ) : null}
+        <div
+          className={`${inDrawer ? `-mx-4 border-t px-4 pt-4 ${isDarkMode ? 'border-white/5' : 'border-black/5'}` : ''}`}
+        >
+          <textarea
+            ref={descTextareaRef}
+            value={taskDescription || ""}
+            onChange={handleDescriptionChange}
+            onBlur={handleDescriptionBlur}
+            onKeyDown={(e) => handleKeyDown(e, 'description')}
+            className={`task-description opacity-70 text-left py-1 px-2 text-white bg-transparent resize-none overflow-hidden min-h-[100px] focus:outline-hidden ${inDrawer ? 'mb-4' : 'mt-4'}`}
+            placeholder="Add a description..."
+            style={{ height: 'auto' }}
+          />
+        </div>
         </div>{/* End scrollable content area */}
         
         {/* Bottom Action Buttons - positioned at bottom, outside scroll */}
         {inDrawer && !isNew && (
-          <div className="flex items-center justify-between px-2 pb-6 pt-4 flex-shrink-0" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
-            {/* Delete Button - left */}
-            {deleteTask && (
-              <motion.button
-                initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.35 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(e);
-                }}
-                className={`p-4 rounded-full transition-colors shadow-lg ${
-                  isDarkMode 
-                    ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300' 
-                    : 'bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700'
-                }`}
-                aria-label="Delete task"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              </motion.button>
-            )}
-            {!deleteTask && <div />}
+          <div
+            className={`flex items-center justify-between gap-2 -mx-4 px-4 pt-4 shrink-0 mt-2 border-t ${
+              isDarkMode ? 'border-white/5' : 'border-black/5'
+            }`}
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}
+          >
+            {/* Delete + Share - left */}
+            <div className="flex items-center gap-2">
+              {deleteTask && (
+                <motion.button
+                  initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.35 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(e);
+                  }}
+                  className={`p-4 rounded-full transition-colors shadow-lg ${
+                    isDarkMode 
+                      ? 'bg-white/10 text-gray-400 hover:text-red-400 hover:bg-red-400/10' 
+                      : 'bg-gray-100 text-gray-600 hover:text-red-600 hover:bg-red-100'
+                  }`}
+                  aria-label="Delete task"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </motion.button>
+              )}
+
+              {task?.id && !taskSource ? (
+                <motion.button
+                  initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.37 }}
+                  whileTap={{ scale: 0.9 }}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isReady) return;
+                    if (!isSignedIn) {
+                      void signIn();
+                      return;
+                    }
+                    setShareDrawerOpen(true);
+                  }}
+                  className={`p-4 rounded-full transition-colors shadow-lg ${
+                    shareDrawerOpen
+                      ? isDarkMode
+                        ? 'bg-white/20 text-gray-100'
+                        : 'bg-gray-800 text-white'
+                      : isDarkMode
+                        ? 'bg-white/10 text-gray-400 hover:text-gray-100 hover:bg-white/20'
+                        : 'bg-gray-100 text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                  }`}
+                  aria-label="Share task"
+                  aria-pressed={shareDrawerOpen}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                  </svg>
+                </motion.button>
+              ) : null}
+            </div>
+            {!deleteTask && !(task?.id && !taskSource) && <div />}
             
             {/* Folder Selector - center */}
             {folders && folders.length > 0 && (
               <motion.div 
                 className="relative"
-                initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                initial={{ opacity: 0, y: 12, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.4 }}
               >
@@ -824,7 +871,7 @@ export const TaskModal = ({
             {/* Focus Button - right */}
             {onEnterFocus && (
               <motion.button
-                initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                initial={{ opacity: 0, y: 12, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.45 }}
                 whileTap={{ scale: 0.9 }}
@@ -848,6 +895,29 @@ export const TaskModal = ({
             {!onEnterFocus && <div />}
           </div>
         )}
+
+        {inDrawer && task?.id && !taskSource ? (
+          <AppDrawer
+            nested
+            open={shareDrawerOpen}
+            onOpenChange={setShareDrawerOpen}
+            title="Share task"
+            popupClassName={isDarkMode ? 'text-white' : 'text-gray-900'}
+            popupStyle={{
+              backgroundColor: getAppSurface(accentColor, isDarkMode),
+              height: 'auto',
+              maxHeight: '70dvh',
+              width: '100%',
+              padding: '1rem',
+            }}
+          >
+            <div className={`mx-auto mb-3 h-1.5 w-12 shrink-0 rounded-full ${isDarkMode ? 'bg-gray-400' : 'bg-gray-300'}`} />
+            <TaskSharePanel
+              taskId={task.id}
+              taskName={taskName || task.name}
+            />
+          </AppDrawer>
+        ) : null}
 
       </div>
       

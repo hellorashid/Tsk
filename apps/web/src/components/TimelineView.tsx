@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { ScheduleCardData, ScheduleCardInput, getEventDuration } from '../utils/schedule';
 import { useTaskRecord } from '../hooks/useBasicData';
 import Checkbox from './Checkbox';
@@ -838,7 +838,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
           onMouseDown={handleTimelineMouseDown}
         >
           {/* Time Labels Column */}
-          <div className="flex-shrink-0 relative" style={{ width: '60px' }}>
+          <div className="shrink-0 relative" style={{ width: '60px' }}>
             {timeLabels.map(({ minutes, label, isMajor }) => {
               const topPosition = (minutes - timeRange.startMinutes) * pixelsPerMinute;
               return (
@@ -863,7 +863,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
           {/* Timeline Bar */}
           <div 
             ref={timelineBarRef}
-            className="flex-shrink-0 relative" 
+            className="shrink-0 relative" 
             style={{ width: '32px' }}
             onMouseEnter={() => setIsTimelineHovered(true)}
             onMouseMove={(e) => {
@@ -883,13 +883,16 @@ const TimelineView: React.FC<TimelineViewProps> = ({
             }}
           >
             <div
-              className="absolute left-1/2 transform -translate-x-1/2 rounded overflow-hidden"
+              className="absolute left-1/2 rounded overflow-hidden"
               style={{
-                width: isTimelineHovered ? '45px' : '32px',
+                width: '45px',
                 top: '-16px',
                 bottom: '-16px',
+                marginLeft: '-22.5px',
                 backgroundColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-                transition: 'width 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)', // Snappy spring-like easing
+                transform: `scaleX(${isTimelineHovered ? 1 : 32 / 45})`,
+                transformOrigin: 'center center',
+                transition: 'transform 200ms cubic-bezier(0.23, 1, 0.32, 1)',
               }}
             >
               {/* Colored segments with gradients - extend to fill padding areas */}
@@ -939,9 +942,11 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                     left: '4px',
                     top: '16px',
                     bottom: '16px',
-                    width: isTimelineHovered ? '8px' : '6px',
+                    width: '8px',
                     backgroundColor: isDarkMode ? 'rgba(96, 165, 250, 0.6)' : 'rgba(59, 130, 246, 0.6)',
-                    transition: 'width 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)', // Same snappy easing
+                    transform: `scaleX(${isTimelineHovered ? 1 : 0.75})`,
+                    transformOrigin: 'left center',
+                    transition: 'transform 200ms cubic-bezier(0.23, 1, 0.32, 1)',
                   }}
                 />
               )}
@@ -956,10 +961,10 @@ const TimelineView: React.FC<TimelineViewProps> = ({
             <AnimatePresence>
               {tooltipPosition !== null && activityHoverY !== null && (
                 <motion.div
-                  initial={{ opacity: 0, x: -5 }}
+                  initial={{ opacity: 0, x: -4 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -5 }}
-                  transition={{ duration: 0.12, ease: 'easeOut' }}
+                  exit={{ opacity: 0, x: -4 }}
+                  transition={{ duration: 0.12, ease: [0.23, 1, 0.32, 1] }}
                   className="fixed pointer-events-none" 
                   style={{ 
                     left: `${tooltipPosition.x}px`, 
@@ -981,7 +986,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                       <motion.div
                         key="weather-tooltip"
                         layout="position"
-                        transition={{ duration: 0.15, ease: 'easeOut' }}
+                        transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
                         className="px-2 py-1.5 rounded-md backdrop-blur-xl text-xs font-medium whitespace-nowrap shadow-lg text-white"
                         style={{ 
                           backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.85)' : 'rgba(37, 99, 235, 0.85)',
@@ -1006,10 +1011,10 @@ const TimelineView: React.FC<TimelineViewProps> = ({
             <AnimatePresence>
               {hoveredActivityGroup && activityPopupPosition && (
                 <motion.div
-                  initial={{ opacity: 0, x: -5, scale: 0.95 }}
+                  initial={{ opacity: 0, x: -4, scale: 0.96 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: -5, scale: 0.95 }}
-                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                  exit={{ opacity: 0, x: -4, scale: 0.96 }}
+                  transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
                   className="fixed z-[9999] pointer-events-auto"
                   style={{
                     left: `${activityPopupPosition.x}px`,
@@ -1060,7 +1065,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                               : 'hover:bg-black/5 active:bg-black/10'
                           }`}
                         >
-                          <svg className="w-3.5 h-3.5 flex-shrink-0 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-3.5 h-3.5 shrink-0 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                           <span 
@@ -1070,7 +1075,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                             {completionEvent.title}
                           </span>
                           <svg 
-                            className="w-3 h-3 flex-shrink-0 ml-auto opacity-40" 
+                            className="w-3 h-3 shrink-0 ml-auto opacity-40" 
                             fill="none" 
                             stroke="currentColor" 
                             viewBox="0 0 24 24"
@@ -1145,7 +1150,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
 
           {/* Activity Column - shows completed task icons grouped by 30-min intervals */}
           <div 
-            className="flex-shrink-0 relative ml-1" 
+            className="shrink-0 relative ml-1" 
             style={{ width: '24px', minHeight: `${timelineHeight}px` }}
           >
             {activityGroups.map((group) => {
@@ -1190,7 +1195,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
                   >
                     {/* Circular checkbox icon - keep green */}
                     <div 
-                      className="rounded-full flex items-center justify-center flex-shrink-0"
+                      className="rounded-full flex items-center justify-center shrink-0"
                       style={{ 
                         width: '12px',
                         height: '12px',
@@ -1560,8 +1565,8 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
           // Compact completion card layout - expands on hover for merged completions
           <div className="flex flex-col w-full h-full overflow-hidden">
             {/* Header row */}
-            <div className="flex items-center gap-2 w-full flex-shrink-0">
-              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <div className="flex items-center gap-2 w-full shrink-0">
+              <svg className="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               <span className={`${titleTextSize} font-medium truncate ${
@@ -1587,11 +1592,11 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
                         : 'text-gray-700 hover:bg-gray-100 active:bg-gray-200'
                     }`}
                   >
-                    <svg className="w-3 h-3 flex-shrink-0 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-3 h-3 shrink-0 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                     <span className="truncate flex-1">{completionEvent.title}</span>
-                    <svg className={`w-3 h-3 flex-shrink-0 opacity-40`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className={`w-3 h-3 shrink-0 opacity-40`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
@@ -1633,7 +1638,7 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
                     {displayTitle}
                   </div>
                   {duration > 0 && (
-                    <span className={`${durationTextSize} flex-shrink-0 ${
+                    <span className={`${durationTextSize} shrink-0 ${
                       isDarkMode ? 'text-gray-500' : 'text-gray-600'
                     }`}>
                       ({Math.round(duration)}m)

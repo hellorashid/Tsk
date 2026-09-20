@@ -98,7 +98,7 @@ export default function TaskSharePanel({ taskId, taskName, compact = false }: Ta
           onChange={(event) => setHandle(event.target.value)}
           placeholder="friend.basic.id"
           autoComplete="off"
-          className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-white/20"
+          className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm outline-hidden focus:ring-2 focus:ring-white/20"
         />
         <button
           type="submit"

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import Checkbox from './Checkbox';
 import { useTaskRecord } from '../hooks/useBasicData';
 import { ScheduleCardData, getEventDuration } from '../utils/schedule';

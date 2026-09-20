@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { ScheduleCardData, getEventDuration, getTimeFromDateTime } from '../utils/schedule';
 import Checkbox from './Checkbox';
 import { showPickerOrClick } from '../utils/showPicker';
@@ -225,7 +225,7 @@ export const EventModal = ({
             value={eventTitle}
             onChange={handleTitleChange}
             onBlur={handleTitleBlur}
-            className={`flex-1 bg-transparent focus:outline-none text-xl font-semibold resize-none overflow-hidden border border-transparent rounded ${
+            className={`flex-1 bg-transparent focus:outline-hidden text-xl font-semibold resize-none overflow-hidden border border-transparent rounded ${
               isDarkMode ? 'text-white' : 'text-gray-900'
             }`}
             rows={1}
@@ -236,7 +236,7 @@ export const EventModal = ({
 
         {/* Date and Time Section */}
         <div className={`flex items-center gap-2 pl-3 pr-2 py-2 rounded-lg h-[36px] mb-4 ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'}`}>
-          <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} viewBox="0 0 20 20" fill="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
           </svg>
           
@@ -266,7 +266,7 @@ export const EventModal = ({
                 isDarkMode 
                   ? 'bg-white/10 text-white border border-white/20' 
                   : 'bg-white text-gray-900 border border-gray-300'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              } focus:outline-hidden focus:ring-2 focus:ring-blue-500`}
             />
           ) : (
             <div
@@ -307,7 +307,7 @@ export const EventModal = ({
                 isDarkMode 
                   ? 'bg-white/10 text-white border border-white/20' 
                   : 'bg-white text-gray-900 border border-gray-300'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              } focus:outline-hidden focus:ring-2 focus:ring-blue-500`}
             />
           ) : (
             <div
@@ -351,7 +351,7 @@ export const EventModal = ({
                 isDarkMode 
                   ? 'bg-white/10 text-white border border-white/20' 
                   : 'bg-white text-gray-900 border border-gray-300'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              } focus:outline-hidden focus:ring-2 focus:ring-blue-500`}
             />
           ) : (
             <div
@@ -373,7 +373,7 @@ export const EventModal = ({
           value={eventDescription}
           onChange={handleDescriptionChange}
           onBlur={handleDescriptionBlur}
-          className={`w-full bg-transparent focus:outline-none resize-none overflow-hidden border border-transparent rounded mb-4 ${
+          className={`w-full bg-transparent focus:outline-hidden resize-none overflow-hidden border border-transparent rounded mb-4 ${
             isDarkMode ? 'text-gray-300' : 'text-gray-700'
           }`}
           rows={3}
@@ -388,7 +388,7 @@ export const EventModal = ({
         {deleteEvent && (
           <div className="flex items-center justify-start px-2 pb-6 pt-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
             <motion.button
-              initial={{ opacity: 0, y: 20, scale: 0.8 }}
+              initial={{ opacity: 0, y: 12, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.35 }}
               whileTap={{ scale: 0.9 }}

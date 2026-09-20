@@ -28,7 +28,7 @@ const AboutContent: React.FC<AboutContentProps> = ({
                 <h1 className="text-xl font-bold">Welcome to tsk.lol</h1>
                 <button
                     onClick={onClose}
-                    className={`bg-transparent focus:outline-none`}
+                    className={`bg-transparent focus:outline-hidden`}
                     aria-label="Close about"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

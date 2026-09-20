@@ -12,6 +12,7 @@ import {
   getNextDay,
   isEventOnDate
 } from '../utils/dateHelpers';
+import { getGlassSurface } from '../contexts/ThemeContext';
 
 // Get weather icon based on condition
 const getWeatherIcon = (condition: string): React.ReactNode => {
@@ -109,21 +110,21 @@ const ScheduleItemRow: React.FC<ScheduleItemRowProps> = ({
       onClick={() => onCardClick?.(event)}
     >
       {/* Time */}
-      <span className={`text-xs font-mono w-10 flex-shrink-0 py-2 ${
+      <span className={`text-xs font-mono w-10 shrink-0 py-2 ${
         isCompleted ? 'opacity-50' : ''
       } ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
         {event.start.dateTime ? formatTimeCompact(event.start.dateTime) : '--:--'}
       </span>
       
       {/* Timeline indicator - continuous line */}
-      <div className="flex flex-col items-center w-5 flex-shrink-0">
+      <div className="flex flex-col items-center w-5 shrink-0">
         {/* Top line segment */}
         <div 
           className={`w-0.5 flex-1 ${isFirst ? 'bg-transparent' : (isDarkMode ? 'bg-white/20' : 'bg-gray-300')}`}
         />
         
         {/* Icon */}
-        <div className="flex-shrink-0 my-0.5">
+        <div className="shrink-0 my-0.5">
           {isTask ? (
             isCompleted ? (
               <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
@@ -206,7 +207,7 @@ const RadialProgress: React.FC<{
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          className="transition-all duration-500 ease-out"
+          className="transition-[stroke-dashoffset] duration-200 ease-out"
         />
       </svg>
       {/* Center content */}
@@ -440,7 +441,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
         isDarkMode ? 'text-gray-100' : 'text-gray-900'
       }`}
         style={{ 
-        backgroundColor: `${accentColor}E6`,
+        backgroundColor: getGlassSurface(accentColor, isDarkMode),
         scrollbarWidth: 'none',
         msOverflowStyle: 'none',
       }}
@@ -508,7 +509,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
             }`}>
               <button
                 onClick={() => onViewModeChange('timeline')}
-                  className={`p-2 rounded-lg transition-all ${
+                  className={`p-2 rounded-lg transition-colors ${
                     isDarkMode
                       ? 'bg-transparent text-gray-400 hover:text-gray-200'
                       : 'bg-transparent text-gray-500 hover:text-gray-800'
@@ -521,7 +522,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
               </button>
               <button
                 onClick={() => onViewModeChange('agenda')}
-                  className={`p-2 rounded-lg transition-all ${
+                  className={`p-2 rounded-lg transition-colors ${
                     isDarkMode
                       ? 'bg-white/20 text-white'
                       : 'bg-white text-gray-900 shadow-sm'
@@ -552,7 +553,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
           <div className={`rounded-2xl p-3 border transition-colors ${cardBg} ${cardBorder}`}>
             {weatherEvent?.metadata?.weather ? (
               <div className="flex items-center gap-3">
-                <div className={`flex-shrink-0 ${isDarkMode ? 'text-blue-400' : 'text-blue-500'}`}>
+                <div className={`shrink-0 ${isDarkMode ? 'text-blue-400' : 'text-blue-500'}`}>
                   {getWeatherIcon(weatherEvent.metadata.weather.condition)}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -593,7 +594,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <div className={`flex-shrink-0 opacity-50 ${isDarkMode ? 'text-blue-400' : 'text-blue-500'}`}>
+                <div className={`shrink-0 opacity-50 ${isDarkMode ? 'text-blue-400' : 'text-blue-500'}`}>
                   <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M18 15h.5a3.5 3.5 0 000-7h-.02a5.5 5.5 0 00-10.78 1.38A3 3 0 008 15h10z" />
                   </svg>
@@ -612,7 +613,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
             onClick={() => (currentEvent || upNextEvent) && onCardClick?.(currentEvent || upNextEvent!)}
           >
             <div className="flex items-center gap-3">
-              <div className={`flex-shrink-0 ${currentEvent ? 'text-red-400' : isDarkMode ? 'text-orange-400' : 'text-orange-500'}`}>
+              <div className={`shrink-0 ${currentEvent ? 'text-red-400' : isDarkMode ? 'text-orange-400' : 'text-orange-500'}`}>
                 <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10" />
                   <polyline points="12 6 12 12 16 14" />

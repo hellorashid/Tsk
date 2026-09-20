@@ -42,23 +42,25 @@ const IconSidebar: React.FC<IconSidebarProps> = ({
 
   return (
     <div 
-      className="hidden md:flex flex-col h-full w-14 flex-shrink-0"
+      className="hidden md:flex flex-col h-full w-14 shrink-0"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Top - Logo with backdrop on hover */}
-      <div className="flex-shrink-0 p-2 flex items-center justify-center">
+      <div className="shrink-0 p-2 flex items-center justify-center">
         <div 
-          className={`rounded-xl transition-all duration-200 ${
+          className={`rounded-xl transition-colors duration-200 ${
             isHovered ? 'backdrop-blur-sm' : ''
           }`}
           style={{ 
-            backgroundColor: isHovered ? `${accentColor}80` : 'transparent'
+            backgroundColor: isHovered
+              ? (isDarkMode ? `${accentColor}80` : 'rgba(255, 255, 255, 0.75)')
+              : 'transparent'
           }}
         >
           <button
             onClick={onOpenAbout}
-            className={`p-2 rounded-xl transition-colors duration-200 ${
+            className={`p-2 rounded-xl transition-colors duration-200 pressable ${
               isDarkMode ? 'hover:bg-white/10' : 'hover:bg-black/10'
             }`}
             aria-label="About tsk"
@@ -73,19 +75,21 @@ const IconSidebar: React.FC<IconSidebarProps> = ({
       <div className="flex-1" />
 
       {/* Bottom - Settings and User with backdrop on hover */}
-      <div className="flex-shrink-0 p-2 pb-4 flex flex-col items-center">
+      <div className="shrink-0 p-2 pb-4 flex flex-col items-center">
         <div 
-          className={`rounded-xl p-1.5 space-y-1 transition-all duration-200 ${
+          className={`rounded-xl p-1.5 space-y-1 transition-colors duration-200 ${
             isHovered ? 'backdrop-blur-sm' : ''
           }`}
           style={{ 
-            backgroundColor: isHovered ? `${accentColor}80` : 'transparent'
+            backgroundColor: isHovered
+              ? (isDarkMode ? `${accentColor}80` : 'rgba(255, 255, 255, 0.75)')
+              : 'transparent'
           }}
         >
           {/* Settings button */}
           <button
             onClick={onOpenSettings}
-            className={`p-2 rounded-lg transition-colors duration-200 ${
+            className={`pressable p-2 rounded-lg transition-colors duration-200 ${
               currentView === 'settings'
                 ? (isDarkMode ? 'bg-white/20' : 'bg-black/20')
                 : 'opacity-70 hover:opacity-100'

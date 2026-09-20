@@ -1,123 +1,216 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useSyncExternalStore,
+  ReactNode,
+} from 'react';
 
-// Define the shape of our theme
+export type ThemeMode = 'system' | 'light' | 'dark';
+
 export interface Theme {
   accentColor: string;
   fontStyle: 'mono' | 'sans' | 'serif';
+  themeMode: ThemeMode;
+  /** Resolved from themeMode + system preference. Not persisted. */
   isDarkMode: boolean;
   location: {
     latitude: number;
     longitude: number;
     name: string;
   };
-  // Add other theme-related properties here if needed
 }
 
-// Define the shape of our context
+interface StoredTheme {
+  accentColor: string;
+  fontStyle: Theme['fontStyle'];
+  themeMode: ThemeMode;
+  location: Theme['location'];
+}
+
 interface ThemeContextType {
   theme: Theme;
-  setTheme: React.Dispatch<React.SetStateAction<Theme>>;
+  setTheme: React.Dispatch<React.SetStateAction<StoredTheme>>;
   setAccentColor: (color: string) => void;
-  setFontStyle: (style: 'mono' | 'sans' | 'serif') => void;
+  setFontStyle: (style: Theme['fontStyle']) => void;
+  setThemeMode: (mode: ThemeMode) => void;
   setIsDarkMode: (isDark: boolean) => void;
   setLocation: (latitude: number, longitude: number, name: string) => void;
 }
 
-// Create the context with a default value
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-// Define the initial theme state
-const initialTheme: Theme = {
-  accentColor: '#1F1B2F', // Default accent color
-  fontStyle: 'sans',     // Default font style
-  isDarkMode: true,      // Default to dark mode
+export const LIGHT_SURFACE = '#F2F3F5';
+export const DEFAULT_ACCENT = '#1F1B2F';
+
+const initialStoredTheme: StoredTheme = {
+  accentColor: DEFAULT_ACCENT,
+  fontStyle: 'sans',
+  themeMode: 'system',
   location: {
-    latitude: 37.7749,   // San Francisco
+    latitude: 37.7749,
     longitude: -122.4194,
-    name: 'San Francisco'
-  }
+    name: 'San Francisco',
+  },
 };
 
-// Create the ThemeProvider component
+function subscribeToSystemTheme(onStoreChange: () => void) {
+  const media = window.matchMedia('(prefers-color-scheme: dark)');
+  media.addEventListener('change', onStoreChange);
+  return () => media.removeEventListener('change', onStoreChange);
+}
+
+function getSystemPrefersDark() {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function resolveIsDarkMode(themeMode: ThemeMode, systemPrefersDark: boolean) {
+  if (themeMode === 'system') return systemPrefersDark;
+  return themeMode === 'dark';
+}
+
+function normalizeStoredTheme(raw: unknown): StoredTheme {
+  if (!raw || typeof raw !== 'object') return initialStoredTheme;
+  const parsed = raw as Partial<StoredTheme> & { isDarkMode?: boolean };
+  const themeMode: ThemeMode =
+    parsed.themeMode === 'system' || parsed.themeMode === 'light' || parsed.themeMode === 'dark'
+      ? parsed.themeMode
+      : typeof parsed.isDarkMode === 'boolean'
+        ? parsed.isDarkMode
+          ? 'dark'
+          : 'light'
+        : initialStoredTheme.themeMode;
+
+  return {
+    ...initialStoredTheme,
+    ...parsed,
+    themeMode,
+    location: {
+      ...initialStoredTheme.location,
+      ...(parsed.location ?? {}),
+    },
+  };
+}
+
+export function getAppSurface(accentColor: string, isDarkMode: boolean) {
+  return isDarkMode ? accentColor : LIGHT_SURFACE;
+}
+
+/** Frosted panels (drawers, islands, sidebars) — dark uses accent tint; light uses white glass. */
+export function getGlassSurface(accentColor: string, isDarkMode: boolean) {
+  return isDarkMode ? `${accentColor}E6` : 'rgba(255, 255, 255, 0.9)';
+}
+
+export function getPhotoOverlay(isDarkMode: boolean) {
+  return isDarkMode
+    ? 'linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4))'
+    : 'linear-gradient(rgba(242, 243, 245, 0.72), rgba(242, 243, 245, 0.88))';
+}
+
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>(() => {
+  const [storedTheme, setStoredTheme] = useState<StoredTheme>(() => {
     try {
-      const storedTheme = localStorage.getItem('appTheme');
-      if (storedTheme) {
-        // Ensure the stored theme has all the necessary properties
-        const parsedTheme = JSON.parse(storedTheme);
-        return { ...initialTheme, ...parsedTheme };
-      }
+      const stored = localStorage.getItem('appTheme');
+      if (stored) return normalizeStoredTheme(JSON.parse(stored));
     } catch (error) {
-      console.error("Error loading theme from localStorage:", error);
+      console.error('Error loading theme from localStorage:', error);
     }
-    return initialTheme;
+    return initialStoredTheme;
   });
 
-  // Save theme to localStorage whenever it changes
+  const systemPrefersDark = useSyncExternalStore(
+    subscribeToSystemTheme,
+    getSystemPrefersDark,
+    () => true,
+  );
+
+  const isDarkMode = resolveIsDarkMode(storedTheme.themeMode, systemPrefersDark);
+
+  const theme = useMemo<Theme>(
+    () => ({
+      ...storedTheme,
+      isDarkMode,
+    }),
+    [storedTheme, isDarkMode],
+  );
+
   useEffect(() => {
     try {
-      localStorage.setItem('appTheme', JSON.stringify(theme));
+      localStorage.setItem(
+        'appTheme',
+        JSON.stringify({
+          accentColor: storedTheme.accentColor,
+          fontStyle: storedTheme.fontStyle,
+          themeMode: storedTheme.themeMode,
+          location: storedTheme.location,
+        }),
+      );
     } catch (error) {
-      console.error("Error saving theme to localStorage:", error);
+      console.error('Error saving theme to localStorage:', error);
     }
-  }, [theme]);
+  }, [storedTheme]);
 
-  // Apply accent color to CSS variables and body background
   useEffect(() => {
+    const surface = getAppSurface(theme.accentColor, theme.isDarkMode);
     document.documentElement.style.setProperty('--accent-color', theme.accentColor);
-    document.body.style.backgroundColor = theme.accentColor;
-    document.documentElement.style.backgroundColor = theme.accentColor;
-  }, [theme.accentColor]);
+    document.documentElement.style.setProperty('--app-surface', surface);
+    document.body.style.backgroundColor = surface;
+    document.documentElement.style.backgroundColor = surface;
+    document.documentElement.style.colorScheme = theme.isDarkMode ? 'dark' : 'light';
+  }, [theme.accentColor, theme.isDarkMode]);
 
-  // Apply theme to document
   useEffect(() => {
-    if (theme.isDarkMode) {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-    } else {
-      document.documentElement.classList.add('light');
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.classList.toggle('dark', theme.isDarkMode);
+    document.documentElement.classList.toggle('light', !theme.isDarkMode);
   }, [theme.isDarkMode]);
 
-  // Apply font style to document
   useEffect(() => {
     document.documentElement.style.setProperty('--font-style', theme.fontStyle);
   }, [theme.fontStyle]);
 
   const setAccentColor = useCallback((color: string) => {
-    setTheme(prevTheme => ({ ...prevTheme, accentColor: color }));
+    setStoredTheme((prev) => ({ ...prev, accentColor: color }));
   }, []);
 
-  const setFontStyle = useCallback((style: 'mono' | 'sans' | 'serif') => {
-    setTheme(prevTheme => ({ ...prevTheme, fontStyle: style }));
+  const setFontStyle = useCallback((style: Theme['fontStyle']) => {
+    setStoredTheme((prev) => ({ ...prev, fontStyle: style }));
+  }, []);
+
+  const setThemeMode = useCallback((mode: ThemeMode) => {
+    setStoredTheme((prev) => ({ ...prev, themeMode: mode }));
   }, []);
 
   const setIsDarkMode = useCallback((isDark: boolean) => {
-    setTheme(prevTheme => ({ ...prevTheme, isDarkMode: isDark }));
+    setStoredTheme((prev) => ({ ...prev, themeMode: isDark ? 'dark' : 'light' }));
   }, []);
 
   const setLocation = useCallback((latitude: number, longitude: number, name: string) => {
-    setTheme(prevTheme => ({ ...prevTheme, location: { latitude, longitude, name } }));
+    setStoredTheme((prev) => ({ ...prev, location: { latitude, longitude, name } }));
   }, []);
 
-  const contextValue = useMemo(() => ({
-    theme, setTheme, setAccentColor, setFontStyle, setIsDarkMode, setLocation
-  }), [theme, setAccentColor, setFontStyle, setIsDarkMode, setLocation]);
-
-  return (
-    <ThemeContext.Provider value={contextValue}>
-      {children}
-    </ThemeContext.Provider>
+  const contextValue = useMemo(
+    () => ({
+      theme,
+      setTheme: setStoredTheme,
+      setAccentColor,
+      setFontStyle,
+      setThemeMode,
+      setIsDarkMode,
+      setLocation,
+    }),
+    [theme, setAccentColor, setFontStyle, setThemeMode, setIsDarkMode, setLocation],
   );
+
+  return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;
 };
 
-// Create a custom hook to use the ThemeContext
 export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
   if (context === undefined) {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
-}; 
+};

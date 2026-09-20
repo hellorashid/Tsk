@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Sheet, useClientMediaQuery, type SheetViewProps } from "@silk-hq/components";
+import { AppDrawer } from './AppDrawer';
 import { useModalHistory } from '../hooks/useModalHistory';
 import { Folder } from '../utils/types';
+import { getGlassSurface } from '../contexts/ThemeContext';
 
 interface FolderDrawerProps {
   isOpen: boolean;
@@ -32,14 +33,7 @@ export default function FolderDrawer({
   isDarkMode,
   accentColor
 }: FolderDrawerProps) {
-  const titleId = React.useId();
-  const viewRef = React.useRef<HTMLDivElement>(null);
   
-  useClientMediaQuery("(min-width: 800px)");
-  const contentPlacement: SheetViewProps["contentPlacement"] = "bottom";
-  const tracks: SheetViewProps["tracks"] = "bottom";
-  
-  // Handle browser back button for closing drawer
   useModalHistory(isOpen, () => setIsOpen(false), 'folder-drawer');
   
   const handleFolderClick = (folderId: string | null) => {
@@ -54,62 +48,19 @@ export default function FolderDrawer({
       onOpenSettings();
     }, 100);
   };
-
-  // Dismiss keyboard when sheet is moved
-  const travelHandler = React.useCallback<Exclude<SheetViewProps["onTravel"], undefined>>(({ progress }) => {
-    if (!viewRef.current) return;
-
-    if (progress < 0.999) {
-      // Dismiss the on-screen keyboard
-      viewRef.current.focus();
-    }
-  }, []);
   
   return (
-    <Sheet.Root 
-      license="non-commercial"
-      presented={isOpen}
-      onPresentedChange={setIsOpen}
+    <AppDrawer
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      title="Folders"
+      popupClassName="backdrop-blur-3xl"
+      popupStyle={{
+        backgroundColor: getGlassSurface(accentColor, isDarkMode),
+        maxHeight: '60vh',
+      }}
     >
-      <Sheet.Portal>
-        <Sheet.View
-          ref={viewRef}
-          contentPlacement={contentPlacement}
-          tracks={tracks}
-          swipeOvershoot={false}
-          nativeEdgeSwipePrevention={true}
-          onTravel={travelHandler}
-          style={{ 
-            height: typeof CSS !== 'undefined' && CSS.supports('height', '100dvh') ? '100dvh' : 'calc(var(--vh, 1vh) * 100)',
-            maxHeight: typeof CSS !== 'undefined' && CSS.supports('height', '100dvh') ? '100dvh' : 'calc(var(--vh, 1vh) * 100)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'stretch',
-            justifyContent: 'flex-end',
-            padding: '0',
-          }}
-        >
-          <Sheet.Backdrop 
-            themeColorDimming="auto" 
-          />
-          <Sheet.Content 
-            className="backdrop-blur-3xl"
-            style={{
-              backgroundColor: `${accentColor}E6`, // 90% opacity
-              borderRadius: '1rem 1rem 0 0',
-              padding: '0px',
-              display: 'flex',
-              flexDirection: 'column',
-              maxHeight: '60vh',
-              overflow: 'hidden',
-            }}
-            aria-labelledby={titleId}
-          >
-            <h2 id={titleId} className="sr-only">
-              Folders
-            </h2>
-            
-            <div className="mx-auto w-12 h-1.5 bg-gray-400 dark:bg-gray-600 rounded-full my-4 flex-shrink-0" />
+            <div className={`mx-auto my-4 h-1.5 w-12 shrink-0 rounded-full ${isDarkMode ? 'bg-gray-400' : 'bg-gray-300'}`} />
             
             <div className={`w-full px-5 pb-10 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
               <h3 className="text-lg font-semibold mb-4">Folders</h3>
@@ -287,9 +238,6 @@ export default function FolderDrawer({
                 </button>
               </div>
             </div>
-          </Sheet.Content>
-        </Sheet.View>
-      </Sheet.Portal>
-    </Sheet.Root>
+    </AppDrawer>
   );
 }

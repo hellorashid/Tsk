@@ -15,7 +15,7 @@ import ScheduleSidebar from "./components/ScheduleSidebar";
 import SettingsPage from "./components/SettingsPage";
 import SharedTasksView from "./components/SharedTasksView";
 import SilkTaskDrawer from "./components/SilkTaskDrawer";
-import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
+import { useTheme, getAppSurface, getPhotoOverlay } from "./contexts/ThemeContext";
 import { useAppActions } from "./hooks/useAppActions";
 import { useFolderRecords, useScheduleRecords, useTaskRecords } from "./hooks/useBasicData";
 import { useSourcedTaskMutations } from "./hooks/useSourcedTaskMutations";
@@ -353,8 +353,8 @@ function Home() {
             typeof CSS !== "undefined" && CSS.supports("height", "100dvh")
               ? "100dvh"
               : "calc(var(--vh, 1vh) * 100)",
-          backgroundColor: theme.accentColor,
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4)), url(${bgImage})`,
+          backgroundColor: getAppSurface(theme.accentColor, theme.isDarkMode),
+          backgroundImage: `${getPhotoOverlay(theme.isDarkMode)}, url(${bgImage})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
@@ -595,6 +595,8 @@ function Home() {
                         onDeleteEvent={deleteScheduleEvent}
                         onTaskToggle={handleTaskToggle}
                         onAddEvent={handleAddEvent}
+                        accentColor={theme.accentColor}
+                        isDarkMode={theme.isDarkMode}
                         viewMode={scheduleViewMode}
                         onViewModeChange={setScheduleViewMode}
                         location={theme.location}
@@ -606,6 +608,8 @@ function Home() {
                         onCardClick={handleScheduleCardClick}
                         events={scheduleEvents}
                         onTaskToggle={handleTaskToggle}
+                        accentColor={theme.accentColor}
+                        isDarkMode={theme.isDarkMode}
                         viewMode={scheduleViewMode}
                         onViewModeChange={setScheduleViewMode}
                         location={theme.location}
@@ -626,6 +630,8 @@ function Home() {
                         onDeleteEvent={deleteScheduleEvent}
                         onTaskToggle={handleTaskToggle}
                         onAddEvent={handleAddEvent}
+                        accentColor={theme.accentColor}
+                        isDarkMode={theme.isDarkMode}
                         viewMode={scheduleViewMode}
                         onViewModeChange={setScheduleViewMode}
                         location={theme.location}
@@ -637,6 +643,8 @@ function Home() {
                         onCardClick={handleScheduleCardClick}
                         events={scheduleEvents}
                         onTaskToggle={handleTaskToggle}
+                        accentColor={theme.accentColor}
+                        isDarkMode={theme.isDarkMode}
                         viewMode={scheduleViewMode}
                         onViewModeChange={setScheduleViewMode}
                         location={theme.location}
@@ -771,11 +779,9 @@ function Home() {
 
 function App() {
   return (
-    <ThemeProvider>
-      <div className="App">
-        <Home />
-      </div>
-    </ThemeProvider>
+    <div className="App">
+      <Home />
+    </div>
   );
 }
 

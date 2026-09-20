@@ -1,13 +1,14 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Folder, Task, TaskSource, TaskUpdate } from '../utils/types';
 import { ScheduleCardData, ScheduleCardInput, ScheduleCardUpdate, getEventDuration, getTimeFromDateTime } from '../utils/schedule';
 import Checkbox from './Checkbox';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme, getGlassSurface } from '../contexts/ThemeContext';
 import { useScheduleRecord, useScheduleRecords, useSubtaskRecords, useTaskRecord } from '../hooks/useBasicData';
 import SubtasksList from './SubtasksList';
 import TaskSharePanel from './TaskSharePanel';
 import { useAutoResizeTextarea } from '../hooks/useAutoResizeTextarea';
+import { basic } from '../basic';
 
 interface DynamicIslandProps {
   selectedTask: Task | null;
@@ -67,6 +68,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
 }) => {
   const { theme } = useTheme();
   const { accentColor, isDarkMode } = theme;
+  const { isSignedIn, isReady, signIn } = basic.useAuth();
   
   const [inputValue, setInputValue] = useState('');
   const [title, setTitle] = useState('');
@@ -89,6 +91,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   useEffect(() => { eventDescriptionRef.current = eventDescription; }, [eventDescription]);
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
+  const [showSharePanel, setShowSharePanel] = useState(false);
   const [isActivityExpanded, setIsActivityExpanded] = useState(false);
   
   // Activity editing state
@@ -179,6 +182,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
     if (currentTask) {
       setTitle(currentTask.name || '');
       setDescription(currentTask.description || '');
+      setShowSharePanel(false);
     } else {
       setTitle('');
       setDescription('');
@@ -853,9 +857,13 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
     setActivityEditError(null);
   };
 
-  const getBackgroundColor = () => {
-    return `${accentColor}E6`; // 90% opacity
-  };
+  const getBackgroundColor = () => getGlassSurface(accentColor, isDarkMode);
+
+  // Shell size: animate max-height only (never measure → unlock to auto).
+  // Measuring then switching to auto caused a second expand/shrink when
+  // textareas, subtasks, and async data reflowed after open.
+  const COLLAPSED_H = 56;
+  const EXPANDED_MAX_H = 'min(70vh, 56.25rem)'; // matches task panel max-h-[70vh]
 
   return (
     <div 
@@ -867,29 +875,21 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
         minWidth: '500px', // Ensure minimum width
       }}
     >
-      <motion.div
-        initial={false}
-        animate={{
-          borderRadius: isExpanded ? '1rem' : '2rem',
-          height: isExpanded ? 'auto' : '3.5rem',
-        }}
-        transition={{ duration: 0.15, ease: [0.32, 0.72, 0, 1] }}
+      <div
         className={`overflow-hidden backdrop-blur-3xl ${
           isDarkMode ? 'text-gray-100' : 'text-gray-900'
         }`}
         style={{
+          maxHeight: isExpanded ? EXPANDED_MAX_H : COLLAPSED_H,
+          borderRadius: isExpanded ? 16 : 32,
           backgroundColor: getBackgroundColor(),
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+          transition:
+            'max-height 200ms cubic-bezier(0.32, 0.72, 0, 1), border-radius 200ms cubic-bezier(0.32, 0.72, 0, 1)',
         }}
       >
-        <AnimatePresence mode="wait">
-          {mode === 'command' ? (
-             <motion.div
-              key="command-palette"
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 5 }}
-              transition={{ duration: 0.1 }}
+        {mode === 'command' ? (
+             <div
               className="flex flex-col-reverse max-h-[300px]"
             >
               <div className="flex items-center h-14 px-4 gap-3 border-t border-white/10">
@@ -907,8 +907,8 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   onKeyDown={handleCommandKeyDown}
                   placeholder="Type a command..."
                   autoFocus
-                  className={`flex-1 bg-transparent border-none outline-none ${
-                    isDarkMode ? 'text-gray-100 placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'
+                  className={`flex-1 bg-transparent border-none outline-hidden ${
+                    isDarkMode ? 'text-gray-100 placeholder:text-gray-400' : 'text-gray-900 placeholder:text-gray-500'
                   } text-sm`}
                   autoComplete="off"
                 />
@@ -946,16 +946,9 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   </div>
                 )}
               </div>
-            </motion.div>
+            </div>
           ) : !isExpanded ? (
-            <motion.div
-              key="collapsed"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.1 }}
-              className="flex items-center h-14 px-4 gap-3"
-            >
+            <div className="flex items-center h-14 px-4 gap-3">
               <form 
                 onSubmit={handleSubmit}
                 onKeyDown={(e) => {
@@ -974,8 +967,8 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   onFocus={() => setIsInputFocused(true)}
                   onBlur={() => setIsInputFocused(false)}
                   placeholder={creationMode === 'task' ? 'I want to...' : 'Event title...'}
-                  className={`flex-1 bg-transparent border-none outline-none ${
-                    isDarkMode ? 'text-gray-100 placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'
+                  className={`flex-1 bg-transparent border-none outline-hidden ${
+                    isDarkMode ? 'text-gray-100 placeholder:text-gray-400' : 'text-gray-900 placeholder:text-gray-500'
                   } text-sm`}
                   autoComplete="off"
                   inputMode="text"
@@ -984,7 +977,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleSwitchToTask}
-                  className={`p-2 rounded-lg transition-all ${
+                  className={`pressable p-2 rounded-lg transition-colors ${
                     isInputFocused || inputValue.trim()
                       ? creationMode === 'task'
                         ? isDarkMode 
@@ -1005,7 +998,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 </button>
                 <button
                   onClick={handleSwitchToEvent}
-                  className={`p-2 rounded-lg transition-all ${
+                  className={`pressable p-2 rounded-lg transition-colors ${
                     isInputFocused || inputValue.trim()
                       ? creationMode === 'event'
                         ? isDarkMode 
@@ -1025,22 +1018,15 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   </svg>
                 </button>
               </div>
-            </motion.div>
+            </div>
           ) : isEventView ? (
             // Check if this is a completion event
             currentEvent?.type === 'task:completed' ? (
               // Simple read-only view for task completion
-              <motion.div
-                key="expanded-completion"
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 5 }}
-                transition={{ duration: 0.15, ease: [0.32, 0.72, 0, 1] }}
-                className="p-4 space-y-4"
-              >
+              <div className="p-4 space-y-4">
                 {/* Header with checkmark and close button */}
                 <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <svg className="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
@@ -1066,7 +1052,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 {/* Completion info */}
                 <div className={`space-y-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   <div className="flex items-start gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     <p className="text-sm">
@@ -1079,7 +1065,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
                   <div className="flex items-start gap-2">
                     <svg 
-                      className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" 
+                      className="w-4 h-4 text-green-400 shrink-0 mt-0.5" 
                       fill="none" 
                       strokeWidth="2" 
                       stroke="currentColor" 
@@ -1113,17 +1099,10 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                     </svg>
                   </button>
                 </div>
-              </motion.div>
+              </div>
             ) : currentEvent?.type === 'task' && (!currentEvent?.taskId || currentEvent?.taskId === '') && currentEvent?.metadata?.taskSnapshot ? (
               // Read-only view for deleted task
-              <motion.div
-                    key="expanded-deleted-task"
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 5 }}
-                    transition={{ duration: 0.15, ease: [0.32, 0.72, 0, 1] }}
-                    className="p-4 space-y-4"
-                  >
+              <div className="p-4 space-y-4">
                     {/* Header with checkbox and close button - matching regular task layout */}
                     <div className="flex items-center gap-3">
                       <Checkbox
@@ -1199,7 +1178,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 <div className="p-3 bg-yellow-500/15 border border-yellow-500/25 rounded-lg">
                   <div className="flex items-start gap-2">
                     <svg 
-                      className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" 
+                      className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" 
                       fill="none" 
                       strokeWidth="2" 
                       stroke="currentColor" 
@@ -1232,17 +1211,10 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                     </svg>
                   </button>
                 </div>
-              </motion.div>
+              </div>
             ) : (
               // Regular event view
-              <motion.div
-                key="expanded-event"
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 5 }}
-                transition={{ duration: 0.15, ease: [0.32, 0.72, 0, 1] }}
-                className="p-4 space-y-4"
-              >
+              <div className="p-4 space-y-4">
                 {/* Header with close button */}
                 <div className="flex items-start gap-3">
                   <div className="flex-1">
@@ -1252,7 +1224,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                       onChange={handleEventTitleChange}
                       onBlur={handleEventTitleBlur}
                       onKeyDown={handleEventTitleKeyDown}
-                      className={`w-full bg-transparent focus:outline-none text-lg font-medium min-h-[2rem] resize-none overflow-hidden border border-transparent rounded ${
+                      className={`w-full bg-transparent focus:outline-hidden text-lg font-medium min-h-[2rem] resize-none overflow-hidden border border-transparent rounded ${
                         isDarkMode ? 'text-gray-100' : 'text-gray-900'
                       }`}
                       rows={1}
@@ -1280,7 +1252,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                     value={eventStartTime}
                     onChange={handleEventStartTimeChange}
                     onBlur={handleEventStartTimeBlur}
-                    className={`flex-1 bg-transparent border border-white/10 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-white/30 ${
+                    className={`flex-1 bg-transparent border border-white/10 rounded px-2 py-1.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-white/30 ${
                       isDarkMode ? 'text-gray-100' : 'text-gray-900'
                     }`}
                   />
@@ -1290,7 +1262,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                     value={eventEndTime}
                     onChange={handleEventEndTimeChange}
                     onBlur={handleEventEndTimeBlur}
-                    className={`flex-1 bg-transparent border border-white/10 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-white/30 ${
+                    className={`flex-1 bg-transparent border border-white/10 rounded px-2 py-1.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-white/30 ${
                       isDarkMode ? 'text-gray-100' : 'text-gray-900'
                     }`}
                   />
@@ -1303,8 +1275,8 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   onChange={handleEventDescriptionChange}
                   onBlur={handleEventDescriptionBlur}
                   onKeyDown={handleEventDescriptionKeyDown}
-                  className={`w-full bg-transparent focus:outline-none min-h-[100px] resize-none border border-transparent rounded ${
-                    isDarkMode ? 'text-gray-300 placeholder-gray-500' : 'text-gray-700 placeholder-gray-400'
+                  className={`w-full bg-transparent focus:outline-hidden min-h-[100px] resize-none border border-transparent rounded ${
+                    isDarkMode ? 'text-gray-300 placeholder:text-gray-500' : 'text-gray-700 placeholder:text-gray-400'
                   }`}
                   placeholder="Add a description..."
                   style={{ height: 'auto' }}
@@ -1326,19 +1298,12 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                     </svg>
                   </button>
                 </div>
-              </motion.div>
+              </div>
             )
           ) : (
-            <motion.div
-              key="expanded-task"
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 5 }}
-              transition={{ duration: 0.15, ease: [0.32, 0.72, 0, 1] }}
-              className="p-4 flex flex-col max-h-[70vh]"
-            >
+            <div className="p-4 flex flex-col max-h-[70vh]">
               {/* Header with checkbox and close button - sticky */}
-              <div className="flex items-center gap-3 pb-4 flex-shrink-0">
+              <div className="flex items-center gap-3 pb-4 shrink-0">
                 <Checkbox
                   id={`dynamic-island-${currentTask?.id}`}
                   size="sm"
@@ -1352,7 +1317,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                     onChange={handleTitleChange}
                     onBlur={handleTitleBlur}
                     onKeyDown={(e) => handleTextareaKeyDown(e, 'title')}
-                    className={`w-full bg-transparent focus:outline-none text-lg font-medium min-h-[2rem] resize-none overflow-hidden border border-transparent rounded ${
+                    className={`w-full bg-transparent focus:outline-hidden text-lg font-medium min-h-[2rem] resize-none overflow-hidden border border-transparent rounded ${
                       isDarkMode ? 'text-gray-100' : 'text-gray-900'
                     }`}
                     rows={1}
@@ -1397,26 +1362,25 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 )}
 
                 {/* Description Section */}
-                <textarea
-                  ref={descTextareaRef}
-                  value={description}
-                  onChange={handleDescriptionChange}
-                  onBlur={handleDescriptionBlur}
-                  onKeyDown={(e) => handleTextareaKeyDown(e, 'description')}
-                  className={`w-full bg-transparent focus:outline-none min-h-[100px] resize-none overflow-hidden border border-transparent rounded ${
-                    isDarkMode ? 'text-gray-300 placeholder-gray-500' : 'text-gray-700 placeholder-gray-400'
+                <div
+                  className={`-ml-4 border-t px-4 pt-4 ${
+                    isDarkMode ? 'border-white/5' : 'border-black/5'
                   }`}
-                  placeholder="Add a description..."
-                  style={{ height: 'auto' }}
-                />
-
-                {currentTask?.id && !taskSource ? (
-                  <TaskSharePanel
-                    taskId={currentTask.id}
-                    taskName={currentTask.name || title}
-                    compact
+                  style={{ width: 'calc(100% + 1rem)' }}
+                >
+                  <textarea
+                    ref={descTextareaRef}
+                    value={description}
+                    onChange={handleDescriptionChange}
+                    onBlur={handleDescriptionBlur}
+                    onKeyDown={(e) => handleTextareaKeyDown(e, 'description')}
+                    className={`w-full bg-transparent focus:outline-hidden min-h-[100px] resize-none overflow-hidden border border-transparent rounded ${
+                      isDarkMode ? 'text-gray-300 placeholder:text-gray-500' : 'text-gray-700 placeholder:text-gray-400'
+                    }`}
+                    placeholder="Add a description..."
+                    style={{ height: 'auto' }}
                   />
-                ) : null}
+                </div>
 
               {/* Activity Section - show scheduled events if any exist */}
               {scheduledEvents && scheduledEvents.length > 0 && (() => {
@@ -1518,15 +1482,15 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                           <div className="flex items-center justify-between gap-2 px-3 py-2">
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               {isCompletion ? (
-                                <svg className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} fill="currentColor" viewBox="0 0 20 20">
+                                <svg className={`h-4 w-4 shrink-0 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                 </svg>
                               ) : isTask ? (
-                                <svg className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} viewBox="0 0 20 20" fill="currentColor">
+                                <svg className={`h-4 w-4 shrink-0 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} viewBox="0 0 20 20" fill="currentColor">
                                   <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
                                 </svg>
                               ) : (
-                                <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} viewBox="0 0 20 20" fill="currentColor">
+                                <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} viewBox="0 0 20 20" fill="currentColor">
                                   <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                                 </svg>
                               )}
@@ -1534,12 +1498,12 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                                 {displayText}
                               </span>
                               {eventDurationMinutes > 0 && (
-                                <span className={`text-xs flex-shrink-0 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                <span className={`text-xs shrink-0 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                                   ({formatDuration(eventDurationMinutes)})
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-1 flex-shrink-0">
+                            <div className="flex items-center gap-1 shrink-0">
                               {/* Edit button - only show for non-completion events */}
                               {!isCompletion && (
                                 <button
@@ -1581,11 +1545,10 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                           <AnimatePresence>
                             {isEditing && (
                               <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.15 }}
-                                className="overflow-hidden"
+                                initial={{ opacity: 0, y: -4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -4 }}
+                                transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
                               >
                                 <div className={`px-3 pb-3 pt-1 border-t ${
                                   isDarkMode ? 'border-white/10' : 'border-gray-200'
@@ -1598,7 +1561,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                                         type="date"
                                         value={editActivityDate}
                                         onChange={(e) => setEditActivityDate(e.target.value)}
-                                        className={`w-full mt-1 px-2 py-1.5 text-sm rounded border focus:outline-none focus:ring-2 ${
+                                        className={`w-full mt-1 px-2 py-1.5 text-sm rounded border focus:outline-hidden focus:ring-2 ${
                                           isDarkMode 
                                             ? 'bg-white/5 border-white/10 text-gray-100 focus:ring-white/30' 
                                             : 'bg-white border-gray-200 text-gray-900 focus:ring-gray-300'
@@ -1614,7 +1577,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                                           type="time"
                                           value={editActivityStartTime}
                                           onChange={(e) => { setEditActivityStartTime(e.target.value); setActivityEditError(null); }}
-                                          className={`w-full mt-1 px-2 py-1.5 text-sm rounded border focus:outline-none focus:ring-2 ${
+                                          className={`w-full mt-1 px-2 py-1.5 text-sm rounded border focus:outline-hidden focus:ring-2 ${
                                             isDarkMode 
                                               ? 'bg-white/5 border-white/10 text-gray-100 focus:ring-white/30' 
                                               : 'bg-white border-gray-200 text-gray-900 focus:ring-gray-300'
@@ -1627,7 +1590,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                                           type="time"
                                           value={editActivityEndTime}
                                           onChange={(e) => { setEditActivityEndTime(e.target.value); setActivityEditError(null); }}
-                                          className={`w-full mt-1 px-2 py-1.5 text-sm rounded border focus:outline-none focus:ring-2 ${
+                                          className={`w-full mt-1 px-2 py-1.5 text-sm rounded border focus:outline-hidden focus:ring-2 ${
                                             isDarkMode 
                                               ? 'bg-white/5 border-white/10 text-gray-100 focus:ring-white/30' 
                                               : 'bg-white border-gray-200 text-gray-900 focus:ring-gray-300'
@@ -1698,15 +1661,29 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
               })()}
               </div>
 
+              {showSharePanel && currentTask?.id && !taskSource && isSignedIn ? (
+                <div className="shrink-0 px-0 pb-2">
+                  <TaskSharePanel
+                    taskId={currentTask.id}
+                    taskName={currentTask.name || title}
+                    compact
+                  />
+                </div>
+              ) : null}
+
               {/* Actions Footer - sticky */}
-              <div className="flex justify-between items-center gap-2 pt-4 border-t border-white/10 flex-shrink-0 mt-4">
+              <div
+                className={`flex justify-between items-center gap-2 pt-4 shrink-0 mt-4 -mx-4 px-4 border-t ${
+                  isDarkMode ? 'border-white/5' : 'border-black/5'
+                }`}
+              >
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleDelete}
                     className={`p-2 rounded-lg bg-transparent transition-colors ${
                       isDarkMode 
-                        ? 'text-red-400 hover:bg-red-400/10' 
-                        : 'text-red-600 hover:bg-red-100'
+                        ? 'text-gray-400 hover:text-red-400 hover:bg-red-400/10' 
+                        : 'text-gray-600 hover:text-red-600 hover:bg-red-100'
                     }`}
                     aria-label="Delete task"
                   >
@@ -1714,6 +1691,35 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                       <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
                   </button>
+
+                  {currentTask?.id && !taskSource ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!isReady) return;
+                        if (!isSignedIn) {
+                          void signIn();
+                          return;
+                        }
+                        setShowSharePanel((open) => !open);
+                      }}
+                      className={`p-2 rounded-lg bg-transparent transition-colors ${
+                        showSharePanel
+                          ? isDarkMode
+                            ? 'bg-white/10 text-gray-100'
+                            : 'bg-gray-200 text-gray-900'
+                          : isDarkMode
+                            ? 'text-gray-400 hover:text-gray-100 hover:bg-white/10'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      }`}
+                      aria-label="Share task"
+                      aria-pressed={showSharePanel}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                      </svg>
+                    </button>
+                  ) : null}
 
                   {/* Folder Dropdown */}
                   {folders && folders.length > 0 && (
@@ -1821,7 +1827,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                         }
                       }}
                       disabled={!selectedTask || !onAddToSchedule}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors h-[36px] ${
+                      className={`pressable flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors h-[36px] ${
                         selectedTask && onAddToSchedule
                           ? isDarkMode 
                             ? 'bg-white/10 hover:bg-white/20 text-white' 
@@ -1840,7 +1846,7 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   {onEnterFocus && currentTask && (
                     <button
                       onClick={() => onEnterFocus(currentTask as Task)}
-                      className={`p-2 rounded-lg bg-transparent transition-colors ${
+                      className={`pressable p-2 rounded-lg bg-transparent transition-colors ${
                         isDarkMode 
                           ? 'text-purple-400 hover:bg-purple-400/10' 
                           : 'text-purple-600 hover:bg-purple-100'
@@ -1855,10 +1861,9 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   )}
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
-      </motion.div>
+      </div>
     </div>
   );
 };

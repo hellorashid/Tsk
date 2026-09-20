@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Sheet, useClientMediaQuery, type SheetViewProps } from "@silk-hq/components";
+import { AppDrawer, useMediaQuery } from './AppDrawer';
 import { useModalHistory } from '../hooks/useModalHistory';
 import { Folder } from '../utils/types';
-import * as Switch from '@radix-ui/react-switch';
+import { ThemeSwitch } from './ThemeSwitch';
+import { getGlassSurface } from '../contexts/ThemeContext';
 
 interface FolderSettingsProps {
   isOpen: boolean;
@@ -53,7 +54,6 @@ export default function FolderSettings({
   accentColor
 }: FolderSettingsProps) {
   const titleId = React.useId();
-  const viewRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
   
   const [newFolderName, setNewFolderName] = useState('');
@@ -64,9 +64,7 @@ export default function FolderSettings({
   const [editColor, setEditColor] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   
-  const largeViewport = useClientMediaQuery("(min-width: 800px)");
-  const contentPlacement: SheetViewProps["contentPlacement"] = largeViewport ? "center" : "bottom";
-  const tracks: SheetViewProps["tracks"] = largeViewport ? ["top", "bottom"] : "bottom";
+  const largeViewport = useMediaQuery('(min-width: 800px)');
   
   // Handle browser back button for closing modal
   useModalHistory(isOpen, () => setIsOpen(false), 'folder-settings');
@@ -153,63 +151,25 @@ export default function FolderSettings({
     }
   };
 
-  // Dismiss keyboard when sheet is moved
-  const travelHandler = React.useCallback<Exclude<SheetViewProps["onTravel"], undefined>>(({ progress }) => {
-    if (!viewRef.current) return;
-
-    if (progress < 0.999) {
-      viewRef.current.focus();
-    }
-  }, []);
+  const supportsDvh = typeof CSS !== 'undefined' && CSS.supports('height', '100dvh');
+  const panelHeight = largeViewport
+    ? (supportsDvh ? 'calc(100dvh - 4rem)' : 'calc(var(--vh, 1vh) * 100 - 4rem)')
+    : (supportsDvh ? '90dvh' : 'calc(var(--vh, 1vh) * 90)');
   
   return (
-    <Sheet.Root 
-      license="non-commercial"
-      presented={isOpen}
-      onPresentedChange={setIsOpen}
+    <AppDrawer
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      title="Folder Settings"
+      placement={largeViewport ? 'center' : 'bottom'}
+      popupClassName="backdrop-blur-3xl"
+      popupStyle={{
+        backgroundColor: getGlassSurface(accentColor, isDarkMode),
+        height: panelHeight,
+        maxHeight: panelHeight,
+        width: largeViewport ? 'min(700px, 90vw)' : '100%',
+      }}
     >
-      <Sheet.Portal>
-        <Sheet.View
-          ref={viewRef}
-          contentPlacement={contentPlacement}
-          tracks={tracks}
-          swipeOvershoot={false}
-          nativeEdgeSwipePrevention={true}
-          onTravel={travelHandler}
-          style={{ 
-            height: typeof CSS !== 'undefined' && CSS.supports('height', '100dvh') ? '100dvh' : 'calc(var(--vh, 1vh) * 100)',
-            maxHeight: typeof CSS !== 'undefined' && CSS.supports('height', '100dvh') ? '100dvh' : 'calc(var(--vh, 1vh) * 100)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: largeViewport ? 'center' : 'stretch',
-            justifyContent: largeViewport ? 'center' : 'flex-end',
-            padding: largeViewport ? '2rem' : '0',
-          }}
-        >
-          <Sheet.Backdrop 
-            themeColorDimming="auto" 
-          />
-          <Sheet.Content 
-            className="backdrop-blur-3xl"
-            style={{
-              backgroundColor: `${accentColor}E6`, // 90% opacity
-              borderRadius: largeViewport ? '1rem' : '1rem 1rem 0 0',
-              padding: '0px',
-              display: 'flex',
-              flex: largeViewport ? '0 1 auto' : '1',
-              flexDirection: 'column',
-              height: typeof CSS !== 'undefined' && CSS.supports('height', '100dvh')
-                ? (largeViewport ? 'calc(100dvh - 4rem)' : '90dvh')
-                : (largeViewport ? 'calc(var(--vh, 1vh) * 100 - 4rem)' : 'calc(var(--vh, 1vh) * 90)'),
-              maxHeight: typeof CSS !== 'undefined' && CSS.supports('height', '100dvh')
-                ? (largeViewport ? 'calc(100dvh - 4rem)' : '90dvh')
-                : (largeViewport ? 'calc(var(--vh, 1vh) * 100 - 4rem)' : 'calc(var(--vh, 1vh) * 90)'),
-              overflow: 'hidden',
-              width: largeViewport ? '90%' : '100%',
-              maxWidth: largeViewport ? '700px' : '100%',
-            }}
-            aria-labelledby={titleId}
-          >
             <h2 id={titleId} className="sr-only">
               Folder Settings
             </h2>
@@ -217,7 +177,7 @@ export default function FolderSettings({
             {/* Header with close button */}
             <div className={`flex items-center justify-between px-6 py-4 border-b ${isDarkMode ? 'border-white/10' : 'border-gray-200'}`}>
               {!largeViewport && (
-                <div className="mx-auto w-12 h-1.5 bg-gray-400 dark:bg-gray-600 rounded-full absolute top-4 left-1/2 -translate-x-1/2" />
+                <div className={`absolute top-4 left-1/2 mx-auto h-1.5 w-12 -translate-x-1/2 rounded-full ${isDarkMode ? 'bg-gray-400' : 'bg-gray-300'}`} />
               )}
               <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>Folder Settings</h3>
               <button
@@ -259,9 +219,9 @@ export default function FolderSettings({
                       placeholder="Folder name"
                       className={`flex-1 px-4 py-2 rounded-lg border transition-colors duration-200 ${
                         isDarkMode
-                          ? 'bg-white/5 border-white/20 text-gray-100 placeholder-gray-500 focus:border-white/40'
-                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-gray-500'
-                      } focus:outline-none focus:ring-2 focus:ring-white/20`}
+                          ? 'bg-white/5 border-white/20 text-gray-100 placeholder:text-gray-500 focus:border-white/40'
+                          : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-gray-500'
+                      } focus:outline-hidden focus:ring-2 focus:ring-white/20`}
                       autoComplete="off"
                     />
                     <button
@@ -286,7 +246,7 @@ export default function FolderSettings({
                           key={color.value}
                           type="button"
                           onClick={() => setNewFolderColor(color.value)}
-                          className={`w-6 h-6 rounded-full transition-all ${
+                          className={`w-6 h-6 rounded-full transition-colors ${
                             newFolderColor === color.value 
                               ? 'ring-2 ring-offset-2 ring-white/50' 
                               : 'hover:scale-110'
@@ -330,23 +290,10 @@ export default function FolderSettings({
                         Tasks not in any folder
                       </p>
                     </div>
-                    <Switch.Root
+                    <ThemeSwitch
                       checked={showOtherFolder}
                       onCheckedChange={onToggleOtherFolder}
-                      className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${
-                        showOtherFolder 
-                          ? 'bg-white/30' 
-                          : isDarkMode ? 'bg-white/10' : 'bg-gray-300'
-                      }`}
-                    >
-                      <Switch.Thumb
-                        className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
-                          showOtherFolder 
-                            ? 'translate-x-5 bg-white' 
-                            : 'translate-x-0.5 bg-gray-400'
-                        }`}
-                      />
-                    </Switch.Root>
+                    />
                   </div>
 
                   {/* Today Folder Toggle */}
@@ -366,23 +313,10 @@ export default function FolderSettings({
                         Tasks scheduled for today
                       </p>
                     </div>
-                    <Switch.Root
+                    <ThemeSwitch
                       checked={showTodayFolder}
                       onCheckedChange={onToggleTodayFolder}
-                      className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${
-                        showTodayFolder 
-                          ? 'bg-white/30' 
-                          : isDarkMode ? 'bg-white/10' : 'bg-gray-300'
-                      }`}
-                    >
-                      <Switch.Thumb
-                        className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
-                          showTodayFolder 
-                            ? 'translate-x-5 bg-white' 
-                            : 'translate-x-0.5 bg-gray-400'
-                        }`}
-                      />
-                    </Switch.Root>
+                    />
                   </div>
 
                   {/* All Folder Toggle */}
@@ -397,23 +331,10 @@ export default function FolderSettings({
                       </svg>
                       <span className="font-medium">All Tasks</span>
                     </div>
-                    <Switch.Root
+                    <ThemeSwitch
                       checked={showAllFolder}
                       onCheckedChange={onToggleAllFolder}
-                      className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${
-                        showAllFolder 
-                          ? 'bg-white/30' 
-                          : isDarkMode ? 'bg-white/10' : 'bg-gray-300'
-                      }`}
-                    >
-                      <Switch.Thumb
-                        className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
-                          showAllFolder 
-                            ? 'translate-x-5 bg-white' 
-                            : 'translate-x-0.5 bg-gray-400'
-                        }`}
-                      />
-                    </Switch.Root>
+                    />
                   </div>
                 </div>
               </div>
@@ -448,9 +369,9 @@ export default function FolderSettings({
                               placeholder="Folder name"
                               className={`w-full px-3 py-2 rounded-lg border transition-colors text-sm ${
                                 isDarkMode
-                                  ? 'bg-white/5 border-white/20 text-gray-100 placeholder-gray-500'
-                                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-                              } focus:outline-none focus:ring-2 focus:ring-white/20`}
+                                  ? 'bg-white/5 border-white/20 text-gray-100 placeholder:text-gray-500'
+                                  : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400'
+                              } focus:outline-hidden focus:ring-2 focus:ring-white/20`}
                               autoFocus
                             />
                             <input
@@ -461,9 +382,9 @@ export default function FolderSettings({
                               placeholder="Labels (comma-separated)"
                               className={`w-full px-3 py-2 rounded-lg border transition-colors text-sm ${
                                 isDarkMode
-                                  ? 'bg-white/5 border-white/20 text-gray-100 placeholder-gray-500'
-                                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-                              } focus:outline-none focus:ring-2 focus:ring-white/20`}
+                                  ? 'bg-white/5 border-white/20 text-gray-100 placeholder:text-gray-500'
+                                  : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400'
+                              } focus:outline-hidden focus:ring-2 focus:ring-white/20`}
                             />
                             
                             {/* Color Picker */}
@@ -475,7 +396,7 @@ export default function FolderSettings({
                                     key={color.value}
                                     type="button"
                                     onClick={() => setEditColor(color.value)}
-                                    className={`w-5 h-5 rounded-full transition-all ${
+                                    className={`w-5 h-5 rounded-full transition-colors ${
                                       editColor === color.value 
                                         ? 'ring-2 ring-offset-1 ring-white/50' 
                                         : 'hover:scale-110'
@@ -520,7 +441,7 @@ export default function FolderSettings({
                               <div className="flex items-center gap-2">
                                 {folder.color && (
                                   <div 
-                                    className="w-3 h-3 rounded-full flex-shrink-0"
+                                    className="w-3 h-3 rounded-full shrink-0"
                                     style={{ backgroundColor: folder.color }}
                                   />
                                 )}
@@ -574,10 +495,7 @@ export default function FolderSettings({
                 )}
               </div>
             </div>
-          </Sheet.Content>
-        </Sheet.View>
-      </Sheet.Portal>
-    </Sheet.Root>
+    </AppDrawer>
   );
 }
 

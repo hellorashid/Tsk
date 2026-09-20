@@ -46,7 +46,7 @@ const FoldersBar: React.FC<FoldersBarProps> = ({
       <button
         key={folderId}
         onClick={() => onFolderSelect(folderId)}
-        className={`flex-shrink-0 px-3 py-1.5 rounded-md transition-all duration-100 font-medium whitespace-nowrap text-base ${
+        className={`pressable shrink-0 px-3 py-1.5 rounded-md transition-colors duration-100 font-medium whitespace-nowrap text-base ${
           isActive ? 'backdrop-blur-md' : ''
         }`}
         style={{
@@ -54,8 +54,9 @@ const FoldersBar: React.FC<FoldersBarProps> = ({
           backgroundColor: isActive
             ? isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
             : 'transparent',
-          transform: isActive ? 'scale(1.125)' : 'scale(1)',
+          transform: isActive ? 'scale(1.125)' : undefined,
           transformOrigin: 'left center',
+          transition: 'transform 160ms var(--ease-out), background-color 100ms ease, color 100ms ease',
         }}
       >
         {label}
@@ -65,7 +66,7 @@ const FoldersBar: React.FC<FoldersBarProps> = ({
 
   return (
     <div 
-      className="z-30 flex-shrink-0 group"
+      className="z-30 shrink-0 group"
       style={{
         paddingTop: 'max(0.25rem, env(safe-area-inset-top, 0px))',
       }}

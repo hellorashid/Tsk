@@ -15,15 +15,5 @@
     "build:web": "npm run build --workspace @tsk/web",
     "lint:web": "npm run lint --workspace @tsk/web",
     "test:web": "npm run test --workspace @tsk/web"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.39.4",
-    "@typescript-eslint/eslint-plugin": "^8.63.0",
-    "@typescript-eslint/parser": "^8.63.0",
-    "eslint": "^9.39.4",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.3",
-    "globals": "^17.7.0"
   }
 }

@@ -103,11 +103,13 @@ const ListItem: React.FC<ListItemProps> = ({
 
   // Calculate background colors based on accent color
   const getBackgroundColor = () => {
+    if (!isDarkMode) {
+      return isSelected && !isMobile ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.72)';
+    }
     if (isSelected && !isMobile) {
       return accentColor;
-    } else {
-      return `${accentColor}70`; // 70% opacity
     }
+    return `${accentColor}70`;
   };
 
   const handleContainerClick = () => {
@@ -119,7 +121,7 @@ const ListItem: React.FC<ListItemProps> = ({
   return (
     <div
       className={`group px-3 md:px-2 relative ${styles.container} ${viewMode === 'compact' ? '' : 'rounded-lg'
-        } transition-all duration-200 backdrop-blur-sm hover:bg-opacity-80 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'
+        } transition-colors duration-200 backdrop-blur-sm hover:bg-opacity-80 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'
         } cursor-pointer`}
       style={{
         backgroundColor: getBackgroundColor(),
@@ -149,7 +151,7 @@ const ListItem: React.FC<ListItemProps> = ({
                 onBlur={handleTitleBlur}
                 onKeyDown={handleKeyDown}
                 onClick={(e) => e.stopPropagation()}
-                className={`px-2 py-1 text-sm w-full bg-transparent border border-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white/30 ${styles.title} ${isDarkMode ? 'text-gray-100' : 'text-gray-900'
+                className={`px-2 py-1 text-sm w-full bg-transparent border border-white/20 rounded focus:outline-hidden focus:ring-2 focus:ring-white/30 ${styles.title} ${isDarkMode ? 'text-gray-100' : 'text-gray-900'
                   }`}
                 autoFocus
                 autoComplete="off"

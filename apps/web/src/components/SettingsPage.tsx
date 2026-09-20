@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { basic } from "../basic";
-import { useTheme } from '../contexts/ThemeContext';
-import * as Switch from '@radix-ui/react-switch';
+import { useTheme, DEFAULT_ACCENT, getAppSurface, getGlassSurface } from '../contexts/ThemeContext';
+import { ThemeSwitch } from './ThemeSwitch';
 import { Folder } from '../utils/types';
 
 type SettingsTab = 'general' | 'folders' | 'appearance';
@@ -167,8 +167,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   onToggleTodayFolder,
 }) => {
   const { sync, signIn, signOut, isSignedIn, isAnonymous, isReady, user, handle, status: authStatus } = basic.useBasic();
-  const { theme, setAccentColor, setIsDarkMode, setFontStyle } = useTheme();
-  const { accentColor, isDarkMode, fontStyle } = theme;
+  const { theme, setAccentColor, setThemeMode, setFontStyle } = useTheme();
+  const { accentColor, isDarkMode, fontStyle, themeMode } = theme;
   const isLocalAccount = isAnonymous || !isSignedIn;
   const needsReauth = authStatus === "expired";
   const backup = getBackupState({
@@ -186,7 +186,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     : accountEmail;
   
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
-  const defaultAccentColor = '#1F1B2F';
+  const defaultAccentColor = DEFAULT_ACCENT;
   
   // Folder state
   const [newFolderName, setNewFolderName] = useState('');
@@ -312,14 +312,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     <div 
       className={`w-full h-full flex flex-col ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}
       style={{ 
-        backgroundColor: accentColor,
+        backgroundColor: getAppSurface(accentColor, isDarkMode),
       }}
     >
       {/* Header with back button and tabs */}
       <div
-        className="flex-shrink-0 sticky top-0 z-10 backdrop-blur-xl"
+        className="shrink-0 sticky top-0 z-10 backdrop-blur-xl"
         style={{
-          backgroundColor: `${accentColor}E6`,
+          backgroundColor: getGlassSurface(accentColor, isDarkMode),
           paddingTop: 'env(safe-area-inset-top, 0px)',
         }}
       >
@@ -346,10 +346,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all flex-shrink-0 whitespace-nowrap ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors shrink-0 whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'bg-white/20'
-                    : `${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-black/10'} opacity-60 hover:opacity-100`
+                    ? isDarkMode
+                      ? 'bg-white/20 text-white'
+                      : 'bg-gray-900 text-white'
+                    : isDarkMode
+                      ? 'hover:bg-white/10 opacity-60 hover:opacity-100'
+                      : 'text-gray-700 hover:bg-black/5'
                 }`}
               >
                 {tab.icon}
@@ -406,7 +410,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                       <button
                         type="button"
                         onClick={() => { void signIn(); }}
-                        className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                        className={`pressable w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                           isDarkMode
                             ? 'bg-white/15 hover:bg-white/25'
                             : 'bg-black/10 hover:bg-black/15'
@@ -489,9 +493,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                       placeholder="Folder name"
                       className={`flex-1 px-4 py-2 rounded-lg transition-colors duration-200 ${
                         isDarkMode
-                          ? 'bg-white/5 text-gray-100 placeholder-gray-500 focus:bg-white/10'
-                          : 'bg-white text-gray-900 placeholder-gray-400 focus:bg-gray-50'
-                      } focus:outline-none focus:ring-2 focus:ring-white/20 border-0`}
+                          ? 'bg-white/5 text-gray-100 placeholder:text-gray-500 focus:bg-white/10'
+                          : 'bg-white text-gray-900 placeholder:text-gray-400 focus:bg-gray-50'
+                      } focus:outline-hidden focus:ring-2 focus:ring-white/20 border-0`}
                       autoComplete="off"
                     />
                     <button
@@ -516,7 +520,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                           key={color.value}
                           type="button"
                           onClick={() => setNewFolderColor(color.value)}
-                          className={`w-6 h-6 rounded-full transition-all ${
+                          className={`w-6 h-6 rounded-full transition-colors ${
                             newFolderColor === color.value 
                               ? 'ring-2 ring-offset-2 ring-white/50' 
                               : 'hover:scale-110'
@@ -554,19 +558,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                         Tasks not in any folder
                       </p>
                     </div>
-                    <Switch.Root
+                    <ThemeSwitch
                       checked={showOtherFolder}
                       onCheckedChange={onToggleOtherFolder}
-                      className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${
-                        showOtherFolder ? 'bg-white/30' : isDarkMode ? 'bg-white/10' : 'bg-gray-300'
-                      }`}
-                    >
-                      <Switch.Thumb
-                        className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
-                          showOtherFolder ? 'translate-x-5 bg-white' : 'translate-x-0.5 bg-gray-400'
-                        }`}
-                      />
-                    </Switch.Root>
+                    />
                   </div>
 
                   {/* Today Folder Toggle */}
@@ -584,19 +579,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                         Tasks scheduled for today
                       </p>
                     </div>
-                    <Switch.Root
+                    <ThemeSwitch
                       checked={showTodayFolder}
                       onCheckedChange={onToggleTodayFolder}
-                      className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${
-                        showTodayFolder ? 'bg-white/30' : isDarkMode ? 'bg-white/10' : 'bg-gray-300'
-                      }`}
-                    >
-                      <Switch.Thumb
-                        className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
-                          showTodayFolder ? 'translate-x-5 bg-white' : 'translate-x-0.5 bg-gray-400'
-                        }`}
-                      />
-                    </Switch.Root>
+                    />
                   </div>
 
                   {/* All Folder Toggle */}
@@ -609,19 +595,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                       </svg>
                       <span className="font-medium">All Tasks</span>
                     </div>
-                    <Switch.Root
+                    <ThemeSwitch
                       checked={showAllFolder}
                       onCheckedChange={onToggleAllFolder}
-                      className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${
-                        showAllFolder ? 'bg-white/30' : isDarkMode ? 'bg-white/10' : 'bg-gray-300'
-                      }`}
-                    >
-                      <Switch.Thumb
-                        className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
-                          showAllFolder ? 'translate-x-5 bg-white' : 'translate-x-0.5 bg-gray-400'
-                        }`}
-                      />
-                    </Switch.Root>
+                    />
                   </div>
                 </div>
               </section>
@@ -648,9 +625,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                               placeholder="Folder name"
                               className={`w-full px-3 py-2 rounded-lg transition-colors text-sm ${
                                 isDarkMode
-                                  ? 'bg-white/5 text-gray-100 placeholder-gray-500'
-                                  : 'bg-white text-gray-900 placeholder-gray-400'
-                              } focus:outline-none focus:ring-2 focus:ring-white/20 border-0`}
+                                  ? 'bg-white/5 text-gray-100 placeholder:text-gray-500'
+                                  : 'bg-white text-gray-900 placeholder:text-gray-400'
+                              } focus:outline-hidden focus:ring-2 focus:ring-white/20 border-0`}
                               autoFocus
                             />
                             <input
@@ -661,9 +638,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                               placeholder="Labels (comma-separated)"
                               className={`w-full px-3 py-2 rounded-lg transition-colors text-sm ${
                                 isDarkMode
-                                  ? 'bg-white/5 text-gray-100 placeholder-gray-500'
-                                  : 'bg-white text-gray-900 placeholder-gray-400'
-                              } focus:outline-none focus:ring-2 focus:ring-white/20 border-0`}
+                                  ? 'bg-white/5 text-gray-100 placeholder:text-gray-500'
+                                  : 'bg-white text-gray-900 placeholder:text-gray-400'
+                              } focus:outline-hidden focus:ring-2 focus:ring-white/20 border-0`}
                             />
                             
                             {/* Color Picker */}
@@ -675,7 +652,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                                     key={color.value}
                                     type="button"
                                     onClick={() => setEditColor(color.value)}
-                                    className={`w-5 h-5 rounded-full transition-all ${
+                                    className={`w-5 h-5 rounded-full transition-colors ${
                                       editColor === color.value 
                                         ? 'ring-2 ring-offset-1 ring-white/50' 
                                         : 'hover:scale-110'
@@ -720,7 +697,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                               <div className="flex items-center gap-2">
                                 {folder.color && (
                                   <div 
-                                    className="w-3 h-3 rounded-full flex-shrink-0"
+                                    className="w-3 h-3 rounded-full shrink-0"
                                     style={{ backgroundColor: folder.color }}
                                   />
                                 )}
@@ -778,28 +755,34 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 <h2 className="text-lg font-semibold mb-4">Theme</h2>
                 
                 <div className="space-y-5">
-                  {/* Dark Mode */}
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="font-medium">Dark Mode</span>
-                      <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        Toggle between light and dark themes
-                      </p>
+                  <div>
+                    <span className="font-medium">Appearance</span>
+                    <p className={`text-xs mt-0.5 mb-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Follow your system setting, or lock light or dark
+                    </p>
+                    <div className="flex gap-2">
+                      {([
+                        { id: 'system', label: 'Auto' },
+                        { id: 'light', label: 'Light' },
+                        { id: 'dark', label: 'Dark' },
+                      ] as const).map((option) => (
+                        <button
+                          key={option.id}
+                          onClick={() => setThemeMode(option.id)}
+                          className={`flex-1 px-3 py-2 rounded-lg text-sm capitalize transition-colors duration-200 ${
+                            themeMode === option.id
+                              ? isDarkMode
+                                ? 'bg-white/30 font-medium'
+                                : 'bg-gray-900 text-white font-medium'
+                              : isDarkMode
+                                ? 'bg-white/5 hover:bg-white/10'
+                                : 'bg-white text-gray-800 ring-1 ring-black/10 hover:bg-gray-50'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
                     </div>
-                    <Switch.Root
-                      className={`relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                        isDarkMode ? 'bg-white/30' : 'bg-gray-300'
-                      }`}
-                      checked={isDarkMode}
-                      onCheckedChange={setIsDarkMode}
-                      id="dark-mode-switch"
-                    >
-                      <Switch.Thumb
-                        className={`pointer-events-none inline-block h-[20px] w-[20px] transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                          isDarkMode ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </Switch.Root>
                   </div>
                   
                   {/* Accent Color */}
@@ -846,8 +829,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                           key={mode}
                           className={`px-4 py-2 text-sm rounded-lg transition-colors duration-200 capitalize ${
                             currentViewMode === mode 
-                              ? 'bg-white/30 font-medium' 
-                              : `${isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-black/5 hover:bg-black/10'}`
+                              ? isDarkMode
+                                ? 'bg-white/30 font-medium'
+                                : 'bg-gray-900 text-white font-medium'
+                              : isDarkMode
+                                ? 'bg-white/5 hover:bg-white/10'
+                                : 'bg-white text-gray-800 ring-1 ring-black/10 hover:bg-gray-50'
                           }`}
                           onClick={() => onViewModeChange(mode)}
                         >
@@ -874,8 +861,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                         key={style}
                         className={`px-4 py-2 text-sm rounded-lg transition-colors duration-200 capitalize ${
                           fontStyle === style 
-                            ? 'bg-white/30 font-medium' 
-                            : `${isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-black/5 hover:bg-black/10'}`
+                            ? isDarkMode
+                              ? 'bg-white/30 font-medium'
+                              : 'bg-gray-900 text-white font-medium'
+                            : isDarkMode
+                              ? 'bg-white/5 hover:bg-white/10'
+                              : 'bg-white text-gray-800 ring-1 ring-black/10 hover:bg-gray-50'
                         } font-${style}`}
                         onClick={() => setFontStyle(style)}
                       >

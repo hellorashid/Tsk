@@ -11,6 +11,7 @@ import {
   getNextDay,
   isEventOnDate
 } from '../utils/dateHelpers';
+import { getGlassSurface } from '../contexts/ThemeContext';
 
 interface ScheduleSidebarProps {
   onClose?: () => void;
@@ -367,9 +368,7 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   const goToPreviousDay = () => setSelectedDate(getPreviousDay(selectedDate));
   const goToNextDay = () => setSelectedDate(getNextDay(selectedDate));
 
-  const getBackgroundColor = () => {
-    return `${accentColor}E6`; // 90% opacity (E6 hex = 230/255 ≈ 90%)
-  };
+  const getBackgroundColor = () => getGlassSurface(accentColor, isDarkMode);
 
   const isSelectedDateToday = isToday(selectedDate);
 
@@ -444,7 +443,7 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
             <div className={`flex items-center rounded-xl p-0.5 ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}>
               <button
                 onClick={() => onViewModeChange('timeline')}
-                className={`p-2 rounded-lg transition-all ${
+                className={`p-2 rounded-lg transition-colors ${
                   viewMode === 'timeline'
                     ? isDarkMode ? 'bg-white/20 text-white' : 'bg-white text-gray-900 shadow-sm'
                     : isDarkMode ? 'bg-transparent text-gray-400 hover:text-gray-200' : 'bg-transparent text-gray-500 hover:text-gray-800'
@@ -458,7 +457,7 @@ const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
               </button>
               <button
                 onClick={() => onViewModeChange('agenda')}
-                className={`p-2 rounded-lg transition-all ${
+                className={`p-2 rounded-lg transition-colors ${
                   viewMode === 'agenda'
                     ? isDarkMode ? 'bg-white/20 text-white' : 'bg-white text-gray-900 shadow-sm'
                     : isDarkMode ? 'bg-transparent text-gray-400 hover:text-gray-200' : 'bg-transparent text-gray-500 hover:text-gray-800'

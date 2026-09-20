@@ -1,25 +1,31 @@
-import { defineConfig } from "vite";
+import { defineConfig, type ProxyOptions } from "vite";
 import react from "@vitejs/plugin-react-swc";
+import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from 'vite-plugin-pwa';
-import { basicPdsProxyTarget, stripBasicPdsProxyPrefix } from "./src/basicDevProxy";
+import { basicPdsProxyTarget, stripBasicPdsProxyPrefix } from "./src/basicDevProxy.js";
+
+const basicPdsProxy: ProxyOptions = {
+  target: "https://pds.basic.id",
+  changeOrigin: true,
+  secure: true,
+  ws: true,
+  rewrite: stripBasicPdsProxyPrefix,
+  bypass(req) {
+    // Vite 8's proxy no longer supports http-proxy `router`. Set the target
+    // before the request is forwarded so each PDS host stays addressable.
+    basicPdsProxy.target = basicPdsProxyTarget(req.url ?? "");
+  },
+};
 
 // https://vitejs.dev/config/
 export default defineConfig({
   server: {
     proxy: {
-      "/__basic-pds": {
-        target: "https://pds.basic.id",
-        changeOrigin: true,
-        secure: true,
-        ws: true,
-        router(req) {
-          return basicPdsProxyTarget(req.url ?? "");
-        },
-        rewrite: stripBasicPdsProxyPrefix,
-      },
+      "/__basic-pds": basicPdsProxy,
     },
   },
   plugins: [
+    tailwindcss(),
     react(),
     VitePWA({
       registerType: 'autoUpdate',

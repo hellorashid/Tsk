@@ -1,62 +1,96 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-accent: #DA8DF7;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-fast: 100ms;
+  --duration-ui: 200ms;
+  --duration-drawer: 250ms;
+}
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+}
 
 :root {
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 24px;
   font-weight: 400;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
   --accent-color: #1F1B2F;
+  --app-surface: #1F1B2F;
+  --vh: 1vh;
 }
 
-html, body {
-  background-color: var(--accent-color);
+@supports (height: 100dvh) {
+  :root {
+    --vh: 1dvh;
+  }
+}
+
+html,
+body,
+#root {
+  background-color: var(--app-surface);
   margin: 0;
   padding: 0;
 }
 
-/* Dynamic viewport height variable for mobile Chrome address bar fix */
-:root {
-  --vh: 1vh; /* Fallback for legacy browsers, will be set by JavaScript */
-}
-
-/* Use modern dvh (dynamic viewport height) when supported */
-/* dvh tracks the visible viewport and changes as browser UI shows/hides */
-@supports (height: 100dvh) {
-  :root {
-    --vh: 1dvh; /* Use native dvh if supported */
-  }
-}
-
-#root {
-  background-color: var(--accent-color);
-}
-
-/* Remove dark/light mode styles as we're using Tailwind classes */
-
-/* Remove switch styles as we're using Tailwind classes */
-
-/* 
- * Note: System prefers-color-scheme rules were removed because 
- * the app manages its own theme via isDarkMode in ThemeContext.
- * Using system color scheme would override the user's app preference.
- */
-
-/* Hide scrollbar for schedule sidebar */
 [data-timeline-container]::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
 }
 
-/* Remove tap highlight on mobile devices */
 button {
   -webkit-tap-highlight-color: transparent;
-  tap-highlight-color: transparent;
+}
+
+/* Press feedback — subtle scale on :active (transform only, 160ms ease-out) */
+.pressable {
+  transition: transform 160ms var(--ease-out);
+  transform-origin: center;
+}
+
+.pressable:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pressable,
+  .pressable:active:not(:disabled) {
+    transform: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

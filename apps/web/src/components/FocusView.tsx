@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Task, TaskUpdate } from '../utils/types';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubtaskRecords, useTaskRecord } from '../hooks/useBasicData';
@@ -137,11 +137,11 @@ const FocusView: React.FC<FocusViewProps> = ({
     >
       {/* Clock Pill - Top Left */}
       <motion.button
-        initial={{ opacity: 0, scale: 0.8 }}
+        initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.1 }}
         onClick={() => setIsClockExpanded(!isClockExpanded)}
-        className={`absolute top-6 left-6 flex items-center gap-2 transition-all duration-200 ${
+        className={`absolute top-6 left-6 flex items-center gap-2 transition-colors duration-200 ${
           isClockExpanded ? 'px-4 py-3 rounded-full' : 'p-3 rounded-full'
         } ${
           isDarkMode
@@ -155,9 +155,10 @@ const FocusView: React.FC<FocusViewProps> = ({
         </svg>
         {isClockExpanded && (
           <motion.span
-            initial={{ opacity: 0, width: 0 }}
-            animate={{ opacity: 1, width: 'auto' }}
-            exit={{ opacity: 0, width: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
             className="text-sm font-medium tabular-nums"
           >
             {formatElapsedTime(elapsedTime)}
@@ -169,7 +170,7 @@ const FocusView: React.FC<FocusViewProps> = ({
       <div className="absolute top-6 right-6 flex flex-col gap-3">
         {/* Close button */}
         <motion.button
-          initial={{ opacity: 0, scale: 0.8 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
           onClick={onExit}
@@ -188,7 +189,7 @@ const FocusView: React.FC<FocusViewProps> = ({
 
         {/* Done button */}
         <motion.button
-          initial={{ opacity: 0, scale: 0.8 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.15 }}
           onClick={handleTaskComplete}
@@ -208,9 +209,9 @@ const FocusView: React.FC<FocusViewProps> = ({
 
       {/* Main content */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.3 }}
+        transition={{ delay: 0.1, duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
         className="w-full max-w-2xl mx-auto px-8 pt-24 pb-8 flex flex-col"
         style={{ height: '100vh' }}
       >
@@ -219,7 +220,7 @@ const FocusView: React.FC<FocusViewProps> = ({
           isDarkMode ? 'bg-white/3 hover:bg-white/4' : 'bg-white shadow-lg'
         }`}>
           {/* Task title with checkbox - sticky header */}
-          <div className="flex items-center gap-3 pb-6 flex-shrink-0">
+          <div className="flex items-center gap-3 pb-6 shrink-0">
             <div onClick={(e) => e.stopPropagation()}>
               <Checkbox
                 id={`focus-task-${currentTask.id}`}
@@ -232,9 +233,9 @@ const FocusView: React.FC<FocusViewProps> = ({
               type="text"
               value={currentTask.name}
               onChange={handleTitleChange}
-              className={`text-2xl font-semibold flex-1 bg-transparent border-none outline-none ${
+              className={`text-2xl font-semibold flex-1 bg-transparent border-none outline-hidden ${
                 currentTask.completed ? 'line-through opacity-60' : ''
-              } ${isDarkMode ? 'text-gray-100 placeholder-gray-600' : 'text-gray-900 placeholder-gray-400'}`}
+              } ${isDarkMode ? 'text-gray-100 placeholder:text-gray-600' : 'text-gray-900 placeholder:text-gray-400'}`}
               placeholder="Task name..."
             />
           </div>
@@ -267,8 +268,8 @@ const FocusView: React.FC<FocusViewProps> = ({
               onChange={handleDescriptionChange}
               onBlur={handleDescriptionBlur}
               placeholder="Add description..."
-              className={`w-full min-h-[100px] text-base leading-relaxed resize-none overflow-hidden bg-transparent border-none outline-none ${
-                isDarkMode ? 'text-gray-300 placeholder-gray-600' : 'text-gray-700 placeholder-gray-400'
+              className={`w-full min-h-[100px] text-base leading-relaxed resize-none overflow-hidden bg-transparent border-none outline-hidden ${
+                isDarkMode ? 'text-gray-300 placeholder:text-gray-600' : 'text-gray-700 placeholder:text-gray-400'
               }`}
               style={{ height: 'auto' }}
             />

@@ -1,19 +1,17 @@
 'use client';
 
-import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
-import { Sheet, useClientMediaQuery, type SheetViewProps } from "@silk-hq/components";
-import { motion } from 'framer-motion';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { AppDrawer, useMediaQuery } from './AppDrawer';
 import { TaskModal } from './TaskModal';
 import { EventModal } from './EventModal';
 import ListItem from './ListItem';
 import Checkbox from './Checkbox';
 import { ScheduleCardData } from '../utils/schedule';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme, getAppSurface } from '../contexts/ThemeContext';
 import { useScheduleRecords, useSubtaskRecords, useTaskRecords } from '../hooks/useBasicData';
 import { useModalHistory } from '../hooks/useModalHistory';
 import { Task, TaskSource, Folder } from '../utils/types';
-import './SilkTaskDrawer.css';
-import './SheetWithKeyboard.css';
 
 interface TaskDrawerProps {
   isOpen: boolean;
@@ -60,11 +58,7 @@ export default function SilkTaskDrawer({
   onEnterFocus,
   folders
 }: TaskDrawerProps) {
-  const titleId = React.useId();
-  const viewRef = useRef<HTMLDivElement>(null);
-  const largeViewport = useClientMediaQuery("(min-width: 800px)");
-  const contentPlacement = largeViewport ? "center" : "bottom";
-  const tracks: SheetViewProps["tracks"] = largeViewport ? ["top", "bottom"] : "bottom";
+  const largeViewport = useMediaQuery('(min-width: 800px)');
   
   // Handle browser back button for closing drawer
   useModalHistory(isOpen, () => setIsOpen(false), 'task-drawer');
@@ -152,21 +146,6 @@ export default function SilkTaskDrawer({
     }
   }, [isOpen, isNewTaskMode]);
 
-  // Dismiss keyboard when sheet is moved
-  const travelHandler = useCallback<Exclude<SheetViewProps["onTravel"], undefined>>(({ progress }) => {
-    if (!viewRef.current) return;
-
-    if (progress < 0.999) {
-      // Dismiss the on-screen keyboard
-      viewRef.current.focus();
-    }
-    
-    // Close the drawer when user swipes it away - now handled by onPresentedChange
-    // if (progress < 0.3) {
-    //   setIsOpen(false); 
-    // }
-  }, []); // Removed setIsOpen from dependencies as it's no longer called here
-
   // Handle task creation when in new task mode
   const handleNewTaskInternal = async () => {
     if (newTaskName.trim() !== "" && onAddTask) {
@@ -248,119 +227,43 @@ export default function SilkTaskDrawer({
     }
   };
 
-  // Use inline styles to ensure the sheet is tall enough
-  // Modern browsers: use dvh (dynamic viewport height) which tracks visible viewport
-  // Fallback: JavaScript sets --vh for older browsers
   const supportsDvh = typeof CSS !== 'undefined' && CSS.supports('height', '100dvh');
-  const heightValue = supportsDvh ? '90dvh' : 'calc(var(--vh, 1vh) * 90)';
-  
-  const sheetStyles = {
-    height: heightValue,
-    maxHeight: heightValue,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    backgroundColor: 'transparent'
-  };
-  
-  const contentStyles = {
-    backgroundColor: accentColor,
-    minHeight: heightValue,
-    height: heightValue,
-    maxHeight: heightValue,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    borderTopLeftRadius: '1rem',
-    borderTopRightRadius: '1rem',
-    padding: '1rem'
-  };
+  const heightValue = largeViewport
+    ? (supportsDvh ? 'calc(100dvh - 4rem)' : 'calc(var(--vh, 1vh) * 100 - 4rem)')
+    : (supportsDvh ? '90dvh' : 'calc(var(--vh, 1vh) * 90)');
 
-  const sheetContentStyles = {
-    height: heightValue,
-    maxHeight: heightValue,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    backgroundColor: 'transparent'
-  };
+  const drawerTitle = isNewTaskMode
+    ? (creationMode === 'task' ? 'Add New Task' : 'Add New Event')
+    : event
+      ? `Event Details: ${event?.title || 'Event'}`
+      : `Task Details: ${task?.name || 'Task'}`;
 
   // Determine if we should show the content based on having a valid task or event
   const isLoadingTask = isOpen && !isNewTaskMode && !task && !event;
 
-  // Ensures proper rendering when component mounts
-  useEffect(() => {
-    // Add a class to make all parent containers transparent
-    const dialog = document.querySelector('[role="dialog"]');
-    if (dialog) {
-      dialog.setAttribute('style', 'background-color: transparent !important;');
-      
-      // Find all parent elements of our content and make them transparent
-      const parents = dialog.querySelectorAll('div');
-      parents.forEach(parent => {
-        if (!parent.classList.contains('silk-sheet-content')) {
-          parent.setAttribute('style', 'background-color: transparent !important;');
-        }
-      });
-    }
-  }, [isOpen]);
-
   return (
-    <div className="silk-task-drawer">
-      {/* Add a style tag for direct overrides */}
-      <style>
-        {`
-          .SheetWithKeyboard-view[role="dialog"],
-          .SheetWithKeyboard-view[role="dialog"] > div,
-          .SheetWithKeyboard-view[role="dialog"] div:not(.silk-sheet-content) {
-            background-color: transparent !important;
-          }
-        `}
-      </style>
-      
-      <Sheet.Root 
-        license="non-commercial"
-        presented={isOpen}
-        onPresentedChange={setIsOpen}
-      >
-        <Sheet.Portal>
-          <Sheet.View
-            ref={viewRef}
-            contentPlacement={contentPlacement}
-            tracks={tracks}
-            swipeOvershoot={false}
-            nativeEdgeSwipePrevention={true}
-            onTravel={travelHandler}
-            className="SheetWithKeyboard-view"
-            style={sheetStyles}
-          >
-            <Sheet.Backdrop 
-              className="sheet-backdrop" 
-              themeColorDimming="auto" 
-            />
-            
-            <Sheet.Content 
-              className="SheetWithKeyboard-content"
-              style={sheetContentStyles}
-            >
-              <div 
-                style={contentStyles}
-                className="text-white silk-sheet-content"
-              >
-                {/* Title for accessibility */}
-                <h2 id={titleId} className="sr-only">
-                  {isNewTaskMode 
-                    ? (creationMode === 'task' ? 'Add New Task' : 'Add New Event') 
-                    : event 
-                      ? `Event Details: ${event?.title || 'Event'}` 
-                      : `Task Details: ${task?.name || 'Task'}`}
-                </h2>
-                
-                <div className="pull-handle" />
+    <AppDrawer
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      title={drawerTitle}
+      placement={largeViewport ? 'center' : 'bottom'}
+      popupClassName={isDarkMode ? 'text-white' : 'text-gray-900'}
+      popupStyle={{
+        backgroundColor: getAppSurface(accentColor, isDarkMode),
+        height: heightValue,
+        maxHeight: heightValue,
+        width: largeViewport ? 'min(500px, 90vw)' : '100%',
+        padding: '1rem',
+      }}
+    >
+                <div className={`mx-auto mb-4 h-1.5 w-12 shrink-0 rounded-full ${isDarkMode ? 'bg-gray-400' : 'bg-gray-300'}`} />
                 
                 {/* Mode Toggle - only show in new task mode */}
                 {isNewTaskMode && (
                   <div className="flex gap-2 mb-4">
                     <button
                       onClick={() => setCreationMode('task')}
-                      className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      className={`pressable flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                         creationMode === 'task'
                           ? isDarkMode
                             ? 'bg-white/20 text-white'
@@ -374,7 +277,7 @@ export default function SilkTaskDrawer({
                     </button>
                     <button
                       onClick={() => setCreationMode('event')}
-                      className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      className={`pressable flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                         creationMode === 'event'
                           ? isDarkMode
                             ? 'bg-white/20 text-white'
@@ -397,12 +300,18 @@ export default function SilkTaskDrawer({
                       <div className="mb-4 p-1 bg-white/5 rounded-md overflow-y-auto max-h-60 styled-scrollbar">
                         {/* <h3 className="text-sm font-semibold mb-1 text-gray-300 px-2 pt-1">Added:</h3> */}
                         <div className="space-y-1 py-1">
+                          <AnimatePresence initial={false}>
                           {createdTasks.map((task, index) => (
                             <motion.div
                               key={task.id}
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ type: "spring", stiffness: 300, damping: 20, duration: 0.15, delay: index * 0.03 }}
+                              initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.97 }}
+                              transition={{
+                                duration: 0.2,
+                                ease: [0.23, 1, 0.32, 1],
+                                delay: Math.min(index, 6) * 0.04,
+                              }}
                             >
                               <ListItem
                                 key={task.id}
@@ -428,6 +337,7 @@ export default function SilkTaskDrawer({
                               />
                             </motion.div>
                           ))}
+                          </AnimatePresence>
                         </div>
                       </div>
                     )}
@@ -441,7 +351,7 @@ export default function SilkTaskDrawer({
                         onChange={(e) => setNewTaskName(e.target.value)}
                         placeholder="Enter task name..."
                         autoFocus={true}
-                        className="w-full p-2 rounded-md bg-transparent text-white placeholder-gray-300 focus:outline-none"
+                        className="w-full p-2 rounded-md bg-transparent text-white placeholder:text-gray-300 focus:outline-hidden"
                         onKeyPress={(e) => {
                           if (e.key === 'Enter') {
                             handleNewTaskInternal();
@@ -465,7 +375,7 @@ export default function SilkTaskDrawer({
                           onChange={(e) => setEventTitle(e.target.value)}
                           placeholder="Event title..."
                           autoFocus={true}
-                          className="w-full p-2 rounded-md bg-transparent text-white placeholder-gray-300 focus:outline-none"
+                          className="w-full p-2 rounded-md bg-transparent text-white placeholder:text-gray-300 focus:outline-hidden"
                           onKeyPress={(e) => {
                             if (e.key === 'Enter') {
                               handleNewEventInternal();
@@ -482,7 +392,7 @@ export default function SilkTaskDrawer({
                             type="date"
                             value={eventDate}
                             onChange={(e) => setEventDate(e.target.value)}
-                            className="w-full p-1 rounded-md bg-transparent text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full p-1 rounded-md bg-transparent text-white focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                         <div className="p-2 bg-white/10 rounded-lg shadow-md">
@@ -491,7 +401,7 @@ export default function SilkTaskDrawer({
                             type="time"
                             value={eventStartTime}
                             onChange={(e) => setEventStartTime(e.target.value)}
-                            className="w-full p-1 rounded-md bg-transparent text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full p-1 rounded-md bg-transparent text-white focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                         <div className="p-2 bg-white/10 rounded-lg shadow-md">
@@ -500,7 +410,7 @@ export default function SilkTaskDrawer({
                             type="time"
                             value={eventEndTime}
                             onChange={(e) => setEventEndTime(e.target.value)}
-                            className="w-full p-1 rounded-md bg-transparent text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full p-1 rounded-md bg-transparent text-white focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                       </div>
@@ -512,7 +422,7 @@ export default function SilkTaskDrawer({
                           onChange={(e) => setEventDescription(e.target.value)}
                           placeholder="Description (optional)..."
                           rows={3}
-                          className="w-full p-1 rounded-md bg-transparent text-white placeholder-gray-300 focus:outline-none resize-none"
+                          className="w-full p-1 rounded-md bg-transparent text-white placeholder:text-gray-300 focus:outline-hidden resize-none"
                         />
                       </div>
 
@@ -570,7 +480,7 @@ export default function SilkTaskDrawer({
 
                             {/* Schedule info */}
                             <div className="flex items-center gap-2 pl-3 pr-2 py-2 mb-4 rounded-lg bg-white/5">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                               </svg>
                               <div className="flex-1 text-sm text-gray-300">
@@ -617,7 +527,7 @@ export default function SilkTaskDrawer({
                         <div className="p-3 bg-yellow-500/15 border border-yellow-500/25 rounded-lg mb-4">
                           <div className="flex items-start gap-2">
                             <svg 
-                              className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" 
+                              className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" 
                               fill="none" 
                               strokeWidth="2" 
                               stroke="currentColor" 
@@ -686,11 +596,6 @@ export default function SilkTaskDrawer({
                     taskSource={taskSource}
                   />
                 )}
-              </div>
-            </Sheet.Content>
-          </Sheet.View>
-        </Sheet.Portal>
-      </Sheet.Root>
-    </div>
+    </AppDrawer>
   );
 } 

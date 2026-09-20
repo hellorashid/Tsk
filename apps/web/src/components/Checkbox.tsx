@@ -1,5 +1,5 @@
 import { useState, InputHTMLAttributes, ChangeEvent, CSSProperties } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 const tickVariants = {
   checked: {
@@ -65,7 +65,7 @@ export default function Checkbox({
     <label className="relative flex items-center" htmlFor={id}>
       <input
         type="checkbox"
-        className={`border-blue-gray-200 relative appearance-none rounded-md border transition-all duration-500 ${inputSizeClass} ${restInputProps.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+        className={`border-blue-gray-200 relative appearance-none rounded-md border transition-[background-color,border-color] duration-150 ${inputSizeClass} ${restInputProps.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
         id={id}
         checked={displayChecked}
         onChange={handleChange}

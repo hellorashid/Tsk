@@ -1,0 +1,10 @@
+{
+  "plugins": ["react"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "react/set-state-in-effect": "off",
+    "react/preserve-manual-memoization": "off"
+  },
+}
