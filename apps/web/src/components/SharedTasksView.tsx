@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import { basic } from "../basic";
+import { ShareRecipientAvatar, useShareRecipients } from "@basictech/react";
 import { useOpenedMounts } from "../hooks/useOpenedMounts";
 import { unwrapTasks } from "../utils/basicRecords";
-import { shortDid } from "../utils/shares";
 import type { Task, TaskSource, TaskUpdate } from "../utils/types";
 import ListItem from "./ListItem";
 
@@ -127,6 +127,9 @@ function SharedMountTaskList({
     [data],
   );
 
+  const shareRecipients = useShareRecipients([originOwnerDid]);
+  const recipient = shareRecipients.data[0];
+
   const updateTask = (id: string, changes: TaskUpdate) => {
     if (role !== "editor") {
       return;
@@ -144,7 +147,7 @@ function SharedMountTaskList({
   };
 
   const handleTaskSelect = (task: Task) => {
-    onTaskSelect(task, { mountId, role });
+    onTaskSelect(task, { mountId, role, originOwnerDid });
   };
 
   if (isLoading) {
@@ -157,9 +160,19 @@ function SharedMountTaskList({
 
   return (
     <div>
-      <p className={`text-xs uppercase tracking-wider mb-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
-        From {shortDid(originOwnerDid)} · {role}
-      </p>
+      <div className={`flex items-center gap-2 mb-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
+        {recipient ? (
+          <>
+            <ShareRecipientAvatar recipient={recipient} size={20} />
+            <span className="text-xs">
+              {recipient.handle ? `@${recipient.handle}` : recipient.name || originOwnerDid}
+            </span>
+          </>
+        ) : (
+          <span className="text-xs">{originOwnerDid}</span>
+        )}
+        <span className="text-xs uppercase tracking-wider opacity-60">· {role}</span>
+      </div>
       <div className={`flex flex-col ${viewMode === "compact" ? "space-y-0" : viewMode === "cozy" ? "space-y-1" : "space-y-2"}`}>
         {tasks.map((task) => (
           <ListItem

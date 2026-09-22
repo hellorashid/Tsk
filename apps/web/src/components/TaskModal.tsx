@@ -12,6 +12,7 @@ import { showPickerOrClick } from '../utils/showPicker';
 import { AppDrawer } from './AppDrawer';
 import { TransientTip, useTransientTip } from './TransientTip';
 import { basic } from '../basic';
+import { ShareRecipientAvatar, useShareRecipients } from '@basictech/react';
 
 export const TaskModal = ({
   task, updateFunction, inDrawer = false, deleteTask, new: isNew = false, onDelete, onAddToSchedule, scheduledEvents, onUpdateEvent, onDeleteEvent, onAddSubtask, onUpdateSubtask, onDeleteSubtask, onEnterFocus, folders, taskSource = null
@@ -39,6 +40,11 @@ export const TaskModal = ({
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
   const [shareDrawerOpen, setShareDrawerOpen] = useState(false);
   const shareLoginTip = useTransientTip(2200);
+  
+  // Fetch share information if task is from a shared source
+  const shareOwnerDids = taskSource?.originOwnerDid ? [taskSource.originOwnerDid] : [];
+  const shareRecipients = useShareRecipients(shareOwnerDids);
+  const shareOwner = shareRecipients.data[0];
   
   // Local state for folder label to ensure immediate UI updates
   const [localFolderLabel, setLocalFolderLabel] = useState<string | null>(() => {
@@ -336,6 +342,19 @@ export const TaskModal = ({
         className={`${inDrawer ? "flex flex-col h-full relative overflow-x-hidden" : "bg-black rounded-lg shadow-xl max-w-2xl w-full mx-4 p-4"}`}
         style={inDrawer ? { backgroundColor: getBackgroundColor() } : {}}
       >
+        {/* Shared task indicator */}
+        {taskSource && shareOwner && (
+          <div className={`flex items-center gap-2 px-2 py-2 mb-2 rounded-lg ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'}`}>
+            <ShareRecipientAvatar recipient={shareOwner} size={24} />
+            <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              Shared by {shareOwner.handle ? `@${shareOwner.handle}` : shareOwner.name || 'someone'}
+            </span>
+            <span className={`ml-auto text-xs uppercase tracking-wider ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+              {taskSource.role}
+            </span>
+          </div>
+        )}
+
         {/* Header - Title with checkbox (sticky, outside scroll) */}
         <div className={`flex items-start w-full ${inDrawer ? 'mb-4 shrink-0' : 'my-4'} gap-3`}>
           <div className="mt-2">

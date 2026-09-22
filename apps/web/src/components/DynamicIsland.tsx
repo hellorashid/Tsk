@@ -10,6 +10,7 @@ import TaskSharePanel from './TaskSharePanel';
 import { useAutoResizeTextarea } from '../hooks/useAutoResizeTextarea';
 import { TransientTip, useTransientTip } from './TransientTip';
 import { basic } from '../basic';
+import { ShareRecipientAvatar, useShareRecipients } from '@basictech/react';
 
 interface DynamicIslandProps {
   selectedTask: Task | null;
@@ -71,6 +72,11 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
   const { accentColor, isDarkMode } = theme;
   const { isSignedIn, isReady } = basic.useAuth();
   const shareLoginTip = useTransientTip(2200);
+  
+  // Fetch share information if task is from a shared source
+  const shareOwnerDids = taskSource?.originOwnerDid ? [taskSource.originOwnerDid] : [];
+  const shareRecipients = useShareRecipients(shareOwnerDids);
+  const shareOwner = shareRecipients.data[0];
   
   const [inputValue, setInputValue] = useState('');
   const [title, setTitle] = useState('');
@@ -1307,6 +1313,19 @@ const DynamicIsland: React.FC<DynamicIslandProps> = ({
             )
           ) : (
             <div className="p-4 flex flex-col max-h-[70vh]">
+              {/* Shared task indicator */}
+              {taskSource && shareOwner && (
+                <div className={`flex items-center gap-2 px-2 py-2 mb-3 rounded-lg ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'}`}>
+                  <ShareRecipientAvatar recipient={shareOwner} size={20} />
+                  <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Shared by {shareOwner.handle ? `@${shareOwner.handle}` : shareOwner.name || 'someone'}
+                  </span>
+                  <span className={`ml-auto text-xs uppercase tracking-wider ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                    {taskSource.role}
+                  </span>
+                </div>
+              )}
+
               {/* Header with checkbox and close button - sticky */}
               <div className="flex items-center gap-3 pb-4 shrink-0">
                 <Checkbox
