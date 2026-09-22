@@ -1,5 +1,6 @@
 import { useMemo, useState, useTransition } from "react";
 import { basic } from "../basic";
+import { ShareRecipientLabel, useShareRecipients } from "@basictech/react";
 import { useContactHandles } from "../hooks/useContactHandles";
 import { useTheme } from "../contexts/ThemeContext";
 import { defaultRepoType } from "../utils/schemaInfo";
@@ -31,6 +32,7 @@ export default function TaskSharePanel({ taskId, taskName, compact = false }: Ta
     [taskShares],
   );
   const contactHandles = useContactHandles(recipientDids, shares.getContactHandle);
+  const shareRecipients = useShareRecipients(recipientDids);
 
   const submitShare = () => {
     setError(null);
@@ -114,26 +116,35 @@ export default function TaskSharePanel({ taskId, taskName, compact = false }: Ta
 
       {taskShares.length > 0 ? (
         <ul className="space-y-1">
-          {taskShares.map((share) => (
-            <li key={share.id} className="flex items-center justify-between gap-2 text-xs opacity-80">
-              <span title={share.recipientDid}>
-                {displayShareRecipient(share.recipientDid, contactHandles[share.recipientDid])}
-                <span className="ml-2 uppercase tracking-wider opacity-60">{share.state}</span>
-              </span>
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={() => {
-                  if (share.state === "pending" || share.state === "active") {
-                    endShare(share.id, share.state);
-                  }
-                }}
-                className="underline opacity-70 hover:opacity-100"
-              >
-                {share.state === "pending" ? "Cancel" : "Revoke"}
-              </button>
-            </li>
-          ))}
+          {taskShares.map((share, idx) => {
+            const recipient = shareRecipients.data[idx];
+            return (
+              <li key={share.id} className="flex items-center justify-between gap-2 text-xs">
+                <span className="flex items-center gap-2 min-w-0">
+                  {recipient ? (
+                    <ShareRecipientLabel recipient={recipient} size={20} className="truncate" />
+                  ) : (
+                    <span title={share.recipientDid}>
+                      {displayShareRecipient(share.recipientDid, contactHandles[share.recipientDid])}
+                    </span>
+                  )}
+                  <span className="uppercase tracking-wider opacity-60 shrink-0">{share.state}</span>
+                </span>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => {
+                    if (share.state === "pending" || share.state === "active") {
+                      endShare(share.id, share.state);
+                    }
+                  }}
+                  className="underline opacity-70 hover:opacity-100 shrink-0"
+                >
+                  {share.state === "pending" ? "Cancel" : "Revoke"}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="text-xs opacity-60">Not shared yet. They’ll get an invite in Basic ID.</p>

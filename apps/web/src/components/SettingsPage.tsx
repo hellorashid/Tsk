@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { basic } from "../basic";
+import { ShareInvites } from '@basictech/react';
 import { useTheme, DEFAULT_ACCENT, getAppSurface, getGlassSurface } from '../contexts/ThemeContext';
 import { ThemeSwitch } from './ThemeSwitch';
 import { Folder } from '../utils/types';
@@ -88,6 +89,7 @@ function getBackupState({
 function SharingSettings() {
   const shares = basic.useOutgoingShares();
   const mounts = basic.useMounts();
+  const invites = basic.useShareInvites();
   const { theme } = useTheme();
   const { isDarkMode } = theme;
   const openShares = shares.data.filter((share) => share.state === "pending" || share.state === "active");
@@ -99,6 +101,14 @@ function SharingSettings() {
         Share individual tasks from a task’s details. {openShares.length === 1 ? "1 task is" : `${openShares.length} tasks are`} shared outbound
         {mounts.data.length > 0 ? `, and ${mounts.data.length} ${mounts.data.length === 1 ? "share is" : "shares are"} incoming.` : "."}
       </p>
+      
+      {/* Share Invites Inbox */}
+      {invites.data.length > 0 && (
+        <div className={`mb-4 rounded-lg ${isDarkMode ? 'bg-white/5' : 'bg-black/5'}`}>
+          <ShareInvites className="share-invites-tsk" />
+        </div>
+      )}
+      
       <button
         type="button"
         onClick={() => { window.location.assign("https://basic.id/shares"); }}
