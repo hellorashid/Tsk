@@ -12,9 +12,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@basictech/react": "^0.12.0-beta.3",
-    "@basictech/schema": "^0.12.0-beta.3",
     "@base-ui/react": "^1.8.0",
+    "@basictech/react": "^0.12.0-beta.4",
+    "@basictech/schema": "^0.12.0-beta.4",
     "motion": "^13.4.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

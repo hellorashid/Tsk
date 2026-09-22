@@ -149,7 +149,7 @@ function MobileNavBar({
             aria-label="Primary"
           >
             <div className="flex items-center justify-center w-12 h-12 shrink-0">
-              <UserMenu trigger="avatar" showSyncBadge allowAddAccount menuItems={userMenuItems} />
+              <UserMenu trigger="avatar" showSyncBadge showInvites allowAddAccount menuItems={userMenuItems} />
             </div>
 
             <NavIconButton

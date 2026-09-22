@@ -163,7 +163,7 @@ export function DesktopSidePanel({
           </div>
 
           <div className="flex items-center justify-center size-9">
-            <UserMenu trigger="avatar" showSyncBadge allowAddAccount menuItems={userMenuItems} />
+            <UserMenu trigger="avatar" showSyncBadge showInvites allowAddAccount menuItems={userMenuItems} />
           </div>
         </div>
 
