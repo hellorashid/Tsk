@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { startAdminUserReporting, type ReportingClient } from '@basictech/admin';
 import { PROJECT_ID } from '../basic';
+import { extractAdminUuid } from '../utils/extractAdminUuid';
 import type { BasicClient, BasicSchema } from '@basictech/core';
 
 // Module-level flag to prevent duplicate reporters across StrictMode/HMR
@@ -23,6 +24,13 @@ export function useAdminReporter<S extends BasicSchema = BasicSchema>(client: Ba
     hasInitialized.current = true;
 
     try {
+      // Extract Admin UUID from DID
+      const adminUuid = extractAdminUuid(PROJECT_ID);
+      if (!adminUuid) {
+        console.warn('[Admin] Could not extract Admin UUID from PROJECT_ID; skipping reporting');
+        return;
+      }
+
       // Create a structural adapter for the admin reporter
       // (no runtime dependency on full BasicClient)
       const reportingClient: ReportingClient = {
@@ -41,7 +49,7 @@ export function useAdminReporter<S extends BasicSchema = BasicSchema>(client: Ba
       // Start the reporter with activity reporting enabled
       activeReporter = startAdminUserReporting({
         client: reportingClient,
-        projectId: PROJECT_ID,
+        projectId: adminUuid,
         adminUrl: import.meta.env.VITE_ADMIN_URL || 'https://api.basic.tech',
         activity: true, // Enable daily active user reporting
       });
