@@ -1,12 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook } from '@testing-library/react';
 import type { BasicClient, BasicSchema, BasicClientSnapshot } from '@basictech/core';
 
 // Mock the admin module with factory function
+const mockStop = vi.fn();
+const mockReport = vi.fn();
+const mockStartAdminUserReporting = vi.fn(() => ({
+  report: mockReport,
+  stop: mockStop,
+}));
+
 vi.mock('@basictech/admin', () => ({
-  startAdminUserReporting: vi.fn(() => ({
-    report: vi.fn(),
-    stop: vi.fn(),
-  })),
+  startAdminUserReporting: mockStartAdminUserReporting,
 }));
 
 // Mock the PROJECT_ID
@@ -17,21 +22,20 @@ vi.mock('../basic', () => ({
   },
 }));
 
-// Import after mocks
-import { extractAdminUuid } from '../utils/extractAdminUuid';
-import * as adminModule from '@basictech/admin';
-
 describe('useAdminReporter', () => {
   let mockClient: BasicClient<BasicSchema>;
   let mockSnapshot: BasicClientSnapshot;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    // Reset module to clear activeReporter state
+    vi.resetModules();
+    
     // Reset all mocks
     vi.clearAllMocks();
 
     mockSnapshot = {
       isReady: true,
-      authStatus: 'authenticated' as const, // Verified from @basictech/core types
+      authStatus: 'authenticated' as const,
       isAnonymous: false,
       did: 'did:web:example.com:user:123',
       isSignedIn: true,
@@ -55,7 +59,7 @@ describe('useAdminReporter', () => {
       pendingCount: 0,
       rejected: [],
       conflicts: [],
-      mode: 'sync' as const, // BasicMode = 'sync' | 'rest'
+      mode: 'sync' as const,
       repos: [],
       defaultRepoId: null,
     };
@@ -76,84 +80,77 @@ describe('useAdminReporter', () => {
     vi.restoreAllMocks();
   });
 
-  it('should verify UUID extraction from real PROJECT_ID', () => {
-    // Test the UUID extraction directly with the real PROJECT_ID
-    const projectId = 'did:web:api.basic.tech:projects:701b11bc59a845b581487184d7733e5b';
-    const derivedUuid = extractAdminUuid(projectId);
+  it('should call startAdminUserReporting exactly once with correct params', async () => {
+    const { useAdminReporter } = await import('./useAdminReporter');
     
-    // This is the exact regex from @basictech/admin/dist/index.js line 7
-    const adminUuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    expect(adminUuidRegex.test(derivedUuid!)).toBe(true);
-    expect(derivedUuid).toBe('701b11bc-59a8-45b5-8148-7184d7733e5b');
+    renderHook(() => useAdminReporter(mockClient));
+
+    expect(mockStartAdminUserReporting).toHaveBeenCalledTimes(1);
+    
+    // Get the call arguments (using any to bypass TypeScript's initial empty tuple type)
+    const call = (mockStartAdminUserReporting.mock.calls[0] as any)[0];
+    
+    // Verify all parameters
+    expect(call.projectId).toBe('701b11bc-59a8-45b5-8148-7184d7733e5b');
+    expect(call.adminUrl).toBe('https://api.basic.tech');
+    expect(call.activity).toBe(true);
+    expect(call.client).toBeDefined();
+    
+    // Verify the client adapter passes through the right snapshot structure
+    expect(typeof call.client.subscribe).toBe('function');
+    expect(typeof call.client.getSnapshot).toBe('function');
+    
+    const adapterSnapshot = call.client.getSnapshot();
+    expect(adapterSnapshot.isReady).toBe(mockSnapshot.isReady);
+    expect(adapterSnapshot.authStatus).toBe(mockSnapshot.authStatus);
+    expect(adapterSnapshot.isAnonymous).toBe(mockSnapshot.isAnonymous);
+    expect(adapterSnapshot.did).toBe(mockSnapshot.did);
   });
 
-  it('should verify authStatus value is authenticated for signed-in users', () => {
-    // Verify the mock snapshot has the correct authStatus value
-    // AuthStatus type from @basictech/core: 'bootstrapping' | 'signed_out' | 'authenticated' | 'recovering' | 'expired'
-    // The admin reporter checks: state.authStatus === 'authenticated' (line 20 of @basictech/admin/dist/index.js)
-    expect(mockSnapshot.authStatus).toBe('authenticated');
-    expect(mockSnapshot.isAnonymous).toBe(false);
-    expect(mockSnapshot.isSignedIn).toBe(true);
+  it('should call stop() on unmount', async () => {
+    const { useAdminReporter } = await import('./useAdminReporter');
     
-    // Verify this is the value that @basictech/admin actually checks for
-    // From line 20: state.authStatus === 'authenticated'
-    const isAuthStatusCorrect = mockSnapshot.authStatus === 'authenticated';
-    expect(isAuthStatusCorrect).toBe(true);
+    const { unmount } = renderHook(() => useAdminReporter(mockClient));
+    
+    expect(mockStop).not.toHaveBeenCalled();
+    
+    unmount();
+    
+    expect(mockStop).toHaveBeenCalledTimes(1);
   });
 
-  it('should verify ReportingClient adapter structure matches admin requirements', () => {
-    // Create the same adapter structure that useAdminReporter creates
-    const reportingClient = {
-      subscribe: (listener: () => void) => mockClient.subscribe(listener),
-      getSnapshot: () => {
-        const state = mockClient.getSnapshot();
-        return {
-          isReady: state.isReady,
-          authStatus: state.authStatus,
-          isAnonymous: state.isAnonymous,
-          did: state.did,
-        };
-      },
-    };
-
-    // Verify the adapter has the required methods
-    expect(reportingClient.subscribe).toBeDefined();
-    expect(reportingClient.getSnapshot).toBeDefined();
-    expect(typeof reportingClient.subscribe).toBe('function');
-    expect(typeof reportingClient.getSnapshot).toBe('function');
+  it('should not start a second concurrent reporter when rendered twice', async () => {
+    const { useAdminReporter } = await import('./useAdminReporter');
     
-    // Verify getSnapshot returns the structure admin expects
-    const snapshot = reportingClient.getSnapshot();
-    expect(snapshot).toHaveProperty('isReady');
-    expect(snapshot).toHaveProperty('authStatus');
-    expect(snapshot).toHaveProperty('isAnonymous');
-    expect(snapshot).toHaveProperty('did');
+    // First render
+    renderHook(() => useAdminReporter(mockClient));
     
-    // Verify the values match what admin checks for (line 20-21 of index.js)
-    expect(snapshot.isReady).toBe(true);
-    expect(snapshot.authStatus).toBe('authenticated');
-    expect(snapshot.isAnonymous).toBe(false);
-    expect(snapshot.did).toBe('did:web:example.com:user:123');
+    expect(mockStartAdminUserReporting).toHaveBeenCalledTimes(1);
+    
+    // Second render (simulates StrictMode or re-render)
+    renderHook(() => useAdminReporter(mockClient));
+    
+    // Should still only be called once due to module-level guard
+    expect(mockStartAdminUserReporting).toHaveBeenCalledTimes(1);
   });
 
-  it('should verify startAdminUserReporting is called with correct parameters', () => {
-    const mockStart = vi.mocked(adminModule.startAdminUserReporting);
+  it('should not throw if startAdminUserReporting throws', async () => {
+    // Make startAdminUserReporting throw
+    mockStartAdminUserReporting.mockImplementationOnce(() => {
+      throw new Error('Admin reporter startup failed');
+    });
+
+    const { useAdminReporter } = await import('./useAdminReporter');
     
-    // We can't easily test the hook lifecycle with module-level state,
-    // but we can verify the expected parameters are correct
-    const expectedParams = {
-      client: expect.any(Object), // ReportingClient adapter
-      projectId: '701b11bc-59a8-45b5-8148-7184d7733e5b', // Derived UUID
-      adminUrl: 'https://api.basic.tech',
-      activity: true,
-    };
+    // Should not throw - error is caught and logged
+    expect(() => {
+      renderHook(() => useAdminReporter(mockClient));
+    }).not.toThrow();
     
-    // Verify the mock exists and would be called with these params
-    expect(mockStart).toBeDefined();
-    expect(typeof mockStart).toBe('function');
-    
-    // Verify the derived UUID passes validation
-    const adminUuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    expect(adminUuidRegex.test(expectedParams.projectId)).toBe(true);
+    // Should log the error
+    expect(console.warn).toHaveBeenCalledWith(
+      '[Admin] Failed to start reporting (non-critical):',
+      expect.any(Error)
+    );
   });
 });
