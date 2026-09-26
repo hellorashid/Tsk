@@ -27,8 +27,13 @@ import { useHomeUiState } from "./hooks/useHomeUiState";
 import { useTaskCollections } from "./hooks/useTaskCollections";
 import { ScheduleCardData } from "./utils/schedule";
 import { Task, TaskSource } from "./utils/types";
+import { useAdminReporter } from "./hooks/useAdminReporter";
+import { basic } from "./basic";
 
 function Home() {
+  // Initialize admin user directory and activity reporting
+  useAdminReporter(basic.client);
+  
   const isDbReady = useBasicDbReady();
   const { theme } = useTheme();
   const reduceMotion = useReducedMotion();

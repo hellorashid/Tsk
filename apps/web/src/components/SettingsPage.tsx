@@ -420,6 +420,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                     </p>
                   </div>
 
+                  {isReady && !isLocalAccount ? (
+                    <div className={`pt-3 border-t ${isDarkMode ? 'border-white/10' : 'border-black/10'}`}>
+                      <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                        Signed-in usage is reported to Basic's admin directory (account ID + daily active use). No cookies or tracking IDs.
+                      </p>
+                    </div>
+                  ) : null}
+
                   {isReady && isLocalAccount ? (
                     <div>
                       <button

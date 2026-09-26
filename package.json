@@ -15,5 +15,8 @@
     "build:web": "npm run build --workspace @tsk/web",
     "lint:web": "npm run lint --workspace @tsk/web",
     "test:web": "npm run test --workspace @tsk/web"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.3"
   }
 }
