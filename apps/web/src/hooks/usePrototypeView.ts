@@ -1,20 +1,20 @@
 import { useState, useCallback } from 'react';
 import { PrototypeId as BasePrototypeId } from '../components/prototypes/PrototypesLanding';
 
-export type PrototypeId = BasePrototypeId | null;
+export type PrototypeId = BasePrototypeId | null | undefined;
 
 export const usePrototypeView = () => {
-  const [activePrototype, setActivePrototype] = useState<PrototypeId>(null);
+  const [activePrototype, setActivePrototype] = useState<PrototypeId>(undefined);
 
-  const openPrototype = useCallback((id: PrototypeId) => {
+  const openPrototype = useCallback((id: BasePrototypeId | null) => {
     setActivePrototype(id);
   }, []);
 
   const closePrototype = useCallback(() => {
-    setActivePrototype(null);
+    setActivePrototype(undefined);
   }, []);
 
-  const isPrototypeActive = activePrototype !== null;
+  const isPrototypeActive = activePrototype !== undefined;
 
   return {
     activePrototype,
