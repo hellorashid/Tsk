@@ -38,7 +38,7 @@ interface DynamicIslandProps {
   onModeChange?: (mode: 'default' | 'task' | 'event' | 'command') => void;
   onOpenSettings?: () => void;
   onToggleView?: () => void;
-  currentView?: 'timeline' | 'agenda';
+  currentView?: 'timeline' | 'agenda' | 'week-planner' | 'month-board';
 }
 
 const DynamicIsland: React.FC<DynamicIslandProps> = ({

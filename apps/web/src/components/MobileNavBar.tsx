@@ -7,7 +7,7 @@ export type MobileNavTarget = "tasks" | "agenda" | "calendar";
 
 interface MobileNavBarProps {
   currentView: "tasks" | "calendar";
-  scheduleViewMode: "timeline" | "agenda";
+  scheduleViewMode: "timeline" | "agenda" | "week-planner" | "month-board";
   onViewChange: (view: MobileNavTarget) => void;
   onCreateNew: () => void;
   onOpenSettings: () => void;

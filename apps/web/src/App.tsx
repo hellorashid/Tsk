@@ -35,6 +35,7 @@ import WeekGridView from "./components/prototypes/WeekGridView";
 import MonthBoardView from "./components/prototypes/MonthBoardView";
 import WeekPlannerView from "./components/prototypes/WeekPlannerView";
 import AgendaMonthView from "./components/prototypes/AgendaMonthView";
+import type { ScheduleViewMode } from "./hooks/useHomeUiState";
 
 function Home() {
   // Initialize admin user directory and activity reporting
@@ -472,7 +473,7 @@ function Home() {
                     onBack={() => setCurrentView("home")}
                     viewMode={scheduleViewMode}
                     onViewModeChange={setScheduleViewMode}
-                    expanded={currentView === "settings"}
+                    expanded={currentView === "settings" || scheduleViewMode === "week-planner" || scheduleViewMode === "month-board"}
                   >
                     {currentView === "settings" ? (
                       <SettingsPage
@@ -491,6 +492,24 @@ function Home() {
                         onToggleOtherFolder={setShowOtherFolder}
                         onToggleTodayFolder={setShowTodayFolder}
                         onOpenPrototypes={handleOpenPrototypes}
+                      />
+                    ) : scheduleViewMode === "week-planner" ? (
+                      <WeekPlannerView
+                        events={scheduleEvents}
+                        tasks={tasks}
+                        onCardClick={handleScheduleCardClick}
+                        onTaskClick={handleTaskSelect}
+                        isDarkMode={theme.isDarkMode}
+                        onBack={() => setScheduleViewMode("agenda")}
+                      />
+                    ) : scheduleViewMode === "month-board" ? (
+                      <MonthBoardView
+                        events={scheduleEvents}
+                        tasks={tasks}
+                        onCardClick={handleScheduleCardClick}
+                        onTaskClick={handleTaskSelect}
+                        isDarkMode={theme.isDarkMode}
+                        onBack={() => setScheduleViewMode("agenda")}
                       />
                     ) : scheduleViewMode === "timeline" ? (
                       <ScheduleSidebar
@@ -526,7 +545,7 @@ function Home() {
                 )}
 
                 <AnimatePresence initial={false} mode="popLayout">
-                {currentView === "home" && (!isMobile || mobileView === "tasks") && (
+                {currentView === "home" && (!isMobile || mobileView === "tasks") && scheduleViewMode !== "week-planner" && scheduleViewMode !== "month-board" && (
                   <motion.div
                     key="tasks-column"
                     className="flex-1 flex flex-col relative min-w-0"
@@ -754,7 +773,11 @@ function Home() {
                             mode={islandMode}
                             onModeChange={setIslandMode}
                             onOpenSettings={handleOpenSettings}
-                            onToggleView={() => setScheduleViewMode((current) => (current === "agenda" ? "timeline" : "agenda"))}
+                            onToggleView={() => setScheduleViewMode((current) => {
+                              const cycle: ScheduleViewMode[] = ["agenda", "timeline", "week-planner", "month-board"];
+                              const currentIndex = cycle.indexOf(current);
+                              return cycle[(currentIndex + 1) % cycle.length];
+                            })}
                             currentView={scheduleViewMode}
                           />
                         </div>
@@ -766,7 +789,25 @@ function Home() {
 
                 {isMobile && mobileView === "calendar" && (
                   <div className="flex-1 h-full overflow-hidden px-2 pt-3 relative">
-                    {scheduleViewMode === "timeline" ? (
+                    {scheduleViewMode === "week-planner" ? (
+                      <WeekPlannerView
+                        events={scheduleEvents}
+                        tasks={tasks}
+                        onCardClick={handleScheduleCardClick}
+                        onTaskClick={handleTaskSelect}
+                        isDarkMode={theme.isDarkMode}
+                        onBack={() => setScheduleViewMode("agenda")}
+                      />
+                    ) : scheduleViewMode === "month-board" ? (
+                      <MonthBoardView
+                        events={scheduleEvents}
+                        tasks={tasks}
+                        onCardClick={handleScheduleCardClick}
+                        onTaskClick={handleTaskSelect}
+                        isDarkMode={theme.isDarkMode}
+                        onBack={() => setScheduleViewMode("agenda")}
+                      />
+                    ) : scheduleViewMode === "timeline" ? (
                       <ScheduleSidebar
                         onCardClick={handleScheduleCardClick}
                         events={scheduleEvents}
