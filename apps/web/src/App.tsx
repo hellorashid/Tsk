@@ -29,6 +29,12 @@ import { ScheduleCardData } from "./utils/schedule";
 import { Task, TaskSource } from "./utils/types";
 import { useAdminReporter } from "./hooks/useAdminReporter";
 import { basic } from "./basic";
+import { usePrototypeView } from "./hooks/usePrototypeView";
+import PrototypesLanding from "./components/prototypes/PrototypesLanding";
+import WeekGridView from "./components/prototypes/WeekGridView";
+import MonthBoardView from "./components/prototypes/MonthBoardView";
+import WeekPlannerView from "./components/prototypes/WeekPlannerView";
+import AgendaMonthView from "./components/prototypes/AgendaMonthView";
 
 function Home() {
   // Initialize admin user directory and activity reporting
@@ -44,6 +50,8 @@ function Home() {
 
   const isCollectionsLoading = !isDbReady || tasksLoading || scheduleLoading || foldersLoading;
   const [showDelayedLoadingState, setShowDelayedLoadingState] = useState(false);
+
+  const { activePrototype, isPrototypeActive, openPrototype, closePrototype } = usePrototypeView();
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedTaskSource, setSelectedTaskSource] = useState<TaskSource | null>(null);
@@ -293,6 +301,7 @@ function Home() {
 
   const handleOpenSettings = useCallback(() => setCurrentView("settings"), [setCurrentView]);
   const handleOpenAbout = useCallback(() => setAboutModalOpen(true), [setAboutModalOpen]);
+  const handleOpenPrototypes = useCallback(() => openPrototype(null), [openPrototype]);
   const handleFolderSelect = useCallback((folderId: string | null) => setActiveFolder(folderId), [setActiveFolder]);
   const handleOpenFolderSettings = useCallback(() => setFolderSettingsOpen(true), [setFolderSettingsOpen]);
   const handleFolderUpdateRequest = useCallback(
@@ -348,6 +357,56 @@ function Home() {
     };
   }, []);
 
+  // If prototype is active, render prototype view
+  if (isPrototypeActive) {
+    const prototypeProps = {
+      events: scheduleEvents,
+      tasks,
+      onCardClick: handleScheduleCardClick,
+      onTaskClick: handleTaskSelect,
+      onAddEvent: handleAddEvent,
+      onUpdateEvent: updateScheduleEvent,
+      isDarkMode: theme.isDarkMode,
+      isMobile,
+      onBack: closePrototype,
+    };
+
+    return (
+      <div
+        className="flex"
+        style={{
+          height:
+            typeof CSS !== "undefined" && CSS.supports("height", "100dvh")
+              ? "100dvh"
+              : "calc(var(--vh, 1vh) * 100)",
+          backgroundColor: getAppSurface(theme.accentColor, theme.isDarkMode),
+          backgroundImage: theme.isDarkMode
+            ? `${getPhotoOverlay(true)}, url(${bgImage})`
+            : `url(${bgImage})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {activePrototype === null && (
+            <PrototypesLanding
+              onSelectPrototype={openPrototype}
+              onBack={() => {
+                closePrototype();
+                setCurrentView("home");
+              }}
+            />
+          )}
+          {activePrototype === 'week-grid' && <WeekGridView {...prototypeProps} />}
+          {activePrototype === 'month-board' && <MonthBoardView {...prototypeProps} />}
+          {activePrototype === 'week-planner' && <WeekPlannerView {...prototypeProps} />}
+          {activePrototype === 'agenda-month' && <AgendaMonthView {...prototypeProps} />}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       {focusedTask && (
@@ -394,6 +453,7 @@ function Home() {
                 onToggleAllFolder={setShowAllFolder}
                 onToggleOtherFolder={setShowOtherFolder}
                 onToggleTodayFolder={setShowTodayFolder}
+                onOpenPrototypes={handleOpenPrototypes}
               />
             </div>
           )}
@@ -429,6 +489,7 @@ function Home() {
                         onToggleAllFolder={setShowAllFolder}
                         onToggleOtherFolder={setShowOtherFolder}
                         onToggleTodayFolder={setShowTodayFolder}
+                        onOpenPrototypes={handleOpenPrototypes}
                       />
                     ) : scheduleViewMode === "timeline" ? (
                       <ScheduleSidebar
