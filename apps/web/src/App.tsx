@@ -468,6 +468,7 @@ function Home() {
                   <DesktopSidePanel
                     onOpenSettings={handleOpenSettings}
                     onOpenAbout={handleOpenAbout}
+                    onOpenPrototypes={handleOpenPrototypes}
                     onBack={() => setCurrentView("home")}
                     viewMode={scheduleViewMode}
                     onViewModeChange={setScheduleViewMode}
@@ -874,6 +875,7 @@ function Home() {
               onCreateNew={handleMobileCreateNew}
               onOpenSettings={handleOpenSettings}
               onOpenAbout={handleOpenAbout}
+              onOpenPrototypes={handleOpenPrototypes}
               isCloseMode={currentView === "settings" || folderSettingsOpen}
               onClose={handleCloseSettingsScreen}
             />
