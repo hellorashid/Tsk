@@ -91,7 +91,7 @@ export function DesktopSidePanel({
   
   return (
     <motion.div
-      layout={!reduceMotion}
+      layout={!reduceMotion && expanded}
       transition={{ layout: { duration: 0.28, ease: EASE_DRAWER } }}
       className={`hidden md:flex p-2 ${
         expanded
