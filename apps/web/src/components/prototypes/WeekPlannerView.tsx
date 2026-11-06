@@ -198,7 +198,7 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
 
       {/* Week Grid - Time-aware Calendar Style */}
       <div className="flex-1 overflow-hidden">
-        <div className="flex h-full overflow-hidden">
+        <div className="flex h-full overflow-hidden pl-12">
           {/* Day Columns */}
           {weekDays.map((day) => {
             const dayKey = day.toISOString();
@@ -253,8 +253,10 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
                       <button
                         key={hour}
                         type="button"
-                        className={`absolute left-0 right-0 border-t cursor-pointer hover:bg-blue-500/5 ${
-                          isDarkMode ? 'border-white/5' : 'border-gray-100'
+                        className={`absolute left-0 right-0 border-t transition-colors ${
+                          isDarkMode 
+                            ? 'border-white/5 hover:bg-white/5 cursor-pointer' 
+                            : 'border-gray-100 hover:bg-blue-50 cursor-pointer'
                         }`}
                         style={{ top: `${(hour - 7) * 60}px`, height: '60px' }}
                         onClick={() => handleTimeSlotClick(day, hour)}

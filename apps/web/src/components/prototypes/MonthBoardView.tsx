@@ -119,7 +119,8 @@ const MonthBoardView: React.FC<MonthBoardViewProps> = ({
   };
 
   const handleDayClick = (day: Date, hasItems: boolean) => {
-    const dayKey = getDayKey(day);
+    // Always notify parent about day selection
+    onDayClick?.(day);
     
     // If day has no items and onAddEvent is available, create new event
     if (!hasItems && onAddEvent) {
@@ -141,9 +142,11 @@ const MonthBoardView: React.FC<MonthBoardViewProps> = ({
       return;
     }
     
-    // Otherwise toggle expansion and notify parent
-    setExpandedDay(expandedDay === dayKey ? null : dayKey);
-    onDayClick?.(day);
+    // If day has items, toggle expansion
+    if (hasItems) {
+      const dayKey = getDayKey(day);
+      setExpandedDay(expandedDay === dayKey ? null : dayKey);
+    }
   };
 
   return (
