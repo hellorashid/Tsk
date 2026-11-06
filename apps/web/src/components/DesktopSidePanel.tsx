@@ -87,6 +87,8 @@ export function DesktopSidePanel({
           : 'text-black/55 hover:text-black/85 hover:bg-black/8'
     }`;
 
+  const isWideView = viewMode === 'week-planner' || viewMode === 'month-board';
+  
   return (
     <motion.div
       layout={!reduceMotion}
@@ -94,7 +96,9 @@ export function DesktopSidePanel({
       className={`hidden md:flex p-2 ${
         expanded
           ? 'flex-1 min-w-0'
-          : 'shrink-0 md:pr-4 w-[min(100%,calc(420px+3.5rem+1rem))] max-w-[55vw]'
+          : isWideView
+            ? 'shrink-0 md:pr-4 w-[75%]'
+            : 'shrink-0 md:pr-4 w-[min(100%,calc(420px+3.5rem+1rem))] max-w-[55vw]'
       }`}
     >
       <div
@@ -119,7 +123,7 @@ export function DesktopSidePanel({
 
           <div className="flex-1 flex items-center justify-center min-h-0">
             <AnimatePresence initial={false} mode="wait">
-              {expanded && onBack ? (
+              {expanded && onBack && !isWideView ? (
                 <motion.button
                   key="back"
                   type="button"
@@ -140,7 +144,7 @@ export function DesktopSidePanel({
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                   </svg>
                 </motion.button>
-              ) : !expanded ? (
+              ) : !expanded || isWideView ? (
                 <motion.div
                   key="view-toggle"
                   role="group"

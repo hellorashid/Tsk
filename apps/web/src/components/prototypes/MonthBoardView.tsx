@@ -10,7 +10,7 @@ interface MonthBoardViewProps {
   onTaskClick?: (task: Task) => void;
   onDayClick?: (date: Date) => void;
   isDarkMode: boolean;
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 const MonthBoardView: React.FC<MonthBoardViewProps> = ({
@@ -125,17 +125,19 @@ const MonthBoardView: React.FC<MonthBoardViewProps> = ({
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button
-              onClick={onBack}
-              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
-                isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Labs
-            </button>
+            {onBack && (
+              <button
+                onClick={onBack}
+                className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                  isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Labs
+              </button>
+            )}
             <h1 className="text-lg font-semibold">{monthName}</h1>
           </div>
           <div className="flex items-center gap-2">
