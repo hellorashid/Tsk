@@ -248,6 +248,19 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
                 {/* Time Grid - 7 AM to 9 PM */}
                 <div className="flex-1 overflow-y-auto relative">
                   <div className="relative" style={{ minHeight: '840px' }}>
+                    {/* Hour labels - fixed layer on first column only */}
+                    {weekDays.indexOf(day) === 0 && Array.from({ length: 15 }, (_, i) => i + 7).map((hour) => (
+                      <div
+                        key={`label-${hour}`}
+                        className={`absolute -left-12 w-10 text-right text-[10px] pointer-events-none ${
+                          isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                        }`}
+                        style={{ top: `${(hour - 7) * 60}px` }}
+                      >
+                        {hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
+                      </div>
+                    ))}
+                    
                     {/* Hour markers (7 AM to 9 PM = 14 hours) */}
                     {Array.from({ length: 15 }, (_, i) => i + 7).map((hour) => (
                       <button
@@ -261,16 +274,7 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
                         style={{ top: `${(hour - 7) * 60}px`, height: '60px' }}
                         onClick={() => handleTimeSlotClick(day, hour)}
                         aria-label={`Create event at ${hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}`}
-                      >
-                        {/* Show hour label only on first column */}
-                        {weekDays.indexOf(day) === 0 && (
-                          <div className={`absolute -left-12 top-0 text-[10px] ${
-                            isDarkMode ? 'text-gray-500' : 'text-gray-400'
-                          }`}>
-                            {hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
-                          </div>
-                        )}
-                      </button>
+                      />
                     ))}
 
                     {/* Events positioned by time - Shared chip style */}
