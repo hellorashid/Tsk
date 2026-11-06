@@ -250,13 +250,15 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
                   <div className="relative" style={{ minHeight: '840px' }}>
                     {/* Hour markers (7 AM to 9 PM = 14 hours) */}
                     {Array.from({ length: 15 }, (_, i) => i + 7).map((hour) => (
-                      <div
+                      <button
                         key={hour}
-                        className={`absolute left-0 right-0 border-t ${
+                        type="button"
+                        className={`absolute left-0 right-0 border-t cursor-pointer hover:bg-blue-500/5 ${
                           isDarkMode ? 'border-white/5' : 'border-gray-100'
                         }`}
                         style={{ top: `${(hour - 7) * 60}px`, height: '60px' }}
                         onClick={() => handleTimeSlotClick(day, hour)}
+                        aria-label={`Create event at ${hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}`}
                       >
                         {/* Show hour label only on first column */}
                         {weekDays.indexOf(day) === 0 && (
@@ -266,7 +268,7 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
                             {hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
                           </div>
                         )}
-                      </div>
+                      </button>
                     ))}
 
                     {/* Events positioned by time - Shared chip style */}
