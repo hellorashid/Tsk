@@ -104,6 +104,7 @@ const MonthBoardView: React.FC<MonthBoardViewProps> = ({
   };
 
   const monthName = new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const isCurrentMonth = new Date().getMonth() === month && new Date().getFullYear() === year;
 
   const getDayKey = (date: Date) => {
     return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
@@ -117,58 +118,70 @@ const MonthBoardView: React.FC<MonthBoardViewProps> = ({
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
+      {/* Header - Matches daily calendar style */}
       <div
         className={`px-4 py-3 border-b ${
-          isDarkMode ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white/80'
+          isDarkMode ? 'border-white/10' : 'border-gray-200'
         }`}
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          {/* Left side - Month and year */}
+          <div className="flex items-center gap-2">
             {onBack && (
               <button
                 onClick={onBack}
-                className={`flex items-center gap-2 text-sm font-medium transition-colors ${
-                  isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                className={`p-2 -ml-2 rounded-xl transition-colors ${
+                  isDarkMode ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-200 text-gray-700'
                 }`}
+                aria-label="Back to Labs"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                Labs
               </button>
             )}
-            <h1 className="text-lg font-semibold">{monthName}</h1>
+            <div className="flex items-center gap-2">
+              <h1
+                className={`text-4xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              >
+                {monthName}
+              </h1>
+              {isCurrentMonth && (
+                <span className="w-2 h-2 rounded-full bg-red-500 mt-1" />
+              )}
+            </div>
           </div>
+
+          {/* Right side - Navigation */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={goToPreviousMonth}
-              className={`p-2 rounded-lg transition-colors ${
-                isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <button
-              onClick={goToToday}
-              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-              }`}
-            >
-              Today
-            </button>
-            <button
-              onClick={goToNextMonth}
-              className={`p-2 rounded-lg transition-colors ${
-                isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={goToPreviousMonth}
+                className={`p-2 rounded-xl transition-colors ${isDarkMode ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-200 text-gray-700'}`}
+                aria-label="Previous month"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </button>
+              <button
+                onClick={goToToday}
+                className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${isDarkMode ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-200 text-gray-700'}`}
+                aria-label="Go to current month"
+              >
+                Today
+              </button>
+              <button
+                onClick={goToNextMonth}
+                className={`p-2 rounded-xl transition-colors ${isDarkMode ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-200 text-gray-700'}`}
+                aria-label="Next month"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>

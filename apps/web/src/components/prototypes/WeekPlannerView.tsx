@@ -61,13 +61,6 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
     return byDay;
   }, [events, weekDays]);
 
-  // Filter unscheduled tasks
-  const unscheduledTasks = useMemo(() => {
-    const scheduledTaskIds = new Set(
-      events.filter((e) => e.type === 'task' && e.taskId).map((e) => e.taskId)
-    );
-    return tasks.filter((t) => !t.completed && !scheduledTaskIds.has(t.id));
-  }, [tasks, events]);
 
   const goToPreviousWeek = () => {
     const newDate = new Date(selectedDate);
@@ -97,107 +90,85 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
     return `${hour12}:${minutes.toString().padStart(2, '0')}`;
   };
 
+  const weekStart = weekDays[0];
+  const weekEnd = weekDays[6];
+  const isCurrentWeek = weekDays.some(day => isToday(day));
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
+      {/* Header - Matches daily calendar style */}
       <div
         className={`px-4 py-3 border-b ${
-          isDarkMode ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white/80'
+          isDarkMode ? 'border-white/10' : 'border-gray-200'
         }`}
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          {/* Left side - Week range */}
+          <div className="flex items-center gap-2">
             {onBack && (
               <button
                 onClick={onBack}
-                className={`flex items-center gap-2 text-sm font-medium transition-colors ${
-                  isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                className={`p-2 -ml-2 rounded-xl transition-colors ${
+                  isDarkMode ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-200 text-gray-700'
                 }`}
+                aria-label="Back to Labs"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                Labs
               </button>
             )}
-            <h1 className="text-lg font-semibold">Week Planner</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={goToPreviousWeek}
-              className={`p-2 rounded-lg transition-colors ${
-                isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <button
-              onClick={goToToday}
-              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-              }`}
-            >
-              Today
-            </button>
-            <button
-              onClick={goToNextWeek}
-              className={`p-2 rounded-lg transition-colors ${
-                isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Columns Container */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden">
-        <div className="flex h-full min-w-max">
-          {/* Inbox Column */}
-          <div
-            className={`w-64 shrink-0 border-r flex flex-col ${
-              isDarkMode ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-gray-50'
-            }`}
-          >
-            <div
-              className={`px-4 py-3 border-b ${
-                isDarkMode ? 'border-white/10' : 'border-gray-200'
-              }`}
-            >
-              <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Inbox
-              </h3>
-              <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                {unscheduledTasks.length} undated
-              </p>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {unscheduledTasks.map((task) => (
-                <button
-                  key={task.id}
-                  onClick={() => onTaskClick?.(task)}
-                  className={`w-full text-left p-3 rounded-lg border text-sm transition-colors ${
-                    isDarkMode
-                      ? 'bg-white/5 hover:bg-white/10 border-white/10'
-                      : 'bg-white hover:bg-gray-50 border-gray-200'
-                  }`}
-                >
-                  {task.name}
-                </button>
-              ))}
-              {unscheduledTasks.length === 0 && (
-                <p className={`text-sm text-center py-8 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                  All tasks scheduled
-                </p>
+            <div className="flex items-center gap-2">
+              <h1
+                className={`text-4xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              >
+                {weekStart.toLocaleDateString('en-US', { month: 'short' })} {weekStart.getDate().toString().padStart(2, '0')}
+                {' – '}
+                {weekEnd.toLocaleDateString('en-US', { month: 'short' })} {weekEnd.getDate().toString().padStart(2, '0')}
+              </h1>
+              {isCurrentWeek && (
+                <span className="w-2 h-2 rounded-full bg-red-500 mt-1" />
               )}
             </div>
           </div>
 
+          {/* Right side - Navigation */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={goToPreviousWeek}
+                className={`p-2 rounded-xl transition-colors ${isDarkMode ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-200 text-gray-700'}`}
+                aria-label="Previous week"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </button>
+              <button
+                onClick={goToToday}
+                className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors ${isDarkMode ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-200 text-gray-700'}`}
+                aria-label="Go to current week"
+              >
+                Today
+              </button>
+              <button
+                onClick={goToNextWeek}
+                className={`p-2 rounded-xl transition-colors ${isDarkMode ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-200 text-gray-700'}`}
+                aria-label="Next week"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Week Grid - Calendar Style */}
+      <div className="flex-1 overflow-hidden">
+        <div className="flex h-full">
           {/* Day Columns */}
           {weekDays.map((day) => {
             const dayKey = day.toISOString();
@@ -207,7 +178,7 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
             return (
               <div
                 key={dayKey}
-                className={`w-64 shrink-0 border-r flex flex-col ${
+                className={`flex-1 min-w-0 border-r flex flex-col ${
                   isTodayDay
                     ? isDarkMode
                       ? 'bg-blue-500/5 border-blue-500/20'
@@ -219,48 +190,50 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
               >
                 {/* Day Header */}
                 <div
-                  className={`px-4 py-3 border-b ${
+                  className={`px-2 py-2 border-b ${
                     isDarkMode ? 'border-white/10' : 'border-gray-200'
                   }`}
                 >
-                  <div className={`text-xs mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <div className={`text-xs text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     {day.toLocaleDateString('en-US', { weekday: 'short' })}
                   </div>
-                  <h3
-                    className={`text-lg font-semibold ${
+                  <div
+                    className={`text-base font-semibold text-center ${
                       isTodayDay ? 'text-blue-500' : isDarkMode ? 'text-gray-200' : 'text-gray-900'
                     }`}
                   >
-                    {day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </h3>
-                  <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                    {dayEvents.length} {dayEvents.length === 1 ? 'item' : 'items'}
-                  </p>
+                    {day.getDate()}
+                  </div>
                 </div>
 
-                {/* Task List */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                {/* Items - Compact Calendar Style */}
+                <div className="flex-1 overflow-y-auto p-1 space-y-1">
                   {dayEvents.map((event) => (
                     <button
                       key={event.id}
-                      onClick={() => onCardClick?.(event)}
-                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                      onClick={() => event.type === 'task' && event.taskId && onTaskClick ? 
+                        onTaskClick(tasks.find(t => t.id === event.taskId)!) : 
+                        onCardClick?.(event)
+                      }
+                      className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
                         isDarkMode
-                          ? 'bg-white/5 hover:bg-white/10 border-white/10'
-                          : 'bg-white hover:bg-gray-50 border-gray-200'
+                          ? 'bg-white/10 hover:bg-white/15'
+                          : 'bg-white hover:bg-gray-50 border border-gray-200'
                       }`}
                     >
                       {event.start.dateTime && (
-                        <div className={`text-xs mb-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                        <div className={`font-medium mb-0.5 ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>
                           {formatTime(event.start.dateTime)}
                         </div>
                       )}
-                      <div className="text-sm font-medium">{event.title}</div>
+                      <div className={`truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                        {event.title}
+                      </div>
                     </button>
                   ))}
                   {dayEvents.length === 0 && (
-                    <p className={`text-sm text-center py-8 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                      Nothing planned
+                    <p className={`text-xs text-center py-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                      —
                     </p>
                   )}
                 </div>
