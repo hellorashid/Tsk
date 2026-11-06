@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ScheduleCardData } from '../../utils/schedule';
+import { ScheduleCardData, ScheduleCardInput } from '../../utils/schedule';
 import { Task } from '../../utils/types';
 import { getStartOfDay, isToday } from '../../utils/dateHelpers';
 
@@ -9,6 +9,8 @@ interface MonthBoardViewProps {
   onCardClick?: (cardData: ScheduleCardData) => void;
   onTaskClick?: (task: Task) => void;
   onDayClick?: (date: Date) => void;
+  onAddEvent?: (eventData: ScheduleCardInput) => Promise<ScheduleCardData>;
+  selectedDate?: Date;
   isDarkMode: boolean;
   onBack?: () => void;
 }
@@ -19,11 +21,17 @@ const MonthBoardView: React.FC<MonthBoardViewProps> = ({
   onCardClick,
   onTaskClick,
   onDayClick,
+  onAddEvent,
+  selectedDate: externalSelectedDate,
   isDarkMode,
   onBack,
 }) => {
-  const [selectedDate, setSelectedDate] = useState(() => getStartOfDay(new Date()));
+  const [internalSelectedDate, setInternalSelectedDate] = useState(() => getStartOfDay(new Date()));
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
+
+  // Use external selectedDate if provided, otherwise use internal
+  const selectedDate = externalSelectedDate || internalSelectedDate;
+  const setSelectedDate = externalSelectedDate ? () => {} : setInternalSelectedDate;
 
   const { year, month } = useMemo(() => {
     return {
@@ -110,8 +118,30 @@ const MonthBoardView: React.FC<MonthBoardViewProps> = ({
     return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
   };
 
-  const handleDayClick = (day: Date) => {
+  const handleDayClick = (day: Date, hasItems: boolean) => {
     const dayKey = getDayKey(day);
+    
+    // If day has no items and onAddEvent is available, create new event
+    if (!hasItems && onAddEvent) {
+      const startDate = new Date(day);
+      startDate.setHours(9, 0, 0, 0); // Default to 9 AM
+      
+      const endDate = new Date(startDate);
+      endDate.setHours(10, 0, 0, 0); // 1 hour duration
+      
+      onAddEvent({
+        title: '',
+        start: {
+          dateTime: startDate.toISOString(),
+        },
+        end: {
+          dateTime: endDate.toISOString(),
+        },
+      });
+      return;
+    }
+    
+    // Otherwise toggle expansion and notify parent
     setExpandedDay(expandedDay === dayKey ? null : dayKey);
     onDayClick?.(day);
   };
@@ -215,13 +245,21 @@ const MonthBoardView: React.FC<MonthBoardViewProps> = ({
               const totalCount = dayItems.events.length + dayItems.tasks.length;
               const isTodayDay = isToday(day);
               const isExpanded = expandedDay === dayKey;
+              const isSelectedDay = externalSelectedDate && 
+                day.getFullYear() === externalSelectedDate.getFullYear() &&
+                day.getMonth() === externalSelectedDate.getMonth() &&
+                day.getDate() === externalSelectedDate.getDate();
 
               return (
                 <button
                   key={dayKey}
-                  onClick={() => handleDayClick(day)}
+                  onClick={() => handleDayClick(day, totalCount > 0)}
                   className={`relative rounded-lg border p-2 text-left transition-all min-h-[100px] ${
-                    isTodayDay
+                    isSelectedDay
+                      ? isDarkMode
+                        ? 'border-blue-500 bg-blue-500/15 ring-2 ring-blue-500/50'
+                        : 'border-blue-500 bg-blue-200 ring-2 ring-blue-400'
+                    : isTodayDay
                       ? isDarkMode
                         ? 'border-blue-500 bg-blue-500/10'
                         : 'border-blue-500 bg-blue-50'

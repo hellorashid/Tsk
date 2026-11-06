@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ScheduleCardData } from '../../utils/schedule';
+import { ScheduleCardData, ScheduleCardInput } from '../../utils/schedule';
 import { Task } from '../../utils/types';
 import { getStartOfDay, isToday } from '../../utils/dateHelpers';
 
@@ -8,6 +8,9 @@ interface WeekPlannerViewProps {
   tasks: Task[];
   onCardClick?: (cardData: ScheduleCardData) => void;
   onTaskClick?: (task: Task) => void;
+  onDayClick?: (date: Date) => void;
+  onAddEvent?: (eventData: ScheduleCardInput) => Promise<ScheduleCardData>;
+  selectedDate?: Date;
   isDarkMode: boolean;
   onBack?: () => void;
 }
@@ -17,16 +20,23 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
   tasks,
   onCardClick,
   onTaskClick,
+  onDayClick,
+  onAddEvent,
+  selectedDate: externalSelectedDate,
   isDarkMode,
   onBack,
 }) => {
-  const [selectedDate, setSelectedDate] = useState(() => {
+  const [internalSelectedDate, setInternalSelectedDate] = useState(() => {
     const today = new Date();
     const day = today.getDay();
     const diff = today.getDate() - day; // Get Monday of current week
     const monday = new Date(today.setDate(diff));
     return getStartOfDay(monday);
   });
+
+  // Use external selectedDate if provided, otherwise use internal
+  const selectedDate = externalSelectedDate || internalSelectedDate;
+  const setSelectedDate = externalSelectedDate ? () => {} : setInternalSelectedDate;
 
   // Calculate week days
   const weekDays = useMemo(() => {
@@ -82,12 +92,32 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
     setSelectedDate(getStartOfDay(monday));
   };
 
-  const formatTime = (dateTime: string) => {
-    const date = new Date(dateTime);
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const hour12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-    return `${hour12}:${minutes.toString().padStart(2, '0')}`;
+  const getHourFromDateTime = (dateTime: string): number => {
+    return new Date(dateTime).getHours() + new Date(dateTime).getMinutes() / 60;
+  };
+
+  const handleDayClick = (day: Date) => {
+    onDayClick?.(day);
+  };
+
+  const handleTimeSlotClick = (day: Date, hour: number) => {
+    if (!onAddEvent) return;
+    
+    const startDate = new Date(day);
+    startDate.setHours(Math.floor(hour), (hour % 1) * 60, 0, 0);
+    
+    const endDate = new Date(startDate);
+    endDate.setHours(startDate.getHours() + 1);
+
+    onAddEvent({
+      title: '',
+      start: {
+        dateTime: startDate.toISOString(),
+      },
+      end: {
+        dateTime: endDate.toISOString(),
+      },
+    });
   };
 
   const weekStart = weekDays[0];
@@ -166,20 +196,28 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
         </div>
       </div>
 
-      {/* Week Grid - Calendar Style */}
+      {/* Week Grid - Time-aware Calendar Style */}
       <div className="flex-1 overflow-hidden">
-        <div className="flex h-full">
+        <div className="flex h-full overflow-hidden">
           {/* Day Columns */}
           {weekDays.map((day) => {
             const dayKey = day.toISOString();
             const dayEvents = eventsByDay.get(dayKey) || [];
             const isTodayDay = isToday(day);
+            const isSelectedDay = externalSelectedDate && 
+              day.getFullYear() === externalSelectedDate.getFullYear() &&
+              day.getMonth() === externalSelectedDate.getMonth() &&
+              day.getDate() === externalSelectedDate.getDate();
 
             return (
               <div
                 key={dayKey}
                 className={`flex-1 min-w-0 border-r flex flex-col ${
-                  isTodayDay
+                  isSelectedDay
+                    ? isDarkMode
+                      ? 'bg-blue-500/10 border-blue-500/30'
+                      : 'bg-blue-100 border-blue-300'
+                    : isTodayDay
                     ? isDarkMode
                       ? 'bg-blue-500/5 border-blue-500/20'
                       : 'bg-blue-50 border-blue-200'
@@ -188,54 +226,84 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
                     : 'border-gray-200'
                 }`}
               >
-                {/* Day Header */}
-                <div
-                  className={`px-2 py-2 border-b ${
-                    isDarkMode ? 'border-white/10' : 'border-gray-200'
+                {/* Day Header - Clickable */}
+                <button
+                  onClick={() => handleDayClick(day)}
+                  className={`px-2 py-2 border-b transition-colors text-center w-full ${
+                    isDarkMode ? 'border-white/10 hover:bg-white/5' : 'border-gray-200 hover:bg-gray-50'
                   }`}
                 >
-                  <div className={`text-xs text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     {day.toLocaleDateString('en-US', { weekday: 'short' })}
                   </div>
                   <div
-                    className={`text-base font-semibold text-center ${
+                    className={`text-base font-semibold ${
                       isTodayDay ? 'text-blue-500' : isDarkMode ? 'text-gray-200' : 'text-gray-900'
                     }`}
                   >
                     {day.getDate()}
                   </div>
-                </div>
+                </button>
 
-                {/* Items - Compact Calendar Style */}
-                <div className="flex-1 overflow-y-auto p-1 space-y-1">
-                  {dayEvents.map((event) => (
-                    <button
-                      key={event.id}
-                      onClick={() => event.type === 'task' && event.taskId && onTaskClick ? 
-                        onTaskClick(tasks.find(t => t.id === event.taskId)!) : 
-                        onCardClick?.(event)
-                      }
-                      className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
-                        isDarkMode
-                          ? 'bg-white/10 hover:bg-white/15'
-                          : 'bg-white hover:bg-gray-50 border border-gray-200'
-                      }`}
-                    >
-                      {event.start.dateTime && (
-                        <div className={`font-medium mb-0.5 ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>
-                          {formatTime(event.start.dateTime)}
-                        </div>
-                      )}
-                      <div className={`truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
-                        {event.title}
+                {/* Time Grid - 7 AM to 9 PM */}
+                <div className="flex-1 overflow-y-auto relative">
+                  <div className="relative" style={{ minHeight: '840px' }}>
+                    {/* Hour markers (7 AM to 9 PM = 14 hours) */}
+                    {Array.from({ length: 15 }, (_, i) => i + 7).map((hour) => (
+                      <div
+                        key={hour}
+                        className={`absolute left-0 right-0 border-t ${
+                          isDarkMode ? 'border-white/5' : 'border-gray-100'
+                        }`}
+                        style={{ top: `${(hour - 7) * 60}px`, height: '60px' }}
+                        onClick={() => handleTimeSlotClick(day, hour)}
+                      >
+                        {/* Show hour label only on first column */}
+                        {weekDays.indexOf(day) === 0 && (
+                          <div className={`absolute -left-12 top-0 text-[10px] ${
+                            isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                          }`}>
+                            {hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
+                          </div>
+                        )}
                       </div>
-                    </button>
-                  ))}
-                  {dayEvents.length === 0 && (
-                    <p className={`text-xs text-center py-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                      —
-                    </p>
-                  )}
+                    ))}
+
+                    {/* Events positioned by time - Shared chip style */}
+                    {dayEvents.map((event) => {
+                      const hour = event.start.dateTime ? getHourFromDateTime(event.start.dateTime) : 12;
+                      const topPosition = Math.max(0, (hour - 7) * 60);
+
+                      return (
+                        <button
+                          key={event.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (event.type === 'task' && event.taskId && onTaskClick) {
+                              const task = tasks.find(t => t.id === event.taskId);
+                              if (task) onTaskClick(task);
+                            } else {
+                              onCardClick?.(event);
+                            }
+                          }}
+                          className={`absolute left-1 right-1 px-2 py-1 rounded text-[10px] transition-colors ${
+                            isDarkMode
+                              ? 'bg-white/10 hover:bg-white/20'
+                              : 'bg-blue-100 hover:bg-blue-200'
+                          }`}
+                          style={{ 
+                            top: `${topPosition}px`,
+                            minHeight: '24px',
+                            maxHeight: '56px'
+                          }}
+                        >
+                          <div className={`truncate font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                            {event.title}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             );

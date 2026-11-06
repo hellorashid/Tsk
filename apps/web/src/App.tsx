@@ -57,6 +57,7 @@ function Home() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedTaskSource, setSelectedTaskSource] = useState<TaskSource | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleCardData | null>(null);
+  const [calendarSelectedDate, setCalendarSelectedDate] = useState<Date>(() => new Date());
 
   const setSelectedTaskAndClearSource = useCallback<Dispatch<SetStateAction<Task | null>>>((value) => {
     if (typeof value === "function") {
@@ -300,6 +301,10 @@ function Home() {
     [isMobile, setDrawerOpen, setIsNewTaskMode, tasks],
   );
 
+  const handleCalendarDayClick = useCallback((date: Date) => {
+    setCalendarSelectedDate(date);
+  }, []);
+
   const handleOpenSettings = useCallback(() => setCurrentView("settings"), [setCurrentView]);
   const handleOpenAbout = useCallback(() => setAboutModalOpen(true), [setAboutModalOpen]);
   const handleOpenPrototypes = useCallback(() => openPrototype(null), [openPrototype]);
@@ -499,6 +504,9 @@ function Home() {
                         tasks={tasks}
                         onCardClick={handleScheduleCardClick}
                         onTaskClick={handleTaskSelect}
+                        onDayClick={handleCalendarDayClick}
+                        onAddEvent={handleAddEvent}
+                        selectedDate={calendarSelectedDate}
                         isDarkMode={theme.isDarkMode}
                       />
                     ) : scheduleViewMode === "month-board" ? (
@@ -507,6 +515,9 @@ function Home() {
                         tasks={tasks}
                         onCardClick={handleScheduleCardClick}
                         onTaskClick={handleTaskSelect}
+                        onDayClick={handleCalendarDayClick}
+                        onAddEvent={handleAddEvent}
+                        selectedDate={calendarSelectedDate}
                         isDarkMode={theme.isDarkMode}
                       />
                     ) : scheduleViewMode === "timeline" ? (
@@ -793,6 +804,9 @@ function Home() {
                         tasks={tasks}
                         onCardClick={handleScheduleCardClick}
                         onTaskClick={handleTaskSelect}
+                        onDayClick={handleCalendarDayClick}
+                        onAddEvent={handleAddEvent}
+                        selectedDate={calendarSelectedDate}
                         isDarkMode={theme.isDarkMode}
                       />
                     ) : scheduleViewMode === "month-board" ? (
@@ -801,6 +815,9 @@ function Home() {
                         tasks={tasks}
                         onCardClick={handleScheduleCardClick}
                         onTaskClick={handleTaskSelect}
+                        onDayClick={handleCalendarDayClick}
+                        onAddEvent={handleAddEvent}
+                        selectedDate={calendarSelectedDate}
                         isDarkMode={theme.isDarkMode}
                       />
                     ) : scheduleViewMode === "timeline" ? (
