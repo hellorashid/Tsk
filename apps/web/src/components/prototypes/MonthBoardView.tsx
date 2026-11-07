@@ -2,14 +2,16 @@ import React, { useState, useMemo } from 'react';
 import { ScheduleCardData, ScheduleCardInput } from '../../utils/schedule';
 import { Task } from '../../utils/types';
 import { getStartOfDay, isToday } from '../../utils/dateHelpers';
+import EventPopover from '../EventPopover';
 
 interface MonthBoardViewProps {
   events: ScheduleCardData[];
   tasks: Task[];
-  onCardClick?: (cardData: ScheduleCardData) => void;
   onTaskClick?: (task: Task) => void;
   onDayClick?: (date: Date) => void;
   onAddEvent?: (eventData: ScheduleCardInput) => Promise<ScheduleCardData>;
+  onUpdateEvent?: (id: string, changes: Partial<ScheduleCardData>) => void;
+  onDeleteEvent?: (id: string) => void;
   selectedDate?: Date;
   isDarkMode: boolean;
   onBack?: () => void;
@@ -18,16 +20,24 @@ interface MonthBoardViewProps {
 const MonthBoardView: React.FC<MonthBoardViewProps> = ({
   events,
   tasks,
-  onCardClick,
   onTaskClick,
   onDayClick,
   onAddEvent,
+  onUpdateEvent,
+  onDeleteEvent,
   selectedDate: externalSelectedDate,
   isDarkMode,
   onBack,
 }) => {
   const [internalSelectedDate, setInternalSelectedDate] = useState(() => getStartOfDay(new Date()));
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
+
+  // Popover state
+  const [popoverEvent, setPopoverEvent] = useState<ScheduleCardData | null>(null);
+  const [popoverAnchor, setPopoverAnchor] = useState<HTMLElement | null>(null);
+  const [popoverPosition, setPopoverPosition] = useState<{ x: number; y: number } | undefined>();
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+  const [creationDate, setCreationDate] = useState<Date | undefined>();
 
   // Use external selectedDate if provided, otherwise use internal
   const selectedDate = externalSelectedDate || internalSelectedDate;
@@ -118,27 +128,18 @@ const MonthBoardView: React.FC<MonthBoardViewProps> = ({
     return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
   };
 
-  const handleDayClick = (day: Date, hasItems: boolean) => {
+  const handleDayClick = (day: Date, hasItems: boolean, clickEvent?: React.MouseEvent<HTMLElement>) => {
     // Always notify parent about day selection
     onDayClick?.(day);
     
-    // If day has no items and onAddEvent is available, create new event
-    if (!hasItems && onAddEvent) {
-      const startDate = new Date(day);
-      startDate.setHours(9, 0, 0, 0); // Default to 9 AM
-      
-      const endDate = new Date(startDate);
-      endDate.setHours(10, 0, 0, 0); // 1 hour duration
-      
-      onAddEvent({
-        title: '',
-        start: {
-          dateTime: startDate.toISOString(),
-        },
-        end: {
-          dateTime: endDate.toISOString(),
-        },
-      });
+    // If day has no items, show creation popover
+    if (!hasItems && onAddEvent && clickEvent) {
+      clickEvent.stopPropagation();
+      setCreationDate(day);
+      setIsCreatingEvent(true);
+      setPopoverEvent(null);
+      setPopoverAnchor(clickEvent.currentTarget);
+      setPopoverPosition({ x: clickEvent.clientX, y: clickEvent.clientY });
       return;
     }
     
@@ -147,6 +148,49 @@ const MonthBoardView: React.FC<MonthBoardViewProps> = ({
       const dayKey = getDayKey(day);
       setExpandedDay(expandedDay === dayKey ? null : dayKey);
     }
+  };
+
+  const handleEventClick = (event: ScheduleCardData, clickEvent: React.MouseEvent<HTMLElement>) => {
+    clickEvent.stopPropagation();
+    
+    // For task events, use existing task click handler
+    if (event.type === 'task' && event.taskId && onTaskClick) {
+      const task = tasks.find(t => t.id === event.taskId);
+      if (task) {
+        onTaskClick(task);
+        return;
+      }
+    }
+
+    // Show popover for regular events
+    setPopoverEvent(event);
+    setIsCreatingEvent(false);
+    setPopoverAnchor(clickEvent.currentTarget);
+    setPopoverPosition({ x: clickEvent.clientX, y: clickEvent.clientY });
+  };
+
+  const handlePopoverSave = async (eventData: ScheduleCardInput | Partial<ScheduleCardData>) => {
+    if (isCreatingEvent && onAddEvent) {
+      await onAddEvent(eventData as ScheduleCardInput);
+    } else if (popoverEvent && onUpdateEvent) {
+      onUpdateEvent(popoverEvent.id, eventData as Partial<ScheduleCardData>);
+    }
+    handlePopoverClose();
+  };
+
+  const handlePopoverDelete = (eventId: string) => {
+    if (onDeleteEvent) {
+      onDeleteEvent(eventId);
+    }
+    handlePopoverClose();
+  };
+
+  const handlePopoverClose = () => {
+    setPopoverEvent(null);
+    setPopoverAnchor(null);
+    setPopoverPosition(undefined);
+    setIsCreatingEvent(false);
+    setCreationDate(undefined);
   };
 
   return (
@@ -256,7 +300,7 @@ const MonthBoardView: React.FC<MonthBoardViewProps> = ({
               return (
                 <button
                   key={dayKey}
-                  onClick={() => handleDayClick(day, totalCount > 0)}
+                  onClick={(e) => handleDayClick(day, totalCount > 0, e)}
                   className={`relative rounded-lg border p-2 text-left transition-all min-h-[100px] ${
                     isSelectedDay
                       ? isDarkMode
@@ -282,13 +326,10 @@ const MonthBoardView: React.FC<MonthBoardViewProps> = ({
                       {dayItems.events.slice(0, 3).map((event) => (
                         <div
                           key={event.id}
-                          className={`text-[10px] px-2 py-1 rounded truncate ${
+                          className={`text-[10px] px-2 py-1 rounded truncate cursor-pointer ${
                             isDarkMode ? 'bg-white/10' : 'bg-blue-100'
                           }`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onCardClick?.(event);
-                          }}
+                          onClick={(e) => handleEventClick(event, e)}
                         >
                           {event.title}
                         </div>
@@ -314,10 +355,7 @@ const MonthBoardView: React.FC<MonthBoardViewProps> = ({
                           className={`text-xs px-2 py-1.5 rounded truncate cursor-pointer ${
                             isDarkMode ? 'bg-white/10 hover:bg-white/20' : 'bg-blue-100 hover:bg-blue-200'
                           }`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onCardClick?.(event);
-                          }}
+                          onClick={(e) => handleEventClick(event, e)}
                         >
                           {event.title}
                         </div>
@@ -344,6 +382,23 @@ const MonthBoardView: React.FC<MonthBoardViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Event Popover */}
+      {(popoverEvent || isCreatingEvent) && (
+        <EventPopover
+          event={popoverEvent}
+          isCreating={isCreatingEvent}
+          anchorEl={popoverAnchor}
+          position={popoverPosition}
+          onSave={handlePopoverSave}
+          onDelete={handlePopoverDelete}
+          onClose={handlePopoverClose}
+          isDarkMode={isDarkMode}
+          defaultDate={creationDate}
+          defaultStartTime="09:00"
+          defaultEndTime="10:00"
+        />
+      )}
     </div>
   );
 };

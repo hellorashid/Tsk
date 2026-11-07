@@ -25,7 +25,7 @@ import { useBasicDbReady } from "./hooks/useBasicDbReady";
 import { useHomeKeyboardShortcuts } from "./hooks/useHomeKeyboardShortcuts";
 import { useHomeUiState } from "./hooks/useHomeUiState";
 import { useTaskCollections } from "./hooks/useTaskCollections";
-import { ScheduleCardData, ScheduleCardInput } from "./utils/schedule";
+import { ScheduleCardData } from "./utils/schedule";
 import { Task, TaskSource } from "./utils/types";
 import { useAdminReporter } from "./hooks/useAdminReporter";
 import { basic } from "./basic";
@@ -305,32 +305,6 @@ function Home() {
     setCalendarSelectedDate(date);
   }, []);
 
-  const handleCreateEventFromCalendar = useCallback(
-    async (eventData: ScheduleCardInput): Promise<ScheduleCardData> => {
-      // Create a temporary event object to open the edit modal with pre-filled date/time
-      const tempEvent: ScheduleCardData = {
-        id: 'temp-' + Date.now(),
-        title: (eventData.title as string) || '',
-        description: eventData.description as string | undefined,
-        start: eventData.start as ScheduleCardData['start'],
-        end: eventData.end as ScheduleCardData['end'],
-        color: (eventData.color as string) || theme.accentColor,
-        type: 'event',
-      };
-      
-      setSelectedEvent(tempEvent);
-      setSelectedTask(null);
-      setSelectedTaskSource(null);
-      setIsNewTaskMode(false);
-      if (isMobile) {
-        setDrawerOpen(true);
-      }
-      
-      return tempEvent;
-    },
-    [isMobile, setDrawerOpen, setIsNewTaskMode, theme.accentColor],
-  );
-
   const handleOpenSettings = useCallback(() => setCurrentView("settings"), [setCurrentView]);
   const handleOpenAbout = useCallback(() => setAboutModalOpen(true), [setAboutModalOpen]);
   const handleOpenPrototypes = useCallback(() => openPrototype(null), [openPrototype]);
@@ -531,7 +505,9 @@ function Home() {
                         onCardClick={handleScheduleCardClick}
                         onTaskClick={handleTaskSelect}
                         onDayClick={handleCalendarDayClick}
-                        onAddEvent={handleCreateEventFromCalendar}
+                        onAddEvent={handleAddEvent}
+                        onUpdateEvent={updateScheduleEvent}
+                        onDeleteEvent={deleteScheduleEvent}
                         selectedDate={calendarSelectedDate}
                         isDarkMode={theme.isDarkMode}
                       />
@@ -542,7 +518,9 @@ function Home() {
                         onCardClick={handleScheduleCardClick}
                         onTaskClick={handleTaskSelect}
                         onDayClick={handleCalendarDayClick}
-                        onAddEvent={handleCreateEventFromCalendar}
+                        onAddEvent={handleAddEvent}
+                        onUpdateEvent={updateScheduleEvent}
+                        onDeleteEvent={deleteScheduleEvent}
                         selectedDate={calendarSelectedDate}
                         isDarkMode={theme.isDarkMode}
                       />
@@ -831,7 +809,9 @@ function Home() {
                         onCardClick={handleScheduleCardClick}
                         onTaskClick={handleTaskSelect}
                         onDayClick={handleCalendarDayClick}
-                        onAddEvent={handleCreateEventFromCalendar}
+                        onAddEvent={handleAddEvent}
+                        onUpdateEvent={updateScheduleEvent}
+                        onDeleteEvent={deleteScheduleEvent}
                         selectedDate={calendarSelectedDate}
                         isDarkMode={theme.isDarkMode}
                       />
@@ -842,7 +822,9 @@ function Home() {
                         onCardClick={handleScheduleCardClick}
                         onTaskClick={handleTaskSelect}
                         onDayClick={handleCalendarDayClick}
-                        onAddEvent={handleCreateEventFromCalendar}
+                        onAddEvent={handleAddEvent}
+                        onUpdateEvent={updateScheduleEvent}
+                        onDeleteEvent={deleteScheduleEvent}
                         selectedDate={calendarSelectedDate}
                         isDarkMode={theme.isDarkMode}
                       />

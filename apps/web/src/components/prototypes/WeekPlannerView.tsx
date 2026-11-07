@@ -2,14 +2,16 @@ import React, { useState, useMemo } from 'react';
 import { ScheduleCardData, ScheduleCardInput } from '../../utils/schedule';
 import { Task } from '../../utils/types';
 import { getStartOfDay, isToday } from '../../utils/dateHelpers';
+import EventPopover from '../EventPopover';
 
 interface WeekPlannerViewProps {
   events: ScheduleCardData[];
   tasks: Task[];
-  onCardClick?: (cardData: ScheduleCardData) => void;
   onTaskClick?: (task: Task) => void;
   onDayClick?: (date: Date) => void;
   onAddEvent?: (eventData: ScheduleCardInput) => Promise<ScheduleCardData>;
+  onUpdateEvent?: (id: string, changes: Partial<ScheduleCardData>) => void;
+  onDeleteEvent?: (id: string) => void;
   selectedDate?: Date;
   isDarkMode: boolean;
   onBack?: () => void;
@@ -18,10 +20,11 @@ interface WeekPlannerViewProps {
 const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
   events,
   tasks,
-  onCardClick,
   onTaskClick,
   onDayClick,
   onAddEvent,
+  onUpdateEvent,
+  onDeleteEvent,
   selectedDate: externalSelectedDate,
   isDarkMode,
   onBack,
@@ -33,6 +36,15 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
     const monday = new Date(today.setDate(diff));
     return getStartOfDay(monday);
   });
+
+  // Popover state
+  const [popoverEvent, setPopoverEvent] = useState<ScheduleCardData | null>(null);
+  const [popoverAnchor, setPopoverAnchor] = useState<HTMLElement | null>(null);
+  const [popoverPosition, setPopoverPosition] = useState<{ x: number; y: number } | undefined>();
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+  const [creationDate, setCreationDate] = useState<Date | undefined>();
+  const [creationStartTime, setCreationStartTime] = useState<string | undefined>();
+  const [creationEndTime, setCreationEndTime] = useState<string | undefined>();
 
   // Use external selectedDate if provided, otherwise use internal
   const selectedDate = externalSelectedDate || internalSelectedDate;
@@ -100,8 +112,8 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
     onDayClick?.(day);
   };
 
-  const handleTimeSlotClick = (day: Date, hour: number) => {
-    if (!onAddEvent) return;
+  const handleTimeSlotClick = (day: Date, hour: number, event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
     
     const startDate = new Date(day);
     startDate.setHours(Math.floor(hour), (hour % 1) * 60, 0, 0);
@@ -109,15 +121,61 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
     const endDate = new Date(startDate);
     endDate.setHours(startDate.getHours() + 1);
 
-    onAddEvent({
-      title: '',
-      start: {
-        dateTime: startDate.toISOString(),
-      },
-      end: {
-        dateTime: endDate.toISOString(),
-      },
-    });
+    const startTimeStr = `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`;
+    const endTimeStr = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+
+    setCreationDate(startDate);
+    setCreationStartTime(startTimeStr);
+    setCreationEndTime(endTimeStr);
+    setIsCreatingEvent(true);
+    setPopoverEvent(null);
+    setPopoverAnchor(event.currentTarget);
+    setPopoverPosition({ x: event.clientX, y: event.clientY });
+  };
+
+  const handleEventClick = (event: ScheduleCardData, clickEvent: React.MouseEvent<HTMLButtonElement>) => {
+    clickEvent.stopPropagation();
+    
+    // For task events, use existing task click handler
+    if (event.type === 'task' && event.taskId && onTaskClick) {
+      const task = tasks.find(t => t.id === event.taskId);
+      if (task) {
+        onTaskClick(task);
+        return;
+      }
+    }
+
+    // Show popover for regular events
+    setPopoverEvent(event);
+    setIsCreatingEvent(false);
+    setPopoverAnchor(clickEvent.currentTarget);
+    setPopoverPosition({ x: clickEvent.clientX, y: clickEvent.clientY });
+  };
+
+  const handlePopoverSave = async (eventData: ScheduleCardInput | Partial<ScheduleCardData>) => {
+    if (isCreatingEvent && onAddEvent) {
+      await onAddEvent(eventData as ScheduleCardInput);
+    } else if (popoverEvent && onUpdateEvent) {
+      onUpdateEvent(popoverEvent.id, eventData as Partial<ScheduleCardData>);
+    }
+    handlePopoverClose();
+  };
+
+  const handlePopoverDelete = (eventId: string) => {
+    if (onDeleteEvent) {
+      onDeleteEvent(eventId);
+    }
+    handlePopoverClose();
+  };
+
+  const handlePopoverClose = () => {
+    setPopoverEvent(null);
+    setPopoverAnchor(null);
+    setPopoverPosition(undefined);
+    setIsCreatingEvent(false);
+    setCreationDate(undefined);
+    setCreationStartTime(undefined);
+    setCreationEndTime(undefined);
   };
 
   const weekStart = weekDays[0];
@@ -197,7 +255,7 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
       </div>
 
       {/* Week Grid - Unified Scrolling (Cron/Notion-inspired) */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden relative overscroll-none">
         {/* Sticky Day Headers */}
         <div 
           className={`sticky top-0 z-10 flex ${
@@ -248,9 +306,9 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
 
         {/* Time Grid with Hour Gutter - All Days Share Vertical Scroll */}
         <div className="flex relative">
-          {/* Fixed Hour Gutter */}
+          {/* Fixed Hour Gutter - All 24 Hours */}
           <div className="w-12 shrink-0">
-            {Array.from({ length: 15 }, (_, i) => i + 7).map((hour) => (
+            {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
               <div
                 key={`gutter-${hour}`}
                 className={`h-[60px] pr-2 pt-0.5 text-right text-[10px] ${
@@ -290,8 +348,8 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
                       : 'border-gray-200'
                   }`}
                 >
-                  {/* Hour Row Dividers */}
-                  {Array.from({ length: 15 }, (_, i) => i + 7).map((hour) => (
+                  {/* Hour Row Dividers - All 24 Hours */}
+                  {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
                     <button
                       key={`slot-${hour}`}
                       type="button"
@@ -300,7 +358,7 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
                           ? 'border-white/[0.03] hover:bg-white/[0.02] cursor-pointer' 
                           : 'border-gray-200/50 hover:bg-blue-50/50 cursor-pointer'
                       }`}
-                      onClick={() => handleTimeSlotClick(day, hour)}
+                      onClick={(e) => handleTimeSlotClick(day, hour, e)}
                       aria-label={`Create event at ${hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`} on ${day.toLocaleDateString()}`}
                     />
                   ))}
@@ -308,20 +366,12 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
                   {/* Events - Absolutely Positioned by Time */}
                   {dayEvents.map((event) => {
                     const hour = event.start.dateTime ? getHourFromDateTime(event.start.dateTime) : 12;
-                    const topPosition = Math.max(0, (hour - 7) * 60);
+                    const topPosition = hour * 60; // Position from midnight (0) onwards
 
                     return (
                       <button
                         key={event.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (event.type === 'task' && event.taskId && onTaskClick) {
-                            const task = tasks.find(t => t.id === event.taskId);
-                            if (task) onTaskClick(task);
-                          } else {
-                            onCardClick?.(event);
-                          }
-                        }}
+                        onClick={(e) => handleEventClick(event, e)}
                         className={`absolute left-1 right-1 px-2 py-1 rounded text-[10px] transition-colors ${
                           isDarkMode
                             ? 'bg-white/10 hover:bg-white/20'
@@ -345,6 +395,23 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Event Popover */}
+      {(popoverEvent || isCreatingEvent) && (
+        <EventPopover
+          event={popoverEvent}
+          isCreating={isCreatingEvent}
+          anchorEl={popoverAnchor}
+          position={popoverPosition}
+          onSave={handlePopoverSave}
+          onDelete={handlePopoverDelete}
+          onClose={handlePopoverClose}
+          isDarkMode={isDarkMode}
+          defaultDate={creationDate}
+          defaultStartTime={creationStartTime}
+          defaultEndTime={creationEndTime}
+        />
+      )}
     </div>
   );
 };
