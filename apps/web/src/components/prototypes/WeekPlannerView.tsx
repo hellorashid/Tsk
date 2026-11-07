@@ -10,6 +10,8 @@ interface WeekPlannerViewProps {
   onTaskClick?: (task: Task) => void;
   onDayClick?: (date: Date) => void;
   onAddEvent?: (eventData: ScheduleCardInput) => Promise<ScheduleCardData>;
+  onAddTask?: (taskName: string) => Promise<string | null>;
+  onAddTaskToSchedule?: (taskId: string, startTime: Date, duration: number) => Promise<void>;
   onUpdateEvent?: (id: string, changes: Partial<ScheduleCardData>) => void;
   onDeleteEvent?: (id: string) => void;
   selectedDate?: Date;
@@ -23,6 +25,8 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
   onTaskClick,
   onDayClick,
   onAddEvent,
+  onAddTask,
+  onAddTaskToSchedule,
   onUpdateEvent,
   onDeleteEvent,
   selectedDate: externalSelectedDate,
@@ -172,6 +176,16 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
       await onAddEvent(eventData as ScheduleCardInput);
     } else if (popoverEvent && onUpdateEvent) {
       onUpdateEvent(popoverEvent.id, eventData as Partial<ScheduleCardData>);
+    }
+    handlePopoverClose();
+  };
+
+  const handlePopoverSaveTask = async (taskData: { name: string; startTime: Date; duration: number }) => {
+    if (onAddTask && onAddTaskToSchedule) {
+      const taskId = await onAddTask(taskData.name);
+      if (taskId) {
+        await onAddTaskToSchedule(taskId, taskData.startTime, taskData.duration);
+      }
     }
     handlePopoverClose();
   };
@@ -422,6 +436,7 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
           anchorEl={popoverAnchor}
           position={popoverPosition}
           onSave={handlePopoverSave}
+          onSaveTask={handlePopoverSaveTask}
           onDelete={handlePopoverDelete}
           onClose={handlePopoverClose}
           isDarkMode={isDarkMode}

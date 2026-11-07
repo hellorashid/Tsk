@@ -305,6 +305,36 @@ function Home() {
     setCalendarSelectedDate(date);
   }, []);
 
+  const handleAddTaskWithScheduling = useCallback(
+    async (taskId: string, startTime: Date, durationMinutes: number) => {
+      if (!isDbReady) return;
+
+      const scheduleTable = basic.useCollection("schedule");
+      const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000);
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) return;
+
+      await scheduleTable.create({
+        title: task.name || "Untitled Task",
+        start: {
+          dateTime: startTime.toISOString(),
+          timeZone,
+        },
+        end: {
+          dateTime: endTime.toISOString(),
+          timeZone,
+        },
+        color: "rgba(148, 163, 184, 0.08)",
+        type: "task" as const,
+        taskId: task.id,
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isDbReady, tasks],
+  );
+
   const handleOpenSettings = useCallback(() => setCurrentView("settings"), [setCurrentView]);
   const handleOpenAbout = useCallback(() => setAboutModalOpen(true), [setAboutModalOpen]);
   const handleOpenPrototypes = useCallback(() => openPrototype(null), [openPrototype]);
@@ -505,6 +535,8 @@ function Home() {
                         onTaskClick={handleTaskSelect}
                         onDayClick={handleCalendarDayClick}
                         onAddEvent={handleAddEvent}
+                        onAddTask={handleAddTask}
+                        onAddTaskToSchedule={handleAddTaskWithScheduling}
                         onUpdateEvent={updateScheduleEvent}
                         onDeleteEvent={deleteScheduleEvent}
                         selectedDate={calendarSelectedDate}
@@ -517,6 +549,8 @@ function Home() {
                         onTaskClick={handleTaskSelect}
                         onDayClick={handleCalendarDayClick}
                         onAddEvent={handleAddEvent}
+                        onAddTask={handleAddTask}
+                        onAddTaskToSchedule={handleAddTaskWithScheduling}
                         onUpdateEvent={updateScheduleEvent}
                         onDeleteEvent={deleteScheduleEvent}
                         selectedDate={calendarSelectedDate}
@@ -807,6 +841,8 @@ function Home() {
                         onTaskClick={handleTaskSelect}
                         onDayClick={handleCalendarDayClick}
                         onAddEvent={handleAddEvent}
+                        onAddTask={handleAddTask}
+                        onAddTaskToSchedule={handleAddTaskWithScheduling}
                         onUpdateEvent={updateScheduleEvent}
                         onDeleteEvent={deleteScheduleEvent}
                         selectedDate={calendarSelectedDate}
@@ -819,6 +855,8 @@ function Home() {
                         onTaskClick={handleTaskSelect}
                         onDayClick={handleCalendarDayClick}
                         onAddEvent={handleAddEvent}
+                        onAddTask={handleAddTask}
+                        onAddTaskToSchedule={handleAddTaskWithScheduling}
                         onUpdateEvent={updateScheduleEvent}
                         onDeleteEvent={deleteScheduleEvent}
                         selectedDate={calendarSelectedDate}
