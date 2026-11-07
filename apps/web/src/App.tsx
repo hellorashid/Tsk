@@ -29,6 +29,13 @@ import { ScheduleCardData } from "./utils/schedule";
 import { Task, TaskSource } from "./utils/types";
 import { useAdminReporter } from "./hooks/useAdminReporter";
 import { basic } from "./basic";
+import { usePrototypeView } from "./hooks/usePrototypeView";
+import PrototypesLanding from "./components/prototypes/PrototypesLanding";
+import WeekGridView from "./components/prototypes/WeekGridView";
+import MonthBoardView from "./components/prototypes/MonthBoardView";
+import WeekPlannerView from "./components/prototypes/WeekPlannerView";
+import AgendaMonthView from "./components/prototypes/AgendaMonthView";
+import type { ScheduleViewMode } from "./hooks/useHomeUiState";
 
 function Home() {
   // Initialize admin user directory and activity reporting
@@ -45,9 +52,12 @@ function Home() {
   const isCollectionsLoading = !isDbReady || tasksLoading || scheduleLoading || foldersLoading;
   const [showDelayedLoadingState, setShowDelayedLoadingState] = useState(false);
 
+  const { activePrototype, isPrototypeActive, openPrototype, closePrototype } = usePrototypeView();
+
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedTaskSource, setSelectedTaskSource] = useState<TaskSource | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleCardData | null>(null);
+  const [calendarSelectedDate, setCalendarSelectedDate] = useState<Date>(() => new Date());
 
   const setSelectedTaskAndClearSource = useCallback<Dispatch<SetStateAction<Task | null>>>((value) => {
     if (typeof value === "function") {
@@ -291,8 +301,43 @@ function Home() {
     [isMobile, setDrawerOpen, setIsNewTaskMode, tasks],
   );
 
+  const handleCalendarDayClick = useCallback((date: Date) => {
+    setCalendarSelectedDate(date);
+  }, []);
+
+  const handleAddTaskWithScheduling = useCallback(
+    async (taskId: string, startTime: Date, durationMinutes: number) => {
+      if (!isDbReady) return;
+
+      const scheduleTable = basic.useCollection("schedule");
+      const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000);
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) return;
+
+      await scheduleTable.create({
+        title: task.name || "Untitled Task",
+        start: {
+          dateTime: startTime.toISOString(),
+          timeZone,
+        },
+        end: {
+          dateTime: endTime.toISOString(),
+          timeZone,
+        },
+        color: "rgba(148, 163, 184, 0.08)",
+        type: "task" as const,
+        taskId: task.id,
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isDbReady, tasks],
+  );
+
   const handleOpenSettings = useCallback(() => setCurrentView("settings"), [setCurrentView]);
   const handleOpenAbout = useCallback(() => setAboutModalOpen(true), [setAboutModalOpen]);
+  const handleOpenPrototypes = useCallback(() => openPrototype(null), [openPrototype]);
   const handleFolderSelect = useCallback((folderId: string | null) => setActiveFolder(folderId), [setActiveFolder]);
   const handleOpenFolderSettings = useCallback(() => setFolderSettingsOpen(true), [setFolderSettingsOpen]);
   const handleFolderUpdateRequest = useCallback(
@@ -348,6 +393,56 @@ function Home() {
     };
   }, []);
 
+  // If prototype is active, render prototype view
+  if (isPrototypeActive) {
+    const prototypeProps = {
+      events: scheduleEvents,
+      tasks,
+      onCardClick: handleScheduleCardClick,
+      onTaskClick: handleTaskSelect,
+      onAddEvent: handleAddEvent,
+      onUpdateEvent: updateScheduleEvent,
+      isDarkMode: theme.isDarkMode,
+      isMobile,
+      onBack: closePrototype,
+    };
+
+    return (
+      <div
+        className="flex"
+        style={{
+          height:
+            typeof CSS !== "undefined" && CSS.supports("height", "100dvh")
+              ? "100dvh"
+              : "calc(var(--vh, 1vh) * 100)",
+          backgroundColor: getAppSurface(theme.accentColor, theme.isDarkMode),
+          backgroundImage: theme.isDarkMode
+            ? `${getPhotoOverlay(true)}, url(${bgImage})`
+            : `url(${bgImage})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {activePrototype === null && (
+            <PrototypesLanding
+              onSelectPrototype={openPrototype}
+              onBack={() => {
+                closePrototype();
+                setCurrentView("home");
+              }}
+            />
+          )}
+          {activePrototype === 'week-grid' && <WeekGridView {...prototypeProps} />}
+          {activePrototype === 'month-board' && <MonthBoardView {...prototypeProps} />}
+          {activePrototype === 'week-planner' && <WeekPlannerView {...prototypeProps} />}
+          {activePrototype === 'agenda-month' && <AgendaMonthView {...prototypeProps} />}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       {focusedTask && (
@@ -394,6 +489,7 @@ function Home() {
                 onToggleAllFolder={setShowAllFolder}
                 onToggleOtherFolder={setShowOtherFolder}
                 onToggleTodayFolder={setShowTodayFolder}
+                onOpenPrototypes={handleOpenPrototypes}
               />
             </div>
           )}
@@ -408,6 +504,7 @@ function Home() {
                   <DesktopSidePanel
                     onOpenSettings={handleOpenSettings}
                     onOpenAbout={handleOpenAbout}
+                    onOpenPrototypes={handleOpenPrototypes}
                     onBack={() => setCurrentView("home")}
                     viewMode={scheduleViewMode}
                     onViewModeChange={setScheduleViewMode}
@@ -429,6 +526,35 @@ function Home() {
                         onToggleAllFolder={setShowAllFolder}
                         onToggleOtherFolder={setShowOtherFolder}
                         onToggleTodayFolder={setShowTodayFolder}
+                        onOpenPrototypes={handleOpenPrototypes}
+                      />
+                    ) : scheduleViewMode === "week-planner" ? (
+                      <WeekPlannerView
+                        events={scheduleEvents}
+                        tasks={tasks}
+                        onTaskClick={handleTaskSelect}
+                        onDayClick={handleCalendarDayClick}
+                        onAddEvent={handleAddEvent}
+                        onAddTask={handleAddTask}
+                        onAddTaskToSchedule={handleAddTaskWithScheduling}
+                        onUpdateEvent={updateScheduleEvent}
+                        onDeleteEvent={deleteScheduleEvent}
+                        selectedDate={calendarSelectedDate}
+                        isDarkMode={theme.isDarkMode}
+                      />
+                    ) : scheduleViewMode === "month-board" ? (
+                      <MonthBoardView
+                        events={scheduleEvents}
+                        tasks={tasks}
+                        onTaskClick={handleTaskSelect}
+                        onDayClick={handleCalendarDayClick}
+                        onAddEvent={handleAddEvent}
+                        onAddTask={handleAddTask}
+                        onAddTaskToSchedule={handleAddTaskWithScheduling}
+                        onUpdateEvent={updateScheduleEvent}
+                        onDeleteEvent={deleteScheduleEvent}
+                        selectedDate={calendarSelectedDate}
+                        isDarkMode={theme.isDarkMode}
                       />
                     ) : scheduleViewMode === "timeline" ? (
                       <ScheduleSidebar
@@ -692,7 +818,11 @@ function Home() {
                             mode={islandMode}
                             onModeChange={setIslandMode}
                             onOpenSettings={handleOpenSettings}
-                            onToggleView={() => setScheduleViewMode((current) => (current === "agenda" ? "timeline" : "agenda"))}
+                            onToggleView={() => setScheduleViewMode((current) => {
+                              const cycle: ScheduleViewMode[] = ["agenda", "timeline", "week-planner", "month-board"];
+                              const currentIndex = cycle.indexOf(current);
+                              return cycle[(currentIndex + 1) % cycle.length];
+                            })}
                             currentView={scheduleViewMode}
                           />
                         </div>
@@ -704,7 +834,35 @@ function Home() {
 
                 {isMobile && mobileView === "calendar" && (
                   <div className="flex-1 h-full overflow-hidden px-2 pt-3 relative">
-                    {scheduleViewMode === "timeline" ? (
+                    {scheduleViewMode === "week-planner" ? (
+                      <WeekPlannerView
+                        events={scheduleEvents}
+                        tasks={tasks}
+                        onTaskClick={handleTaskSelect}
+                        onDayClick={handleCalendarDayClick}
+                        onAddEvent={handleAddEvent}
+                        onAddTask={handleAddTask}
+                        onAddTaskToSchedule={handleAddTaskWithScheduling}
+                        onUpdateEvent={updateScheduleEvent}
+                        onDeleteEvent={deleteScheduleEvent}
+                        selectedDate={calendarSelectedDate}
+                        isDarkMode={theme.isDarkMode}
+                      />
+                    ) : scheduleViewMode === "month-board" ? (
+                      <MonthBoardView
+                        events={scheduleEvents}
+                        tasks={tasks}
+                        onTaskClick={handleTaskSelect}
+                        onDayClick={handleCalendarDayClick}
+                        onAddEvent={handleAddEvent}
+                        onAddTask={handleAddTask}
+                        onAddTaskToSchedule={handleAddTaskWithScheduling}
+                        onUpdateEvent={updateScheduleEvent}
+                        onDeleteEvent={deleteScheduleEvent}
+                        selectedDate={calendarSelectedDate}
+                        isDarkMode={theme.isDarkMode}
+                      />
+                    ) : scheduleViewMode === "timeline" ? (
                       <ScheduleSidebar
                         onCardClick={handleScheduleCardClick}
                         events={scheduleEvents}
@@ -813,6 +971,7 @@ function Home() {
               onCreateNew={handleMobileCreateNew}
               onOpenSettings={handleOpenSettings}
               onOpenAbout={handleOpenAbout}
+              onOpenPrototypes={handleOpenPrototypes}
               isCloseMode={currentView === "settings" || folderSettingsOpen}
               onClose={handleCloseSettingsScreen}
             />

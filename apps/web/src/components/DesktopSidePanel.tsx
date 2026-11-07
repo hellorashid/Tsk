@@ -3,13 +3,14 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { UserMenu, type UserMenuItem } from '@basictech/react';
 import { useTheme, getGlassSurface } from '../contexts/ThemeContext';
 
-type ScheduleViewMode = 'timeline' | 'agenda';
+type ScheduleViewMode = 'timeline' | 'agenda' | 'week-planner' | 'month-board';
 
 const EASE_DRAWER = [0.32, 0.72, 0, 1] as const;
 
 interface DesktopSidePanelProps {
   onOpenSettings: () => void;
   onOpenAbout: () => void;
+  onOpenPrototypes?: () => void;
   /** When expanded (settings), back returns home. */
   onBack?: () => void;
   viewMode: ScheduleViewMode;
@@ -23,6 +24,7 @@ interface DesktopSidePanelProps {
 export function DesktopSidePanel({
   onOpenSettings,
   onOpenAbout,
+  onOpenPrototypes,
   onBack,
   viewMode,
   onViewModeChange,
@@ -33,28 +35,46 @@ export function DesktopSidePanel({
   const { isDarkMode, accentColor } = theme;
   const reduceMotion = useReducedMotion();
 
-  const userMenuItems = useMemo<UserMenuItem[]>(() => [
-    {
-      id: 'settings',
-      label: 'Settings',
-      onClick: onOpenSettings,
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: '1em', height: '1em' }}>
-          <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-        </svg>
-      ),
-    },
-    {
-      id: 'about',
-      label: 'About tsk',
-      onClick: onOpenAbout,
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: '1em', height: '1em' }}>
-          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-        </svg>
-      ),
-    },
-  ], [onOpenSettings, onOpenAbout]);
+  const userMenuItems = useMemo<UserMenuItem[]>(() => {
+    const items: UserMenuItem[] = [
+      {
+        id: 'settings',
+        label: 'Settings',
+        onClick: onOpenSettings,
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: '1em', height: '1em' }}>
+            <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+          </svg>
+        ),
+      },
+      {
+        id: 'about',
+        label: 'About tsk',
+        onClick: onOpenAbout,
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: '1em', height: '1em' }}>
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+          </svg>
+        ),
+      },
+    ];
+    
+    // Add Labs option if available
+    if (onOpenPrototypes) {
+      items.splice(1, 0, {
+        id: 'labs',
+        label: 'Calendar Labs',
+        onClick: onOpenPrototypes,
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: '1em', height: '1em' }}>
+            <path fillRule="evenodd" d="M7 2a1 1 0 00-.707 1.707L7 4.414v3.758a1 1 0 01-.293.707l-4 4C.817 14.769 2.156 18 4.828 18h10.343c2.673 0 4.012-3.231 2.122-5.121l-4-4A1 1 0 0113 8.172V4.414l.707-.707A1 1 0 0013 2H7zm2 6.172V4h2v4.172a3 3 0 00.879 2.12l1.027 1.028a4 4 0 00-2.171.102l-.47.156a4 4 0 01-2.53 0l-.563-.187a1.993 1.993 0 00-.114-.035l1.063-1.063A3 3 0 009 8.172z" clipRule="evenodd" />
+          </svg>
+        ),
+      });
+    }
+    
+    return items;
+  }, [onOpenAbout, onOpenPrototypes, onOpenSettings]);
 
   const iconBtn = (active: boolean) =>
     `pressable flex items-center justify-center size-9 rounded-lg transition-[color,background-color] duration-150 ${
@@ -67,14 +87,18 @@ export function DesktopSidePanel({
           : 'text-black/55 hover:text-black/85 hover:bg-black/8'
     }`;
 
+  const isWideView = viewMode === 'week-planner' || viewMode === 'month-board';
+  
   return (
     <motion.div
-      layout={!reduceMotion}
+      layout={!reduceMotion && expanded}
       transition={{ layout: { duration: 0.28, ease: EASE_DRAWER } }}
       className={`hidden md:flex p-2 ${
         expanded
           ? 'flex-1 min-w-0'
-          : 'shrink-0 md:pr-4 w-[min(100%,calc(420px+3.5rem+1rem))] max-w-[55vw]'
+          : isWideView
+            ? 'shrink-0 md:pr-4 w-[75%]'
+            : 'shrink-0 md:pr-4 w-[min(100%,calc(420px+3.5rem+1rem))] max-w-[55vw]'
       }`}
     >
       <div
@@ -99,7 +123,7 @@ export function DesktopSidePanel({
 
           <div className="flex-1 flex items-center justify-center min-h-0">
             <AnimatePresence initial={false} mode="wait">
-              {expanded && onBack ? (
+              {expanded && onBack && !isWideView ? (
                 <motion.button
                   key="back"
                   type="button"
@@ -120,7 +144,7 @@ export function DesktopSidePanel({
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                   </svg>
                 </motion.button>
-              ) : !expanded ? (
+              ) : !expanded || isWideView ? (
                 <motion.div
                   key="view-toggle"
                   role="group"
@@ -152,6 +176,30 @@ export function DesktopSidePanel({
                     aria-label="Timeline view"
                     title="Timeline view"
                     aria-pressed={viewMode === 'timeline'}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-[18px] w-[18px]" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onViewModeChange('week-planner')}
+                    className={iconBtn(viewMode === 'week-planner')}
+                    aria-label="Week planner view"
+                    title="Week planner view"
+                    aria-pressed={viewMode === 'week-planner'}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-[18px] w-[18px]" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M2 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V4zM8 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1H9a1 1 0 01-1-1V4zM15 3a1 1 0 00-1 1v12a1 1 0 001 1h2a1 1 0 001-1V4a1 1 0 00-1-1h-2z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onViewModeChange('month-board')}
+                    className={iconBtn(viewMode === 'month-board')}
+                    aria-label="Month board view"
+                    title="Month board view"
+                    aria-pressed={viewMode === 'month-board'}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-[18px] w-[18px]" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />

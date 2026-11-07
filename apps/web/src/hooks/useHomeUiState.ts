@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 export type ViewMode = "compact" | "cozy" | "chonky";
 export type MobileView = "tasks" | "calendar";
 export type CurrentView = "home" | "settings";
-export type ScheduleViewMode = "timeline" | "agenda";
+export type ScheduleViewMode = "timeline" | "agenda" | "week-planner" | "month-board";
 export type IslandMode = "default" | "task" | "event" | "command";
 
 const FOLDER_PREF_VERSION = "v2";
@@ -45,7 +45,10 @@ export function useHomeUiState() {
   const [currentView, setCurrentView] = useState<CurrentView>("home");
   const [scheduleViewMode, setScheduleViewMode] = useState<ScheduleViewMode>(() => {
     const saved = localStorage.getItem("tsk-schedule-view-mode");
-    return saved === "timeline" || saved === "agenda" ? saved : "agenda";
+    if (saved === "timeline" || saved === "agenda" || saved === "week-planner" || saved === "month-board") {
+      return saved;
+    }
+    return "agenda";
   });
   const [islandMode, setIslandMode] = useState<IslandMode>("default");
   const [activeFolder, setActiveFolder] = useState<string | null>(() => {
