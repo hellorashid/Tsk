@@ -196,13 +196,17 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
         </div>
       </div>
 
-      {/* Week Grid - Time-aware Calendar Style */}
-      <div className="flex-1 overflow-hidden">
-        <div className="flex h-full overflow-hidden pl-12">
-          {/* Day Columns */}
+      {/* Week Grid - Unified Scrolling (Cron/Notion-inspired) */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
+        {/* Sticky Day Headers */}
+        <div 
+          className={`sticky top-0 z-10 flex ${
+            isDarkMode ? 'bg-gray-900/95 backdrop-blur-sm' : 'bg-white/95 backdrop-blur-sm'
+          }`}
+          style={{ marginLeft: '48px' }}
+        >
           {weekDays.map((day) => {
             const dayKey = day.toISOString();
-            const dayEvents = eventsByDay.get(dayKey) || [];
             const isTodayDay = isToday(day);
             const isSelectedDay = externalSelectedDate && 
               day.getFullYear() === externalSelectedDate.getFullYear() &&
@@ -210,112 +214,135 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
               day.getDate() === externalSelectedDate.getDate();
 
             return (
-              <div
-                key={dayKey}
-                className={`flex-1 min-w-0 border-r flex flex-col ${
+              <button
+                key={`header-${dayKey}`}
+                onClick={() => handleDayClick(day)}
+                className={`flex-1 px-2 py-2 border-b border-r transition-colors text-center ${
+                  isDarkMode ? 'border-white/10 hover:bg-white/5' : 'border-gray-200 hover:bg-gray-50'
+                } ${
                   isSelectedDay
                     ? isDarkMode
-                      ? 'bg-blue-500/10 border-blue-500/30'
-                      : 'bg-blue-100 border-blue-300'
+                      ? 'bg-blue-500/15'
+                      : 'bg-blue-100'
                     : isTodayDay
                     ? isDarkMode
-                      ? 'bg-blue-500/5 border-blue-500/20'
-                      : 'bg-blue-50 border-blue-200'
-                    : isDarkMode
-                    ? 'border-white/10'
-                    : 'border-gray-200'
+                      ? 'bg-blue-500/5'
+                      : 'bg-blue-50'
+                    : ''
                 }`}
               >
-                {/* Day Header - Clickable */}
-                <button
-                  onClick={() => handleDayClick(day)}
-                  className={`px-2 py-2 border-b transition-colors text-center w-full ${
-                    isDarkMode ? 'border-white/10 hover:bg-white/5' : 'border-gray-200 hover:bg-gray-50'
+                <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {day.toLocaleDateString('en-US', { weekday: 'short' })}
+                </div>
+                <div
+                  className={`text-base font-semibold ${
+                    isTodayDay ? 'text-blue-500' : isDarkMode ? 'text-gray-200' : 'text-gray-900'
                   }`}
                 >
-                  <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {day.toLocaleDateString('en-US', { weekday: 'short' })}
-                  </div>
-                  <div
-                    className={`text-base font-semibold ${
-                      isTodayDay ? 'text-blue-500' : isDarkMode ? 'text-gray-200' : 'text-gray-900'
-                    }`}
-                  >
-                    {day.getDate()}
-                  </div>
-                </button>
-
-                {/* Time Grid - 7 AM to 9 PM */}
-                <div className="flex-1 overflow-y-auto relative">
-                  <div className="relative" style={{ minHeight: '840px' }}>
-                    {/* Hour labels - fixed layer on first column only */}
-                    {weekDays.indexOf(day) === 0 && Array.from({ length: 15 }, (_, i) => i + 7).map((hour) => (
-                      <div
-                        key={`label-${hour}`}
-                        className={`absolute -left-12 w-10 text-right text-[10px] pointer-events-none ${
-                          isDarkMode ? 'text-gray-500' : 'text-gray-400'
-                        }`}
-                        style={{ top: `${(hour - 7) * 60}px` }}
-                      >
-                        {hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
-                      </div>
-                    ))}
-                    
-                    {/* Hour markers (7 AM to 9 PM = 14 hours) */}
-                    {Array.from({ length: 15 }, (_, i) => i + 7).map((hour) => (
-                      <button
-                        key={hour}
-                        type="button"
-                        className={`absolute left-0 right-0 border-t transition-colors ${
-                          isDarkMode 
-                            ? 'border-white/5 hover:bg-white/5 cursor-pointer' 
-                            : 'border-gray-100 hover:bg-blue-50 cursor-pointer'
-                        }`}
-                        style={{ top: `${(hour - 7) * 60}px`, height: '60px' }}
-                        onClick={() => handleTimeSlotClick(day, hour)}
-                        aria-label={`Create event at ${hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}`}
-                      />
-                    ))}
-
-                    {/* Events positioned by time - Shared chip style */}
-                    {dayEvents.map((event) => {
-                      const hour = event.start.dateTime ? getHourFromDateTime(event.start.dateTime) : 12;
-                      const topPosition = Math.max(0, (hour - 7) * 60);
-
-                      return (
-                        <button
-                          key={event.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (event.type === 'task' && event.taskId && onTaskClick) {
-                              const task = tasks.find(t => t.id === event.taskId);
-                              if (task) onTaskClick(task);
-                            } else {
-                              onCardClick?.(event);
-                            }
-                          }}
-                          className={`absolute left-1 right-1 px-2 py-1 rounded text-[10px] transition-colors ${
-                            isDarkMode
-                              ? 'bg-white/10 hover:bg-white/20'
-                              : 'bg-blue-100 hover:bg-blue-200'
-                          }`}
-                          style={{ 
-                            top: `${topPosition}px`,
-                            minHeight: '24px',
-                            maxHeight: '56px'
-                          }}
-                        >
-                          <div className={`truncate font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
-                            {event.title}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {day.getDate()}
                 </div>
-              </div>
+              </button>
             );
           })}
+        </div>
+
+        {/* Time Grid with Hour Gutter - All Days Share Vertical Scroll */}
+        <div className="flex relative">
+          {/* Fixed Hour Gutter */}
+          <div className="w-12 shrink-0">
+            {Array.from({ length: 15 }, (_, i) => i + 7).map((hour) => (
+              <div
+                key={`gutter-${hour}`}
+                className={`h-[60px] pr-2 pt-0.5 text-right text-[10px] ${
+                  isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                }`}
+              >
+                {hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
+              </div>
+            ))}
+          </div>
+
+          {/* Day Columns Grid */}
+          <div className="flex-1 flex">
+            {weekDays.map((day) => {
+              const dayKey = day.toISOString();
+              const dayEvents = eventsByDay.get(dayKey) || [];
+              const isTodayDay = isToday(day);
+              const isSelectedDay = externalSelectedDate && 
+                day.getFullYear() === externalSelectedDate.getFullYear() &&
+                day.getMonth() === externalSelectedDate.getMonth() &&
+                day.getDate() === externalSelectedDate.getDate();
+
+              return (
+                <div
+                  key={dayKey}
+                  className={`flex-1 relative border-r ${
+                    isSelectedDay
+                      ? isDarkMode
+                        ? 'bg-blue-500/5 border-blue-500/20'
+                        : 'bg-blue-50/50 border-blue-300'
+                      : isTodayDay
+                      ? isDarkMode
+                        ? 'bg-blue-500/[0.02] border-blue-500/10'
+                        : 'bg-blue-50/30 border-blue-200'
+                      : isDarkMode
+                      ? 'border-white/10'
+                      : 'border-gray-200'
+                  }`}
+                >
+                  {/* Hour Row Dividers */}
+                  {Array.from({ length: 15 }, (_, i) => i + 7).map((hour) => (
+                    <button
+                      key={`slot-${hour}`}
+                      type="button"
+                      className={`w-full h-[60px] border-t transition-colors ${
+                        isDarkMode 
+                          ? 'border-white/[0.03] hover:bg-white/[0.02] cursor-pointer' 
+                          : 'border-gray-200/50 hover:bg-blue-50/50 cursor-pointer'
+                      }`}
+                      onClick={() => handleTimeSlotClick(day, hour)}
+                      aria-label={`Create event at ${hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`} on ${day.toLocaleDateString()}`}
+                    />
+                  ))}
+
+                  {/* Events - Absolutely Positioned by Time */}
+                  {dayEvents.map((event) => {
+                    const hour = event.start.dateTime ? getHourFromDateTime(event.start.dateTime) : 12;
+                    const topPosition = Math.max(0, (hour - 7) * 60);
+
+                    return (
+                      <button
+                        key={event.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (event.type === 'task' && event.taskId && onTaskClick) {
+                            const task = tasks.find(t => t.id === event.taskId);
+                            if (task) onTaskClick(task);
+                          } else {
+                            onCardClick?.(event);
+                          }
+                        }}
+                        className={`absolute left-1 right-1 px-2 py-1 rounded text-[10px] transition-colors ${
+                          isDarkMode
+                            ? 'bg-white/10 hover:bg-white/20'
+                            : 'bg-blue-100 hover:bg-blue-200'
+                        }`}
+                        style={{ 
+                          top: `${topPosition}px`,
+                          minHeight: '24px',
+                          maxHeight: '56px'
+                        }}
+                      >
+                        <div className={`truncate font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                          {event.title}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
