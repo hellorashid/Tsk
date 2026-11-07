@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ScheduleCardData, ScheduleCardInput } from '../../utils/schedule';
 import { Task } from '../../utils/types';
 import { getStartOfDay, isToday } from '../../utils/dateHelpers';
@@ -49,6 +49,21 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
   // Use external selectedDate if provided, otherwise use internal
   const selectedDate = externalSelectedDate || internalSelectedDate;
   const setSelectedDate = externalSelectedDate ? () => {} : setInternalSelectedDate;
+
+  // Scroll container ref
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Initialize scroll position to show current hour or 6 AM
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const currentHour = new Date().getHours();
+      // Scroll to current hour - 2 (to show some context above)
+      // But ensure we don't go negative and that midnight is still accessible
+      const targetHour = Math.max(0, currentHour - 2);
+      const scrollTop = targetHour * 60; // 60px per hour
+      scrollContainerRef.current.scrollTop = scrollTop;
+    }
+  }, []); // Only run once on mount
 
   // Calculate week days
   const weekDays = useMemo(() => {
@@ -255,7 +270,10 @@ const WeekPlannerView: React.FC<WeekPlannerViewProps> = ({
       </div>
 
       {/* Week Grid - Unified Scrolling (Cron/Notion-inspired) */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden relative overscroll-none">
+      <div 
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden relative overscroll-none"
+      >
         {/* Sticky Day Headers */}
         <div 
           className={`sticky top-0 z-10 flex ${

@@ -502,7 +502,6 @@ function Home() {
                       <WeekPlannerView
                         events={scheduleEvents}
                         tasks={tasks}
-                        onCardClick={handleScheduleCardClick}
                         onTaskClick={handleTaskSelect}
                         onDayClick={handleCalendarDayClick}
                         onAddEvent={handleAddEvent}
@@ -515,7 +514,6 @@ function Home() {
                       <MonthBoardView
                         events={scheduleEvents}
                         tasks={tasks}
-                        onCardClick={handleScheduleCardClick}
                         onTaskClick={handleTaskSelect}
                         onDayClick={handleCalendarDayClick}
                         onAddEvent={handleAddEvent}
@@ -806,7 +804,6 @@ function Home() {
                       <WeekPlannerView
                         events={scheduleEvents}
                         tasks={tasks}
-                        onCardClick={handleScheduleCardClick}
                         onTaskClick={handleTaskSelect}
                         onDayClick={handleCalendarDayClick}
                         onAddEvent={handleAddEvent}
@@ -819,7 +816,6 @@ function Home() {
                       <MonthBoardView
                         events={scheduleEvents}
                         tasks={tasks}
-                        onCardClick={handleScheduleCardClick}
                         onTaskClick={handleTaskSelect}
                         onDayClick={handleCalendarDayClick}
                         onAddEvent={handleAddEvent}
