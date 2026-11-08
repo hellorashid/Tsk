@@ -546,12 +546,8 @@ export function useAppActions({
     [isDbReady, scheduleTable, selectedTask?.id, setSelectedTask, tasksTable],
   );
 
-  const handleAddTask = useCallback(
-    async (taskName: string): Promise<string | null> => {
-      if (!isDbReady) {
-        return null;
-      }
-
+  const createTaskRecord = useCallback(
+    async (taskName: string): Promise<{ id: string; labels: string } | null> => {
       let labels = "";
       if (activeFolder) {
         const selectedFolder = folders.find((folder) => folder.id === activeFolder);
@@ -567,21 +563,59 @@ export function useAppActions({
         labels,
       });
 
-      const taskId = unwrapTask(record)?.id;
+      const id = unwrapTask(record)?.id;
+      return id ? { id, labels } : null;
+    },
+    [activeFolder, folders, tasksTable],
+  );
 
-      if (activeFolder === "today" && taskId) {
+  const handleAddTask = useCallback(
+    async (taskName: string): Promise<string | null> => {
+      if (!isDbReady) {
+        return null;
+      }
+
+      const created = await createTaskRecord(taskName);
+
+      if (activeFolder === "today" && created) {
         await handleAddToSchedule({
-          id: taskId,
+          id: created.id,
           name: taskName,
           description: "",
           completed: false,
-          labels,
+          labels: created.labels,
         });
       }
 
-      return taskId ?? null;
+      return created?.id ?? null;
     },
-    [activeFolder, folders, handleAddToSchedule, isDbReady, tasksTable],
+    [activeFolder, createTaskRecord, handleAddToSchedule, isDbReady],
+  );
+
+  const handleCreateScheduledTask = useCallback(
+    async ({ name, start, durationMinutes }: { name: string; start: Date; durationMinutes: number }) => {
+      if (!isDbReady) {
+        throw new Error("Basic database is not ready yet.");
+      }
+
+      const created = await createTaskRecord(name);
+      if (!created) {
+        throw new Error("Basic create did not return a task.");
+      }
+
+      const timeZone = getResolvedTimeZone();
+      const end = new Date(start.getTime() + durationMinutes * 60_000);
+
+      await scheduleTable.create({
+        title: name,
+        start: { dateTime: start.toISOString(), timeZone },
+        end: { dateTime: end.toISOString(), timeZone },
+        color: "rgba(148, 163, 184, 0.08)",
+        type: "task" as const,
+        taskId: created.id,
+      });
+    },
+    [createTaskRecord, isDbReady, scheduleTable],
   );
 
   const handleAddSubtask = useCallback(
@@ -666,6 +700,7 @@ export function useAppActions({
     handleAddTask,
     handleAddToSchedule,
     handleCreateFolder,
+    handleCreateScheduledTask,
     handleDeleteFolder,
     handleEnterFocus,
     handleExitFocus,

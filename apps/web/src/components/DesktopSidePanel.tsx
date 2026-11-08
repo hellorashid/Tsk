@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { UserMenu, type UserMenuItem } from '@basictech/react';
 import { useTheme, getGlassSurface } from '../contexts/ThemeContext';
@@ -10,11 +10,12 @@ const EASE_DRAWER = [0.32, 0.72, 0, 1] as const;
 interface DesktopSidePanelProps {
   onOpenSettings: () => void;
   onOpenAbout: () => void;
-  onOpenPrototypes?: () => void;
   /** When expanded (settings), back returns home. */
   onBack?: () => void;
   viewMode: ScheduleViewMode;
   onViewModeChange: (mode: ScheduleViewMode) => void;
+  /** Week and month only: lets the calendar take the tasks column's space. */
+  tasksCollapsed?: boolean;
   /** Full-width mode (e.g. settings) — tasks column is hidden by the parent. */
   expanded?: boolean;
   children: React.ReactNode;
@@ -24,10 +25,10 @@ interface DesktopSidePanelProps {
 export function DesktopSidePanel({
   onOpenSettings,
   onOpenAbout,
-  onOpenPrototypes,
   onBack,
   viewMode,
   onViewModeChange,
+  tasksCollapsed = false,
   expanded = false,
   children,
 }: DesktopSidePanelProps) {
@@ -35,46 +36,28 @@ export function DesktopSidePanel({
   const { isDarkMode, accentColor } = theme;
   const reduceMotion = useReducedMotion();
 
-  const userMenuItems = useMemo<UserMenuItem[]>(() => {
-    const items: UserMenuItem[] = [
-      {
-        id: 'settings',
-        label: 'Settings',
-        onClick: onOpenSettings,
-        icon: (
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: '1em', height: '1em' }}>
-            <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-          </svg>
-        ),
-      },
-      {
-        id: 'about',
-        label: 'About tsk',
-        onClick: onOpenAbout,
-        icon: (
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: '1em', height: '1em' }}>
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-          </svg>
-        ),
-      },
-    ];
-    
-    // Add Labs option if available
-    if (onOpenPrototypes) {
-      items.splice(1, 0, {
-        id: 'labs',
-        label: 'Calendar Labs',
-        onClick: onOpenPrototypes,
-        icon: (
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: '1em', height: '1em' }}>
-            <path fillRule="evenodd" d="M7 2a1 1 0 00-.707 1.707L7 4.414v3.758a1 1 0 01-.293.707l-4 4C.817 14.769 2.156 18 4.828 18h10.343c2.673 0 4.012-3.231 2.122-5.121l-4-4A1 1 0 0113 8.172V4.414l.707-.707A1 1 0 0013 2H7zm2 6.172V4h2v4.172a3 3 0 00.879 2.12l1.027 1.028a4 4 0 00-2.171.102l-.47.156a4 4 0 01-2.53 0l-.563-.187a1.993 1.993 0 00-.114-.035l1.063-1.063A3 3 0 009 8.172z" clipRule="evenodd" />
-          </svg>
-        ),
-      });
-    }
-    
-    return items;
-  }, [onOpenAbout, onOpenPrototypes, onOpenSettings]);
+  const userMenuItems = useMemo<UserMenuItem[]>(() => [
+    {
+      id: 'settings',
+      label: 'Settings',
+      onClick: onOpenSettings,
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: '1em', height: '1em' }}>
+          <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+        </svg>
+      ),
+    },
+    {
+      id: 'about',
+      label: 'About tsk',
+      onClick: onOpenAbout,
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: '1em', height: '1em' }}>
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+        </svg>
+      ),
+    },
+  ], [onOpenSettings, onOpenAbout]);
 
   const iconBtn = (active: boolean) =>
     `pressable flex items-center justify-center size-9 rounded-lg transition-[color,background-color] duration-150 ${
@@ -88,16 +71,30 @@ export function DesktopSidePanel({
     }`;
 
   const isWideView = viewMode === 'week-planner' || viewMode === 'month-board';
+  const isFullWidth = isWideView && tasksCollapsed;
+
+  // Animate width only for the collapse toggle. Switching views stays instant.
+  const [previousFullWidth, setPreviousFullWidth] = useState(isFullWidth);
+  const [isAnimatingWidth, setIsAnimatingWidth] = useState(false);
+  if (previousFullWidth !== isFullWidth) {
+    setPreviousFullWidth(isFullWidth);
+    setIsAnimatingWidth(isWideView && !expanded && !reduceMotion);
+  }
   
   return (
     <motion.div
       layout={!reduceMotion && expanded}
       transition={{ layout: { duration: 0.28, ease: EASE_DRAWER } }}
-      className={`hidden md:flex p-2 ${
+      onTransitionEnd={(event) => {
+        if (event.target === event.currentTarget && event.propertyName === 'width') setIsAnimatingWidth(false);
+      }}
+      className={`hidden md:flex p-2 ${isAnimatingWidth ? 'transition-[width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]' : ''} ${
         expanded
           ? 'flex-1 min-w-0'
+          : isFullWidth
+            ? 'shrink-0 w-full'
           : isWideView
-            ? 'shrink-0 md:pr-4 w-[75%]'
+            ? 'shrink-0 md:pr-4 w-[max(60%,min(75%,calc(100%-22rem)))]'
             : 'shrink-0 md:pr-4 w-[min(100%,calc(420px+3.5rem+1rem))] max-w-[55vw]'
       }`}
     >
@@ -123,7 +120,7 @@ export function DesktopSidePanel({
 
           <div className="flex-1 flex items-center justify-center min-h-0">
             <AnimatePresence initial={false} mode="wait">
-              {expanded && onBack && !isWideView ? (
+              {expanded && onBack ? (
                 <motion.button
                   key="back"
                   type="button"
@@ -144,7 +141,7 @@ export function DesktopSidePanel({
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                   </svg>
                 </motion.button>
-              ) : !expanded || isWideView ? (
+              ) : !expanded ? (
                 <motion.div
                   key="view-toggle"
                   role="group"
@@ -202,7 +199,7 @@ export function DesktopSidePanel({
                     aria-pressed={viewMode === 'month-board'}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-[18px] w-[18px]" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm0 4h3v2.5H4V7zm4.5 0h3v2.5h-3V7zm4.5 0h3v2.5h-3V7zM4 11h3v2.5H4V11zm4.5 0h3v2.5h-3V11zm4.5 0h3v2.5h-3V11z" clipRule="evenodd" />
                     </svg>
                   </button>
                 </motion.div>

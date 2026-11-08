@@ -148,7 +148,6 @@ interface SettingsPageProps {
   onToggleAllFolder: (show: boolean) => void;
   onToggleOtherFolder: (show: boolean) => void;
   onToggleTodayFolder: (show: boolean) => void;
-  onOpenPrototypes?: () => void;
 }
 
 // Predefined subtle colors for folders
@@ -179,7 +178,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   onToggleAllFolder,
   onToggleOtherFolder,
   onToggleTodayFolder,
-  onOpenPrototypes,
 }) => {
   const { sync, signIn, signOut, isSignedIn, isAnonymous, isReady, user, handle, status: authStatus } = basic.useBasic();
   const { theme, setAccentColor, setThemeMode, setFontStyle } = useTheme();
@@ -480,27 +478,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               {isReady && !isLocalAccount ? (
                 <SharingSettings />
               ) : null}
-
-              {/* Labs */}
-              {onOpenPrototypes && (
-                <section className={`rounded-xl p-4 ${isDarkMode ? 'bg-white/5' : 'bg-black/5'}`}>
-                  <h2 className="text-lg font-semibold mb-2">Labs</h2>
-                  <p className={`text-sm mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Explore experimental calendar and task planning interfaces.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={onOpenPrototypes}
-                    className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      isDarkMode
-                        ? 'bg-white/15 hover:bg-white/25'
-                        : 'bg-black/10 hover:bg-black/15'
-                    }`}
-                  >
-                    Open Calendar Labs
-                  </button>
-                </section>
-              )}
 
               {/* About */}
               <section className={`rounded-xl p-4 ${isDarkMode ? 'bg-white/5' : 'bg-black/5'}`}>

@@ -50,6 +50,9 @@ export function useHomeUiState() {
     }
     return "agenda";
   });
+  const [calendarTasksCollapsed, setCalendarTasksCollapsed] = useState(
+    () => localStorage.getItem("tsk-calendar-tasks-collapsed") === "true",
+  );
   const [islandMode, setIslandMode] = useState<IslandMode>("default");
   const [activeFolder, setActiveFolder] = useState<string | null>(() => {
     const saved = localStorage.getItem("tsk-active-folder");
@@ -84,6 +87,10 @@ export function useHomeUiState() {
   useEffect(() => {
     localStorage.setItem("tsk-schedule-view-mode", scheduleViewMode);
   }, [scheduleViewMode]);
+
+  useEffect(() => {
+    localStorage.setItem("tsk-calendar-tasks-collapsed", String(calendarTasksCollapsed));
+  }, [calendarTasksCollapsed]);
 
   useEffect(() => {
     writeLocalStorage(`tsk-show-all-folder:${FOLDER_PREF_VERSION}`, showAllFolder.toString());
@@ -125,6 +132,7 @@ export function useHomeUiState() {
     completedTasksExpanded,
     currentView,
     drawerOpen,
+    calendarTasksCollapsed,
     folderDrawerOpen,
     folderSettingsOpen,
     hasSuggestedInitializedRef,
@@ -140,6 +148,7 @@ export function useHomeUiState() {
     viewMode,
     setActiveFolder,
     setAboutModalOpen,
+    setCalendarTasksCollapsed,
     setCompletedTasksExpanded,
     setCurrentView,
     setDrawerOpen,

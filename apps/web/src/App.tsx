@@ -29,12 +29,9 @@ import { ScheduleCardData } from "./utils/schedule";
 import { Task, TaskSource } from "./utils/types";
 import { useAdminReporter } from "./hooks/useAdminReporter";
 import { basic } from "./basic";
-import { usePrototypeView } from "./hooks/usePrototypeView";
-import PrototypesLanding from "./components/prototypes/PrototypesLanding";
-import WeekGridView from "./components/prototypes/WeekGridView";
-import MonthBoardView from "./components/prototypes/MonthBoardView";
-import WeekPlannerView from "./components/prototypes/WeekPlannerView";
-import AgendaMonthView from "./components/prototypes/AgendaMonthView";
+import WeekPlannerView from "./components/calendar/WeekPlannerView";
+import MonthBoardView from "./components/calendar/MonthBoardView";
+import CalendarViewSwitcher from "./components/calendar/CalendarViewSwitcher";
 import type { ScheduleViewMode } from "./hooks/useHomeUiState";
 
 function Home() {
@@ -51,8 +48,6 @@ function Home() {
 
   const isCollectionsLoading = !isDbReady || tasksLoading || scheduleLoading || foldersLoading;
   const [showDelayedLoadingState, setShowDelayedLoadingState] = useState(false);
-
-  const { activePrototype, isPrototypeActive, openPrototype, closePrototype } = usePrototypeView();
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedTaskSource, setSelectedTaskSource] = useState<TaskSource | null>(null);
@@ -81,6 +76,7 @@ function Home() {
     folderSettingsOpen,
     hasSuggestedInitializedRef,
     islandMode,
+    calendarTasksCollapsed,
     isMobile,
     isNewTaskMode,
     mobileView,
@@ -100,6 +96,7 @@ function Home() {
     setIslandMode,
     setIsNewTaskMode,
     setMobileView,
+    setCalendarTasksCollapsed,
     setScheduleViewMode,
     setShowAllFolder,
     setShowOtherFolder,
@@ -144,6 +141,7 @@ function Home() {
     handleAddEvent,
     handleAddSubtask,
     handleAddTask,
+    handleCreateScheduledTask,
     handleAddToSchedule,
     handleCreateFolder,
     handleDeleteFolder,
@@ -193,7 +191,7 @@ function Home() {
         setScheduleViewMode("agenda");
       } else {
         setMobileView("calendar");
-        setScheduleViewMode("timeline");
+        setScheduleViewMode((current) => (current === "agenda" ? "timeline" : current));
       }
       setCurrentView("home");
       if (folderSettingsOpen) {
@@ -301,43 +299,8 @@ function Home() {
     [isMobile, setDrawerOpen, setIsNewTaskMode, tasks],
   );
 
-  const handleCalendarDayClick = useCallback((date: Date) => {
-    setCalendarSelectedDate(date);
-  }, []);
-
-  const handleAddTaskWithScheduling = useCallback(
-    async (taskId: string, startTime: Date, durationMinutes: number) => {
-      if (!isDbReady) return;
-
-      const scheduleTable = basic.useCollection("schedule");
-      const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000);
-      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-
-      const task = tasks.find((t) => t.id === taskId);
-      if (!task) return;
-
-      await scheduleTable.create({
-        title: task.name || "Untitled Task",
-        start: {
-          dateTime: startTime.toISOString(),
-          timeZone,
-        },
-        end: {
-          dateTime: endTime.toISOString(),
-          timeZone,
-        },
-        color: "rgba(148, 163, 184, 0.08)",
-        type: "task" as const,
-        taskId: task.id,
-      });
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isDbReady, tasks],
-  );
-
   const handleOpenSettings = useCallback(() => setCurrentView("settings"), [setCurrentView]);
   const handleOpenAbout = useCallback(() => setAboutModalOpen(true), [setAboutModalOpen]);
-  const handleOpenPrototypes = useCallback(() => openPrototype(null), [openPrototype]);
   const handleFolderSelect = useCallback((folderId: string | null) => setActiveFolder(folderId), [setActiveFolder]);
   const handleOpenFolderSettings = useCallback(() => setFolderSettingsOpen(true), [setFolderSettingsOpen]);
   const handleFolderUpdateRequest = useCallback(
@@ -393,55 +356,61 @@ function Home() {
     };
   }, []);
 
-  // If prototype is active, render prototype view
-  if (isPrototypeActive) {
-    const prototypeProps = {
-      events: scheduleEvents,
-      tasks,
-      onCardClick: handleScheduleCardClick,
-      onTaskClick: handleTaskSelect,
-      onAddEvent: handleAddEvent,
-      onUpdateEvent: updateScheduleEvent,
-      isDarkMode: theme.isDarkMode,
-      isMobile,
-      onBack: closePrototype,
-    };
+  const calendarViewProps = {
+    events: scheduleEvents,
+    tasks,
+    selectedDate: calendarSelectedDate,
+    onSelectedDateChange: setCalendarSelectedDate,
+    onTaskClick: handleTaskSelect,
+    onAddEvent: handleAddEvent,
+    onCreateScheduledTask: handleCreateScheduledTask,
+    onUpdateEvent: updateScheduleEvent,
+    onDeleteEvent: deleteScheduleEvent,
+    isMobile,
+    tasksCollapsed: calendarTasksCollapsed,
+    onToggleTasks: isMobile ? undefined : () => setCalendarTasksCollapsed((collapsed) => !collapsed),
+  };
 
-    return (
-      <div
-        className="flex"
-        style={{
-          height:
-            typeof CSS !== "undefined" && CSS.supports("height", "100dvh")
-              ? "100dvh"
-              : "calc(var(--vh, 1vh) * 100)",
-          backgroundColor: getAppSurface(theme.accentColor, theme.isDarkMode),
-          backgroundImage: theme.isDarkMode
-            ? `${getPhotoOverlay(true)}, url(${bgImage})`
-            : `url(${bgImage})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-        }}
-      >
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {activePrototype === null && (
-            <PrototypesLanding
-              onSelectPrototype={openPrototype}
-              onBack={() => {
-                closePrototype();
-                setCurrentView("home");
-              }}
-            />
-          )}
-          {activePrototype === 'week-grid' && <WeekGridView {...prototypeProps} />}
-          {activePrototype === 'month-board' && <MonthBoardView {...prototypeProps} />}
-          {activePrototype === 'week-planner' && <WeekPlannerView {...prototypeProps} />}
-          {activePrototype === 'agenda-month' && <AgendaMonthView {...prototypeProps} />}
-        </div>
-      </div>
-    );
-  }
+  const isWideCalendar = scheduleViewMode === "week-planner" || scheduleViewMode === "month-board";
+  const isTasksColumnHidden = !isMobile && isWideCalendar && calendarTasksCollapsed;
+  // The island is where tasks and events get edited, so it floats back whenever it's in use.
+  const showFloatingIsland =
+    isTasksColumnHidden && currentView === "home" && (Boolean(selectedTask || selectedEvent) || islandMode !== "default");
+
+  const desktopIsland = (
+    <DynamicIsland
+      selectedTask={selectedTask}
+      selectedEvent={selectedEvent}
+      taskSource={selectedTaskSource}
+      onTaskSelect={handleTaskSelectWrapper}
+      onEventSelect={handleEventSelectWrapper}
+      onAddTask={handleAddTask}
+      onAddEvent={handleAddEvent}
+      onUpdateTask={selectedTaskUpdate}
+      onDeleteTask={selectedTaskDelete}
+      onUpdateEvent={updateScheduleEvent}
+      onDeleteEvent={deleteScheduleEvent}
+      onAddToSchedule={isSharedSelection ? undefined : handleAddToSchedule}
+      onAddSubtask={isSharedSelection ? undefined : handleAddSubtask}
+      onEnterFocus={isSharedSelection ? undefined : handleEnterFocus}
+      tasks={tasks}
+      folders={folders}
+      activeFolder={activeFolder}
+      onFolderSelect={handleFolderSelect}
+      showAllFolder={showAllFolder}
+      showOtherFolder={showOtherFolder}
+      showTodayFolder={showTodayFolder}
+      mode={islandMode}
+      onModeChange={setIslandMode}
+      onOpenSettings={handleOpenSettings}
+      onToggleView={() => setScheduleViewMode((current) => {
+        const cycle: ScheduleViewMode[] = ["agenda", "timeline", "week-planner", "month-board"];
+        const currentIndex = cycle.indexOf(current);
+        return cycle[(currentIndex + 1) % cycle.length];
+      })}
+      currentView={scheduleViewMode}
+    />
+  );
 
   return (
     <>
@@ -489,7 +458,6 @@ function Home() {
                 onToggleAllFolder={setShowAllFolder}
                 onToggleOtherFolder={setShowOtherFolder}
                 onToggleTodayFolder={setShowTodayFolder}
-                onOpenPrototypes={handleOpenPrototypes}
               />
             </div>
           )}
@@ -504,10 +472,10 @@ function Home() {
                   <DesktopSidePanel
                     onOpenSettings={handleOpenSettings}
                     onOpenAbout={handleOpenAbout}
-                    onOpenPrototypes={handleOpenPrototypes}
                     onBack={() => setCurrentView("home")}
                     viewMode={scheduleViewMode}
                     onViewModeChange={setScheduleViewMode}
+                    tasksCollapsed={calendarTasksCollapsed}
                     expanded={currentView === "settings"}
                   >
                     {currentView === "settings" ? (
@@ -526,36 +494,11 @@ function Home() {
                         onToggleAllFolder={setShowAllFolder}
                         onToggleOtherFolder={setShowOtherFolder}
                         onToggleTodayFolder={setShowTodayFolder}
-                        onOpenPrototypes={handleOpenPrototypes}
                       />
                     ) : scheduleViewMode === "week-planner" ? (
-                      <WeekPlannerView
-                        events={scheduleEvents}
-                        tasks={tasks}
-                        onTaskClick={handleTaskSelect}
-                        onDayClick={handleCalendarDayClick}
-                        onAddEvent={handleAddEvent}
-                        onAddTask={handleAddTask}
-                        onAddTaskToSchedule={handleAddTaskWithScheduling}
-                        onUpdateEvent={updateScheduleEvent}
-                        onDeleteEvent={deleteScheduleEvent}
-                        selectedDate={calendarSelectedDate}
-                        isDarkMode={theme.isDarkMode}
-                      />
+                      <WeekPlannerView {...calendarViewProps} />
                     ) : scheduleViewMode === "month-board" ? (
-                      <MonthBoardView
-                        events={scheduleEvents}
-                        tasks={tasks}
-                        onTaskClick={handleTaskSelect}
-                        onDayClick={handleCalendarDayClick}
-                        onAddEvent={handleAddEvent}
-                        onAddTask={handleAddTask}
-                        onAddTaskToSchedule={handleAddTaskWithScheduling}
-                        onUpdateEvent={updateScheduleEvent}
-                        onDeleteEvent={deleteScheduleEvent}
-                        selectedDate={calendarSelectedDate}
-                        isDarkMode={theme.isDarkMode}
-                      />
+                      <MonthBoardView {...calendarViewProps} />
                     ) : scheduleViewMode === "timeline" ? (
                       <ScheduleSidebar
                         onCardClick={handleScheduleCardClick}
@@ -590,7 +533,7 @@ function Home() {
                 )}
 
                 <AnimatePresence initial={false} mode="popLayout">
-                {currentView === "home" && (!isMobile || mobileView === "tasks") && (
+                {currentView === "home" && (!isMobile || mobileView === "tasks") && !isTasksColumnHidden && (
                   <motion.div
                     key="tasks-column"
                     className="flex-1 flex flex-col relative min-w-0"
@@ -793,38 +736,7 @@ function Home() {
                     {!isMobile && (
                       <div className="absolute bottom-4 inset-x-4 z-50 flex justify-center pointer-events-none">
                         <div className="w-full max-w-2xl pointer-events-auto">
-                          <DynamicIsland
-                            selectedTask={selectedTask}
-                            selectedEvent={selectedEvent}
-                            taskSource={selectedTaskSource}
-                            onTaskSelect={handleTaskSelectWrapper}
-                            onEventSelect={handleEventSelectWrapper}
-                            onAddTask={handleAddTask}
-                            onAddEvent={handleAddEvent}
-                            onUpdateTask={selectedTaskUpdate}
-                            onDeleteTask={selectedTaskDelete}
-                            onUpdateEvent={updateScheduleEvent}
-                            onDeleteEvent={deleteScheduleEvent}
-                            onAddToSchedule={isSharedSelection ? undefined : handleAddToSchedule}
-                            onAddSubtask={isSharedSelection ? undefined : handleAddSubtask}
-                            onEnterFocus={isSharedSelection ? undefined : handleEnterFocus}
-                            tasks={tasks}
-                            folders={folders}
-                            activeFolder={activeFolder}
-                            onFolderSelect={handleFolderSelect}
-                            showAllFolder={showAllFolder}
-                            showOtherFolder={showOtherFolder}
-                            showTodayFolder={showTodayFolder}
-                            mode={islandMode}
-                            onModeChange={setIslandMode}
-                            onOpenSettings={handleOpenSettings}
-                            onToggleView={() => setScheduleViewMode((current) => {
-                              const cycle: ScheduleViewMode[] = ["agenda", "timeline", "week-planner", "month-board"];
-                              const currentIndex = cycle.indexOf(current);
-                              return cycle[(currentIndex + 1) % cycle.length];
-                            })}
-                            currentView={scheduleViewMode}
-                          />
+                          {desktopIsland}
                         </div>
                       </div>
                     )}
@@ -832,36 +744,31 @@ function Home() {
                 )}
                 </AnimatePresence>
 
+                <AnimatePresence>
+                  {showFloatingIsland && (
+                    <motion.div
+                      key="floating-island"
+                      className="absolute bottom-4 right-6 z-50 w-[min(28rem,calc(100%-3rem))]"
+                      initial={reduceMotion ? false : { opacity: 0, transform: "translateY(8px)" }}
+                      animate={{ opacity: 1, transform: "translateY(0px)" }}
+                      exit={reduceMotion ? undefined : { opacity: 0, transform: "translateY(8px)" }}
+                      transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+                    >
+                      {desktopIsland}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 {isMobile && mobileView === "calendar" && (
-                  <div className="flex-1 h-full overflow-hidden px-2 pt-3 relative">
+                  <div className="flex-1 h-full flex flex-col overflow-hidden px-2 pt-3 relative">
+                    {scheduleViewMode !== "agenda" && (
+                      <CalendarViewSwitcher value={scheduleViewMode} onChange={setScheduleViewMode} />
+                    )}
+                    <div className="flex-1 min-h-0">
                     {scheduleViewMode === "week-planner" ? (
-                      <WeekPlannerView
-                        events={scheduleEvents}
-                        tasks={tasks}
-                        onTaskClick={handleTaskSelect}
-                        onDayClick={handleCalendarDayClick}
-                        onAddEvent={handleAddEvent}
-                        onAddTask={handleAddTask}
-                        onAddTaskToSchedule={handleAddTaskWithScheduling}
-                        onUpdateEvent={updateScheduleEvent}
-                        onDeleteEvent={deleteScheduleEvent}
-                        selectedDate={calendarSelectedDate}
-                        isDarkMode={theme.isDarkMode}
-                      />
+                      <WeekPlannerView {...calendarViewProps} />
                     ) : scheduleViewMode === "month-board" ? (
-                      <MonthBoardView
-                        events={scheduleEvents}
-                        tasks={tasks}
-                        onTaskClick={handleTaskSelect}
-                        onDayClick={handleCalendarDayClick}
-                        onAddEvent={handleAddEvent}
-                        onAddTask={handleAddTask}
-                        onAddTaskToSchedule={handleAddTaskWithScheduling}
-                        onUpdateEvent={updateScheduleEvent}
-                        onDeleteEvent={deleteScheduleEvent}
-                        selectedDate={calendarSelectedDate}
-                        isDarkMode={theme.isDarkMode}
-                      />
+                      <MonthBoardView {...calendarViewProps} />
                     ) : scheduleViewMode === "timeline" ? (
                       <ScheduleSidebar
                         onCardClick={handleScheduleCardClick}
@@ -890,6 +797,7 @@ function Home() {
                         folders={folders}
                       />
                     )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -971,7 +879,6 @@ function Home() {
               onCreateNew={handleMobileCreateNew}
               onOpenSettings={handleOpenSettings}
               onOpenAbout={handleOpenAbout}
-              onOpenPrototypes={handleOpenPrototypes}
               isCloseMode={currentView === "settings" || folderSettingsOpen}
               onClose={handleCloseSettingsScreen}
             />
