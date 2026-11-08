@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 export type ViewMode = "compact" | "cozy" | "chonky";
 export type MobileView = "tasks" | "calendar";
 export type CurrentView = "home" | "settings";
-export type ScheduleViewMode = "timeline" | "agenda";
+export type ScheduleViewMode = "timeline" | "agenda" | "week-planner" | "month-board";
 export type IslandMode = "default" | "task" | "event" | "command";
 
 const FOLDER_PREF_VERSION = "v2";
@@ -45,8 +45,14 @@ export function useHomeUiState() {
   const [currentView, setCurrentView] = useState<CurrentView>("home");
   const [scheduleViewMode, setScheduleViewMode] = useState<ScheduleViewMode>(() => {
     const saved = localStorage.getItem("tsk-schedule-view-mode");
-    return saved === "timeline" || saved === "agenda" ? saved : "agenda";
+    if (saved === "timeline" || saved === "agenda" || saved === "week-planner" || saved === "month-board") {
+      return saved;
+    }
+    return "agenda";
   });
+  const [calendarTasksCollapsed, setCalendarTasksCollapsed] = useState(
+    () => localStorage.getItem("tsk-calendar-tasks-collapsed") === "true",
+  );
   const [islandMode, setIslandMode] = useState<IslandMode>("default");
   const [activeFolder, setActiveFolder] = useState<string | null>(() => {
     const saved = localStorage.getItem("tsk-active-folder");
@@ -81,6 +87,10 @@ export function useHomeUiState() {
   useEffect(() => {
     localStorage.setItem("tsk-schedule-view-mode", scheduleViewMode);
   }, [scheduleViewMode]);
+
+  useEffect(() => {
+    localStorage.setItem("tsk-calendar-tasks-collapsed", String(calendarTasksCollapsed));
+  }, [calendarTasksCollapsed]);
 
   useEffect(() => {
     writeLocalStorage(`tsk-show-all-folder:${FOLDER_PREF_VERSION}`, showAllFolder.toString());
@@ -122,6 +132,7 @@ export function useHomeUiState() {
     completedTasksExpanded,
     currentView,
     drawerOpen,
+    calendarTasksCollapsed,
     folderDrawerOpen,
     folderSettingsOpen,
     hasSuggestedInitializedRef,
@@ -137,6 +148,7 @@ export function useHomeUiState() {
     viewMode,
     setActiveFolder,
     setAboutModalOpen,
+    setCalendarTasksCollapsed,
     setCompletedTasksExpanded,
     setCurrentView,
     setDrawerOpen,

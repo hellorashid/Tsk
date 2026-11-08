@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { UserMenu, type UserMenuItem } from '@basictech/react';
 import { useTheme, getGlassSurface } from '../contexts/ThemeContext';
 
-type ScheduleViewMode = 'timeline' | 'agenda';
+type ScheduleViewMode = 'timeline' | 'agenda' | 'week-planner' | 'month-board';
 
 const EASE_DRAWER = [0.32, 0.72, 0, 1] as const;
 
@@ -14,6 +14,8 @@ interface DesktopSidePanelProps {
   onBack?: () => void;
   viewMode: ScheduleViewMode;
   onViewModeChange: (mode: ScheduleViewMode) => void;
+  /** Week and month only: lets the calendar take the tasks column's space. */
+  tasksCollapsed?: boolean;
   /** Full-width mode (e.g. settings) — tasks column is hidden by the parent. */
   expanded?: boolean;
   children: React.ReactNode;
@@ -26,6 +28,7 @@ export function DesktopSidePanel({
   onBack,
   viewMode,
   onViewModeChange,
+  tasksCollapsed = false,
   expanded = false,
   children,
 }: DesktopSidePanelProps) {
@@ -67,14 +70,32 @@ export function DesktopSidePanel({
           : 'text-black/55 hover:text-black/85 hover:bg-black/8'
     }`;
 
+  const isWideView = viewMode === 'week-planner' || viewMode === 'month-board';
+  const isFullWidth = isWideView && tasksCollapsed;
+
+  // Animate width only for the collapse toggle. Switching views stays instant.
+  const [previousFullWidth, setPreviousFullWidth] = useState(isFullWidth);
+  const [isAnimatingWidth, setIsAnimatingWidth] = useState(false);
+  if (previousFullWidth !== isFullWidth) {
+    setPreviousFullWidth(isFullWidth);
+    setIsAnimatingWidth(isWideView && !expanded && !reduceMotion);
+  }
+  
   return (
     <motion.div
-      layout={!reduceMotion}
+      layout={!reduceMotion && expanded}
       transition={{ layout: { duration: 0.28, ease: EASE_DRAWER } }}
-      className={`hidden md:flex p-2 ${
+      onTransitionEnd={(event) => {
+        if (event.target === event.currentTarget && event.propertyName === 'width') setIsAnimatingWidth(false);
+      }}
+      className={`hidden md:flex p-2 ${isAnimatingWidth ? 'transition-[width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]' : ''} ${
         expanded
           ? 'flex-1 min-w-0'
-          : 'shrink-0 md:pr-4 w-[min(100%,calc(420px+3.5rem+1rem))] max-w-[55vw]'
+          : isFullWidth
+            ? 'shrink-0 w-full'
+          : isWideView
+            ? 'shrink-0 md:pr-4 w-[max(60%,min(75%,calc(100%-22rem)))]'
+            : 'shrink-0 md:pr-4 w-[min(100%,calc(420px+3.5rem+1rem))] max-w-[55vw]'
       }`}
     >
       <div
@@ -155,6 +176,30 @@ export function DesktopSidePanel({
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-[18px] w-[18px]" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onViewModeChange('week-planner')}
+                    className={iconBtn(viewMode === 'week-planner')}
+                    aria-label="Week planner view"
+                    title="Week planner view"
+                    aria-pressed={viewMode === 'week-planner'}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-[18px] w-[18px]" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M2 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V4zM8 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1H9a1 1 0 01-1-1V4zM15 3a1 1 0 00-1 1v12a1 1 0 001 1h2a1 1 0 001-1V4a1 1 0 00-1-1h-2z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onViewModeChange('month-board')}
+                    className={iconBtn(viewMode === 'month-board')}
+                    aria-label="Month board view"
+                    title="Month board view"
+                    aria-pressed={viewMode === 'month-board'}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-[18px] w-[18px]" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm0 4h3v2.5H4V7zm4.5 0h3v2.5h-3V7zm4.5 0h3v2.5h-3V7zM4 11h3v2.5H4V11zm4.5 0h3v2.5h-3V11zm4.5 0h3v2.5h-3V11z" clipRule="evenodd" />
                     </svg>
                   </button>
                 </motion.div>

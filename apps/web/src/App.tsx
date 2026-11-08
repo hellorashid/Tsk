@@ -29,6 +29,10 @@ import { ScheduleCardData } from "./utils/schedule";
 import { Task, TaskSource } from "./utils/types";
 import { useAdminReporter } from "./hooks/useAdminReporter";
 import { basic } from "./basic";
+import WeekPlannerView from "./components/calendar/WeekPlannerView";
+import MonthBoardView from "./components/calendar/MonthBoardView";
+import CalendarViewSwitcher from "./components/calendar/CalendarViewSwitcher";
+import type { ScheduleViewMode } from "./hooks/useHomeUiState";
 
 function Home() {
   // Initialize admin user directory and activity reporting
@@ -48,6 +52,7 @@ function Home() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedTaskSource, setSelectedTaskSource] = useState<TaskSource | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleCardData | null>(null);
+  const [calendarSelectedDate, setCalendarSelectedDate] = useState<Date>(() => new Date());
 
   const setSelectedTaskAndClearSource = useCallback<Dispatch<SetStateAction<Task | null>>>((value) => {
     if (typeof value === "function") {
@@ -71,6 +76,7 @@ function Home() {
     folderSettingsOpen,
     hasSuggestedInitializedRef,
     islandMode,
+    calendarTasksCollapsed,
     isMobile,
     isNewTaskMode,
     mobileView,
@@ -90,6 +96,7 @@ function Home() {
     setIslandMode,
     setIsNewTaskMode,
     setMobileView,
+    setCalendarTasksCollapsed,
     setScheduleViewMode,
     setShowAllFolder,
     setShowOtherFolder,
@@ -134,6 +141,7 @@ function Home() {
     handleAddEvent,
     handleAddSubtask,
     handleAddTask,
+    handleCreateScheduledTask,
     handleAddToSchedule,
     handleCreateFolder,
     handleDeleteFolder,
@@ -183,7 +191,7 @@ function Home() {
         setScheduleViewMode("agenda");
       } else {
         setMobileView("calendar");
-        setScheduleViewMode("timeline");
+        setScheduleViewMode((current) => (current === "agenda" ? "timeline" : current));
       }
       setCurrentView("home");
       if (folderSettingsOpen) {
@@ -348,6 +356,62 @@ function Home() {
     };
   }, []);
 
+  const calendarViewProps = {
+    events: scheduleEvents,
+    tasks,
+    selectedDate: calendarSelectedDate,
+    onSelectedDateChange: setCalendarSelectedDate,
+    onTaskClick: handleTaskSelect,
+    onAddEvent: handleAddEvent,
+    onCreateScheduledTask: handleCreateScheduledTask,
+    onUpdateEvent: updateScheduleEvent,
+    onDeleteEvent: deleteScheduleEvent,
+    isMobile,
+    tasksCollapsed: calendarTasksCollapsed,
+    onToggleTasks: isMobile ? undefined : () => setCalendarTasksCollapsed((collapsed) => !collapsed),
+  };
+
+  const isWideCalendar = scheduleViewMode === "week-planner" || scheduleViewMode === "month-board";
+  const isTasksColumnHidden = !isMobile && isWideCalendar && calendarTasksCollapsed;
+  // The island is where tasks and events get edited, so it floats back whenever it's in use.
+  const showFloatingIsland =
+    isTasksColumnHidden && currentView === "home" && (Boolean(selectedTask || selectedEvent) || islandMode !== "default");
+
+  const desktopIsland = (
+    <DynamicIsland
+      selectedTask={selectedTask}
+      selectedEvent={selectedEvent}
+      taskSource={selectedTaskSource}
+      onTaskSelect={handleTaskSelectWrapper}
+      onEventSelect={handleEventSelectWrapper}
+      onAddTask={handleAddTask}
+      onAddEvent={handleAddEvent}
+      onUpdateTask={selectedTaskUpdate}
+      onDeleteTask={selectedTaskDelete}
+      onUpdateEvent={updateScheduleEvent}
+      onDeleteEvent={deleteScheduleEvent}
+      onAddToSchedule={isSharedSelection ? undefined : handleAddToSchedule}
+      onAddSubtask={isSharedSelection ? undefined : handleAddSubtask}
+      onEnterFocus={isSharedSelection ? undefined : handleEnterFocus}
+      tasks={tasks}
+      folders={folders}
+      activeFolder={activeFolder}
+      onFolderSelect={handleFolderSelect}
+      showAllFolder={showAllFolder}
+      showOtherFolder={showOtherFolder}
+      showTodayFolder={showTodayFolder}
+      mode={islandMode}
+      onModeChange={setIslandMode}
+      onOpenSettings={handleOpenSettings}
+      onToggleView={() => setScheduleViewMode((current) => {
+        const cycle: ScheduleViewMode[] = ["agenda", "timeline", "week-planner", "month-board"];
+        const currentIndex = cycle.indexOf(current);
+        return cycle[(currentIndex + 1) % cycle.length];
+      })}
+      currentView={scheduleViewMode}
+    />
+  );
+
   return (
     <>
       {focusedTask && (
@@ -411,6 +475,7 @@ function Home() {
                     onBack={() => setCurrentView("home")}
                     viewMode={scheduleViewMode}
                     onViewModeChange={setScheduleViewMode}
+                    tasksCollapsed={calendarTasksCollapsed}
                     expanded={currentView === "settings"}
                   >
                     {currentView === "settings" ? (
@@ -430,6 +495,10 @@ function Home() {
                         onToggleOtherFolder={setShowOtherFolder}
                         onToggleTodayFolder={setShowTodayFolder}
                       />
+                    ) : scheduleViewMode === "week-planner" ? (
+                      <WeekPlannerView {...calendarViewProps} />
+                    ) : scheduleViewMode === "month-board" ? (
+                      <MonthBoardView {...calendarViewProps} />
                     ) : scheduleViewMode === "timeline" ? (
                       <ScheduleSidebar
                         onCardClick={handleScheduleCardClick}
@@ -464,7 +533,7 @@ function Home() {
                 )}
 
                 <AnimatePresence initial={false} mode="popLayout">
-                {currentView === "home" && (!isMobile || mobileView === "tasks") && (
+                {currentView === "home" && (!isMobile || mobileView === "tasks") && !isTasksColumnHidden && (
                   <motion.div
                     key="tasks-column"
                     className="flex-1 flex flex-col relative min-w-0"
@@ -667,34 +736,7 @@ function Home() {
                     {!isMobile && (
                       <div className="absolute bottom-4 inset-x-4 z-50 flex justify-center pointer-events-none">
                         <div className="w-full max-w-2xl pointer-events-auto">
-                          <DynamicIsland
-                            selectedTask={selectedTask}
-                            selectedEvent={selectedEvent}
-                            taskSource={selectedTaskSource}
-                            onTaskSelect={handleTaskSelectWrapper}
-                            onEventSelect={handleEventSelectWrapper}
-                            onAddTask={handleAddTask}
-                            onAddEvent={handleAddEvent}
-                            onUpdateTask={selectedTaskUpdate}
-                            onDeleteTask={selectedTaskDelete}
-                            onUpdateEvent={updateScheduleEvent}
-                            onDeleteEvent={deleteScheduleEvent}
-                            onAddToSchedule={isSharedSelection ? undefined : handleAddToSchedule}
-                            onAddSubtask={isSharedSelection ? undefined : handleAddSubtask}
-                            onEnterFocus={isSharedSelection ? undefined : handleEnterFocus}
-                            tasks={tasks}
-                            folders={folders}
-                            activeFolder={activeFolder}
-                            onFolderSelect={handleFolderSelect}
-                            showAllFolder={showAllFolder}
-                            showOtherFolder={showOtherFolder}
-                            showTodayFolder={showTodayFolder}
-                            mode={islandMode}
-                            onModeChange={setIslandMode}
-                            onOpenSettings={handleOpenSettings}
-                            onToggleView={() => setScheduleViewMode((current) => (current === "agenda" ? "timeline" : "agenda"))}
-                            currentView={scheduleViewMode}
-                          />
+                          {desktopIsland}
                         </div>
                       </div>
                     )}
@@ -702,9 +744,32 @@ function Home() {
                 )}
                 </AnimatePresence>
 
+                <AnimatePresence>
+                  {showFloatingIsland && (
+                    <motion.div
+                      key="floating-island"
+                      className="absolute bottom-4 right-6 z-50 w-[min(28rem,calc(100%-3rem))]"
+                      initial={reduceMotion ? false : { opacity: 0, transform: "translateY(8px)" }}
+                      animate={{ opacity: 1, transform: "translateY(0px)" }}
+                      exit={reduceMotion ? undefined : { opacity: 0, transform: "translateY(8px)" }}
+                      transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+                    >
+                      {desktopIsland}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 {isMobile && mobileView === "calendar" && (
-                  <div className="flex-1 h-full overflow-hidden px-2 pt-3 relative">
-                    {scheduleViewMode === "timeline" ? (
+                  <div className="flex-1 h-full flex flex-col overflow-hidden px-2 pt-3 relative">
+                    {scheduleViewMode !== "agenda" && (
+                      <CalendarViewSwitcher value={scheduleViewMode} onChange={setScheduleViewMode} />
+                    )}
+                    <div className="flex-1 min-h-0">
+                    {scheduleViewMode === "week-planner" ? (
+                      <WeekPlannerView {...calendarViewProps} />
+                    ) : scheduleViewMode === "month-board" ? (
+                      <MonthBoardView {...calendarViewProps} />
+                    ) : scheduleViewMode === "timeline" ? (
                       <ScheduleSidebar
                         onCardClick={handleScheduleCardClick}
                         events={scheduleEvents}
@@ -732,6 +797,7 @@ function Home() {
                         folders={folders}
                       />
                     )}
+                    </div>
                   </div>
                 )}
               </div>

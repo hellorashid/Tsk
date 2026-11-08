@@ -7,7 +7,7 @@ export type MobileNavTarget = "tasks" | "agenda" | "calendar";
 
 interface MobileNavBarProps {
   currentView: "tasks" | "calendar";
-  scheduleViewMode: "timeline" | "agenda";
+  scheduleViewMode: "timeline" | "agenda" | "week-planner" | "month-board";
   onViewChange: (view: MobileNavTarget) => void;
   onCreateNew: () => void;
   onOpenSettings: () => void;
@@ -128,7 +128,7 @@ function MobileNavBar({
 
   const tasksActive = currentView === "tasks";
   const agendaActive = currentView === "calendar" && scheduleViewMode === "agenda";
-  const calendarActive = currentView === "calendar" && scheduleViewMode === "timeline";
+  const calendarActive = currentView === "calendar" && scheduleViewMode !== "agenda";
 
   return (
     <div

@@ -64,7 +64,7 @@ const toLocalMidnight = (year: number, month: number, day: number): Date => {
   return date;
 };
 
-const parseDateOnlyValue = (value: string): Date | null => {
+export const parseDateOnlyValue = (value: string): Date | null => {
   const [yearValue, monthValue, dayValue] = value.split("-").map(Number);
   if (!yearValue || !monthValue || !dayValue) {
     return null;
